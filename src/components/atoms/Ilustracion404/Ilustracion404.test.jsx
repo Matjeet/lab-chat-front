@@ -3,22 +3,29 @@ import { render } from '@testing-library/react';
 import Ilustracion404 from './Ilustracion404';
 
 describe('Ilustracion404', () => {
-  it('es puramente decorativa y admite className', () => {
-    const { container } = render(<Ilustracion404 className="foo" />);
-    const svg = container.querySelector('svg');
+  it('monta las dos variantes (claro y oscuro), decorativas', () => {
+    const { container } = render(<Ilustracion404 />);
+    const svgs = container.querySelectorAll('svg');
 
-    expect(svg).toHaveAttribute('aria-hidden', 'true');
-    expect(svg).toHaveAttribute('viewBox', '0 0 750 750');
-    expect(svg).toHaveClass('foo');
+    expect(svgs).toHaveLength(2);
+    svgs.forEach((svg) => {
+      expect(svg).toHaveAttribute('aria-hidden', 'true');
+      expect(svg).toHaveAttribute('viewBox', '0 0 750 750');
+    });
   });
 
-  it('usa tokens de color reactivos al tema, no hex fijo', () => {
+  it('cada variante trae el fondo pensado para su tema', () => {
     const { container } = render(<Ilustracion404 />);
-    const html = container.innerHTML;
+    const [claro, oscuro] = container.querySelectorAll('svg');
 
-    expect(html).toContain('var(--color-bg)');
-    expect(html).toContain('var(--color-primary)');
-    expect(html).toContain('var(--color-on-primary)');
-    expect(html).not.toMatch(/#0E0F13|#8B83FF|#00160A/i);
+    // El SVG "claro" está hecho para fondo #F5F6F8 (--color-bg en claro);
+    // el "oscuro", para #0E0F13 (--color-bg en oscuro).
+    expect(claro.innerHTML).toContain('#F5F6F8');
+    expect(oscuro.innerHTML).toContain('#0E0F13');
+  });
+
+  it('aplica className al contenedor', () => {
+    const { container } = render(<Ilustracion404 className="foo" />);
+    expect(container.firstChild).toHaveClass('foo');
   });
 });

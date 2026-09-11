@@ -4,6 +4,7 @@
     "color-no-hex": true,
     "color-named": "never",
     "selector-class-pattern": null,
+    "selector-pseudo-class-no-unknown": [true, { "ignorePseudoClasses": ["global"] }],
     "custom-property-empty-line-before": null,
     "declaration-empty-line-before": null,
     "comment-empty-line-before": null,

@@ -147,14 +147,15 @@ solo formulario/tarjeta, p. ej. registro), el contenido además se centra
    ambos temas antes de dar por bueno.
 3. **Nunca** introducir un color/tamaño literal en un `.module.css`: `npm run
    lint` (Stylelint, regla `color-no-hex`) lo rechaza.
-4. **Ilustraciones con color de marca (SVG en línea):** los `fill`/`stroke`
-   que deban seguir el tema van a `var(--token)` como cualquier CSS — ver
-   `Ilustracion404`, donde el fondo y la mancha usan `--color-bg` /
-   `--color-primary`, y el trazo usa `--color-on-primary` (el mismo par de
-   contraste de un texto sobre un botón `primary`). Los acentos propios del
-   dibujo que no deban cambiar con el tema se dejan fijos, documentados como
-   tal — Stylelint no llega dentro de un `.jsx`, así que es en el código
-   donde hay que dejar claro por qué esos sí son literales.
+4. **Ilustraciones que cambian de tema, con dos SVG en línea:** cuando el
+   propio dibujo (no solo el color) está pensado distinto para cada tema —
+   ver `Ilustracion404`, con un SVG completo por tema en lugar de uno
+   recoloreado por tokens — se inlinean los dos y el CSS del componente
+   decide cuál se ve, con el mismo criterio que `tokens.css`: claro por
+   defecto, oscuro por `prefers-color-scheme` o por `[data-theme="dark"]`.
+   Las dos variantes se montan siempre (nunca se desmonta la que no toca) para
+   que el cambio de tema sea instantáneo. Sus colores quedan tal cual los
+   entregaron — no son tokens, es la paleta propia de esa ilustración.
 
 ## Herramientas
 

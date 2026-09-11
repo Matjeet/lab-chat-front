@@ -105,19 +105,20 @@ chat-frontend/
 
 ## Assets estáticos: `public/` vs. SVG en línea
 
-Dos formas de meter una imagen, según si sus colores deben adaptarse al tema:
+Tres formas de meter una imagen, según si debe adaptarse al tema:
 
 - **No necesita re-tematizarse** (foto, ilustración con paleta fija, logo de
   marca): archivo en `public/`, referenciado como `/archivo.ext` (sin
   `public/` en la ruta) con un `<img>` normal — no hace falta `next/image`
   para algo estático en export mode.
-- **Sus colores deben seguir el tema claro/oscuro**: SVG **en línea**, como
-  componente (ver `Ilustracion404`). Un `<img src="...svg">` no puede leer
+- **Solo cambian algunos colores puntuales del mismo dibujo**: SVG **en
+  línea**, como componente JSX. Un `<img src="...svg">` no puede leer
   `var(--token)` — el navegador no aplica el CSS de la página dentro del
-  archivo. Inlineado como JSX sí: cada `fill="#hex"` se cambia por
-  `fill="var(--color-x)"` y hereda el tema como cualquier otro elemento.
-  Los colores *propios* de la ilustración que no deban cambiar con el tema
-  (acentos, resaltes) se dejan fijos a propósito, documentados como tal.
+  archivo; inlineado como JSX sí (`fill="#hex"` → `fill="var(--color-x)"`).
+- **Hay un dibujo distinto por tema** (no solo un recolor): dos SVG en línea
+  en el mismo componente, uno por tema, y el CSS decide cuál se ve — ver
+  `Ilustracion404`. Ninguno usa tokens de color: cada archivo trae la paleta
+  que le hicieron para su tema, tal cual.
 
 ## Variantes de `DefaultLayout`
 
