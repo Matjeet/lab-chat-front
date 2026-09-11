@@ -147,6 +147,14 @@ solo formulario/tarjeta, p. ej. registro), el contenido además se centra
    ambos temas antes de dar por bueno.
 3. **Nunca** introducir un color/tamaño literal en un `.module.css`: `npm run
    lint` (Stylelint, regla `color-no-hex`) lo rechaza.
+4. **Ilustraciones con color de marca (SVG en línea):** los `fill`/`stroke`
+   que deban seguir el tema van a `var(--token)` como cualquier CSS — ver
+   `Ilustracion404`, donde el fondo y la mancha usan `--color-bg` /
+   `--color-primary`, y el trazo usa `--color-on-primary` (el mismo par de
+   contraste de un texto sobre un botón `primary`). Los acentos propios del
+   dibujo que no deban cambiar con el tema se dejan fijos, documentados como
+   tal — Stylelint no llega dentro de un `.jsx`, así que es en el código
+   donde hay que dejar claro por qué esos sí son literales.
 
 ## Herramientas
 

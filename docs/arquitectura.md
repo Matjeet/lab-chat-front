@@ -69,8 +69,6 @@ helper en `src/utils/`.
 ```
 chat-frontend/
 ├── docs/                      # Documentación (este directorio)
-├── public/                    # Assets estáticos, servidos tal cual en "/"
-│   └── not-found.svg          # Ilustración de NotFoundPage
 ├── app/                       # App Router (solo enrutado)
 │   ├── layout.jsx             # html/body + tokens + global.css + tema inicial
 │   ├── page.jsx               # "/"         -> <HomePage/>
@@ -88,7 +86,7 @@ chat-frontend/
 │   │   ├── tokens.css         # Tokens de diseño (ver sistema-de-diseno.md)
 │   │   └── global.css         # Reset y estilos base
 │   └── components/
-│       ├── atoms/             Button · Input · Alert
+│       ├── atoms/             Button · Input · Alert · Ilustracion404
 │       ├── molecules/         FormField · ThemeToggle · RequisitosCampo
 │       ├── organisms/         Header · RegistroForm
 │       ├── templates/         DefaultLayout
@@ -105,13 +103,21 @@ chat-frontend/
 └── package.json
 ```
 
-## Assets estáticos
+## Assets estáticos: `public/` vs. SVG en línea
 
-Lo que vaya en `public/` se sirve tal cual desde la raíz del sitio: un archivo
-`public/not-found.svg` se referencia como `/not-found.svg` (sin `public/` en
-la ruta), con un `<img>` normal — no hace falta `next/image` para un SVG
-estático en export mode. Usar solo para imágenes/ilustraciones que no
-necesitan pasar por Webpack (no se versionan con hash de contenido).
+Dos formas de meter una imagen, según si sus colores deben adaptarse al tema:
+
+- **No necesita re-tematizarse** (foto, ilustración con paleta fija, logo de
+  marca): archivo en `public/`, referenciado como `/archivo.ext` (sin
+  `public/` en la ruta) con un `<img>` normal — no hace falta `next/image`
+  para algo estático en export mode.
+- **Sus colores deben seguir el tema claro/oscuro**: SVG **en línea**, como
+  componente (ver `Ilustracion404`). Un `<img src="...svg">` no puede leer
+  `var(--token)` — el navegador no aplica el CSS de la página dentro del
+  archivo. Inlineado como JSX sí: cada `fill="#hex"` se cambia por
+  `fill="var(--color-x)"` y hereda el tema como cualquier otro elemento.
+  Los colores *propios* de la ilustración que no deban cambiar con el tema
+  (acentos, resaltes) se dejan fijos a propósito, documentados como tal.
 
 ## Variantes de `DefaultLayout`
 

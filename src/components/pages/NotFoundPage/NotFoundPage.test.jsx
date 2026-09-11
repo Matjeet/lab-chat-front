@@ -19,12 +19,8 @@ describe('NotFoundPage', () => {
     );
   });
 
-  it('incluye la ilustración como decorativa (alt vacío)', () => {
-    // alt="" hace que el <img> tenga role "presentation": no se busca por
-    // role "img", se comprueba directo en el DOM.
+  it('incluye la ilustración como decorativa', () => {
     const { container } = render(<NotFoundPage />);
-    const img = container.querySelector('img');
-    expect(img).toHaveAttribute('src', '/not-found.svg');
-    expect(img).toHaveAttribute('alt', '');
+    expect(container.querySelector('svg[aria-hidden="true"]')).toBeInTheDocument();
   });
 });

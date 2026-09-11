@@ -10,7 +10,6 @@
   width: 100%;
   max-width: 220px;
   height: auto;
-  border-radius: var(--radius-lg);
 }
 
 .codigo {

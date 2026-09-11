@@ -1,6 +1,7 @@
 import Link from 'next/link';
 
 import DefaultLayout from '../../templates/DefaultLayout';
+import Ilustracion404 from '../../atoms/Ilustracion404';
 import styles from './NotFoundPage.module.css';
 
 /**
@@ -11,14 +12,7 @@ import styles from './NotFoundPage.module.css';
 const NotFoundPage = () => (
   <DefaultLayout title="Página no encontrada" centered>
     <div className={styles.contenido}>
-      {/* Decorativa: el texto de al lado ya explica el error, por eso alt="". */}
-      <img
-        src="/not-found.svg"
-        alt=""
-        width={750}
-        height={750}
-        className={styles.ilustracion}
-      />
+      <Ilustracion404 className={styles.ilustracion} />
       <p className={styles.codigo}>404</p>
       <p className={styles.mensaje}>
         La página que buscas no existe, se movió o la URL tiene un error.

@@ -47,7 +47,6 @@ Servidor de desarrollo en `http://localhost:3000`.
 ## Estructura
 
 ```
-public/                       # Assets estáticos servidos tal cual en "/"
 app/                          # App Router: solo enrutado
 ├── layout.jsx                # Layout raíz (html/body + tokens + CSS global)
 ├── page.jsx                  # "/"         -> <HomePage/>
@@ -64,7 +63,7 @@ src/
 │   ├── tokens.css            # Tokens de diseño (color, tipografía, espaciado...)
 │   └── global.css            # Reset y estilos base
 └── components/               # Atomic Design
-    ├── atoms/       Button, Input, Alert
+    ├── atoms/       Button, Input, Alert, Ilustracion404
     ├── molecules/   FormField, ThemeToggle, RequisitosCampo
     ├── organisms/   Header, RegistroForm
     ├── templates/   DefaultLayout
