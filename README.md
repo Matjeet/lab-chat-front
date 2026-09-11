@@ -51,7 +51,8 @@ app/                          # App Router: solo enrutado
 ├── layout.jsx                # Layout raíz (html/body + tokens + CSS global)
 ├── page.jsx                  # "/"         -> <HomePage/>
 ├── registro/page.jsx         # "/registro" -> <RegistroPage/>
-└── estilos/page.jsx          # "/estilos"  -> guía viva del sistema de diseño
+├── estilos/page.jsx          # "/estilos"  -> guía viva del sistema de diseño
+└── not-found.jsx             # 404 -> <NotFoundPage/> (se exporta como out/404.html)
 src/
 ├── setupTests.js             # Setup de Jest
 ├── api/                      # Llamadas a los microservicios backend
@@ -66,7 +67,7 @@ src/
     ├── molecules/   FormField, ThemeToggle, RequisitosCampo
     ├── organisms/   Header, RegistroForm
     ├── templates/   DefaultLayout
-    └── pages/       HomePage, RegistroPage, StyleGuidePage
+    └── pages/       HomePage, RegistroPage, StyleGuidePage, NotFoundPage
 ```
 
 `app/` solo conecta URLs con componentes. Toda la UI y su lógica viven en

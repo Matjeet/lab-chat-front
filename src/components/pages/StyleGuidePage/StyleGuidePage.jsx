@@ -31,6 +31,7 @@ const COLORES = [
 ];
 
 const TEXTOS = [
+  ['--font-size-3xl', 'Encabezado 3xl'],
   ['--font-size-2xl', 'Encabezado 2xl'],
   ['--font-size-xl', 'Encabezado xl'],
   ['--font-size-lg', 'Subtítulo lg'],

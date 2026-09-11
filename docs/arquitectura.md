@@ -18,6 +18,9 @@ Nginx o una CDN, sin proceso Node en producción. Consecuencias:
 - No hay SSR en runtime, ni API routes, ni middleware, ni Server Actions.
 - Todo se prerenderiza en tiempo de build o se renderiza en el cliente.
 - El optimizador de imágenes de Next se desactiva (`images.unoptimized`).
+- `app/not-found.jsx` se exporta como `out/404.html`. Quien configure el
+  servidor (Nginx, CDN...) debe apuntar su `error_page 404` / *custom error
+  document* ahí para que se sirva en vez de un 404 genérico del servidor.
 
 ## App Router vs. componentes
 
@@ -70,7 +73,8 @@ chat-frontend/
 │   ├── layout.jsx             # html/body + tokens + global.css + tema inicial
 │   ├── page.jsx               # "/"         -> <HomePage/>
 │   ├── registro/page.jsx      # "/registro" -> <RegistroPage/>
-│   └── estilos/page.jsx       # "/estilos"  -> <StyleGuidePage/> (guía viva)
+│   ├── estilos/page.jsx       # "/estilos"  -> <StyleGuidePage/> (guía viva)
+│   └── not-found.jsx          # 404 (ruta inexistente o notFound()) -> <NotFoundPage/>
 ├── src/
 │   ├── setupTests.js          # Setup global de Jest (matchers de jest-dom)
 │   ├── api/                   # Acceso a los servicios backend
@@ -86,7 +90,7 @@ chat-frontend/
 │       ├── molecules/         FormField · ThemeToggle · RequisitosCampo
 │       ├── organisms/         Header · RegistroForm
 │       ├── templates/         DefaultLayout
-│       └── pages/             HomePage · RegistroPage · StyleGuidePage
+│       └── pages/             HomePage · RegistroPage · StyleGuidePage · NotFoundPage
 │           └── Button/
 │               ├── Button.jsx
 │               ├── Button.module.css
