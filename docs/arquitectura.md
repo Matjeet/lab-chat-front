@@ -1,0 +1,120 @@
+# Arquitectura del frontend
+
+## Stack
+
+- **Next.js 16** con **App Router**, en modo **export estático**
+  (`output: 'export'` en `next.config.js`).
+- **React 19**.
+- **Jest + Testing Library** (a través de `next/jest`) para los tests unitarios.
+- **CSS Modules** para estilos con ámbito local por componente.
+
+No se usa TypeScript en esta cáscara; se puede añadir más adelante.
+
+### Export estático
+
+`next build` produce HTML/JS/CSS en `out/`. Ese directorio se sirve tal cual con
+Nginx o una CDN, sin proceso Node en producción. Consecuencias:
+
+- No hay SSR en runtime, ni API routes, ni middleware, ni Server Actions.
+- Todo se prerenderiza en tiempo de build o se renderiza en el cliente.
+- El optimizador de imágenes de Next se desactiva (`images.unoptimized`).
+
+## App Router vs. componentes
+
+`app/` **solo** contiene enrutado:
+
+| Archivo | Rol |
+|---------|-----|
+| `app/layout.jsx` | Layout raíz: `<html>`, `<body>`, import del CSS global, metadata. |
+| `app/page.jsx` | Ruta `/`. Solo hace `return <HomePage/>`. |
+
+Toda la interfaz y su lógica viven en `src/components/` siguiendo Atomic Design.
+Añadir una pantalla nueva = crear `app/ruta/page.jsx` que renderiza la `page`
+correspondiente de Atomic Design.
+
+### Client vs. Server Components
+
+Los componentes del App Router son Server Components por defecto. Un componente
+que use estado, efectos o handlers de eventos necesita `'use client'` en la
+primera línea (p. ej. `HomePage`). Sus hijos heredan el modo cliente.
+
+## Atomic Design
+
+La interfaz se organiza en cinco niveles, de menor a mayor complejidad. Cada
+nivel solo puede depender de niveles inferiores:
+
+```
+atoms  ->  molecules  ->  organisms  ->  templates  ->  pages
+```
+
+| Nivel | Qué es | Ejemplos en el repo |
+|-------|--------|---------------------|
+| **atoms** | Elementos indivisibles de UI. | `Button`, `Input` |
+| **molecules** | Grupos pequeños de átomos con una función. | `FormField` |
+| **organisms** | Secciones reconocibles de una pantalla. | `Header` |
+| **templates** | Estructura/layout de una pantalla, sin datos. | `DefaultLayout` |
+| **pages** | Plantilla + datos + lógica reales. | `HomePage` |
+
+### Regla de dependencia
+
+Un componente **nunca** importa de su mismo nivel ni de uno superior. Si dos
+átomos necesitan compartir algo, ese algo probablemente es otro átomo o un
+helper en `src/utils/`.
+
+## Estructura de carpetas
+
+```
+chat-frontend/
+├── docs/                      # Documentación (este directorio)
+├── app/                       # App Router (solo enrutado)
+│   ├── layout.jsx
+│   ├── page.jsx               # "/" -> <HomePage/>
+│   └── page.test.jsx
+├── src/
+│   ├── setupTests.js          # Setup global de Jest (matchers de jest-dom)
+│   ├── styles/
+│   │   └── global.css         # Reset y estilos base
+│   └── components/
+│       ├── atoms/
+│       │   ├── Button/
+│       │   │   ├── Button.jsx
+│       │   │   ├── Button.module.css
+│       │   │   ├── Button.test.jsx
+│       │   │   └── index.js   # barrel: export { default } from './Button'
+│       │   └── Input/
+│       ├── molecules/
+│       │   └── FormField/
+│       ├── organisms/
+│       │   └── Header/
+│       ├── templates/
+│       │   └── DefaultLayout/
+│       └── pages/
+│           └── HomePage/
+├── jsconfig.json              # alias "@/*" -> "src/*"
+├── next.config.js
+├── jest.config.js
+└── package.json
+```
+
+## Anatomía de un componente
+
+Cada componente vive en su propia carpeta con estos archivos:
+
+- `NombreComponente.jsx` — el componente.
+- `NombreComponente.module.css` — sus estilos (CSS Modules).
+- `NombreComponente.test.jsx` — sus tests unitarios.
+- `index.js` — *barrel* para poder importar `.../Button` en vez de `.../Button/Button`.
+
+## Añadir un componente nuevo
+
+1. Decide el nivel atómico que le corresponde.
+2. Crea la carpeta dentro de ese nivel con los cuatro archivos de arriba.
+3. Escribe el test junto al componente.
+4. Importa solo de niveles inferiores.
+5. Si usa estado/efectos/eventos, añade `'use client'` en la primera línea.
+
+## Añadir una ruta nueva
+
+1. Crea `app/mi-ruta/page.jsx`.
+2. Que solo renderice la `page` de Atomic Design correspondiente
+   (`src/components/pages/MiPantalla`).

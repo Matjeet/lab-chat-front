@@ -1,0 +1,29 @@
+# Dependencias
+node_modules/
+
+# Next.js
+.next/
+out/
+next-env.d.ts
+.swc/
+
+# Cobertura de tests
+coverage/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Entornos
+.env
+.env.local
+.env.*.local
+
+# Editores / SO
+.DS_Store
+.idea/
+.vscode/
+*.swp
+Thumbs.db
