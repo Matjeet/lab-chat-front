@@ -11,7 +11,24 @@ Cómo consume este frontend los microservicios backend. Contrato completo:
 
 `src/api/config.js` la lee y le quita la barra final.
 
-CORS lo resuelve el gateway / reverse proxy, no el servicio (ver contrato §1).
+### CORS
+
+`chat-registro` habilita CORS él mismo para `/api/**` (`CorsConfig` +
+`CORS_ALLOWED_ORIGINS`, ver contrato §1) — ya no lo resuelve un gateway.
+
+- **Desarrollo**: el valor por defecto del backend es `http://localhost:3000`,
+  que coincide con `npm run dev`. No hace falta tocar nada.
+- **Producción**: quien despliegue `chat-registro` debe incluir el origen real
+  donde se sirve `out/` (el dominio, con esquema y puerto, sin barra final) en
+  `CORS_ALLOWED_ORIGINS`. Sin eso, toda petición del frontend falla.
+- **Un origen no permitido responde `403` sin cabeceras `Access-Control-*`**:
+  el navegador bloquea la lectura de la respuesta y `fetch` lanza — nuestro
+  código ya lo captura como `{ kind: 'red' }` (ver más abajo), así que en la UI
+  se ve igual que "no se pudo conectar". Si aparece ese mensaje con el backend
+  arriba, revisa la consola del navegador (error de CORS) y
+  `CORS_ALLOWED_ORIGINS` antes de asumir que es un problema de red.
+- No enviamos cookies/credenciales (`fetch` sin `credentials`), consistente con
+  `CORS_ALLOW_CREDENTIALS=false` por defecto en el backend.
 
 ## Dónde vive el código
 
