@@ -69,6 +69,9 @@ helper en `src/utils/`.
 ```
 chat-frontend/
 ├── docs/                      # Documentación (este directorio)
+├── assets/                    # Fuentes de diseño a inlinear a mano (ver su README)
+│   ├── 404-claro.svg
+│   └── 404-oscuro.svg
 ├── app/                       # App Router (solo enrutado)
 │   ├── layout.jsx             # html/body + tokens + global.css + tema inicial
 │   ├── page.jsx               # "/"         -> <HomePage/>
@@ -119,6 +122,10 @@ Tres formas de meter una imagen, según si debe adaptarse al tema:
   en el mismo componente, uno por tema, y el CSS decide cuál se ve — ver
   `Ilustracion404`. Ninguno usa tokens de color: cada archivo trae la paleta
   que le hicieron para su tema, tal cual.
+
+En los dos últimos casos, el `.svg` original (la fuente para regenerar el
+componente si se edita) vive en `assets/`, no en `public/` — no se sirve tal
+cual, así que no pertenece ahí. Ver `assets/README.md`.
 
 ## Variantes de `DefaultLayout`
 

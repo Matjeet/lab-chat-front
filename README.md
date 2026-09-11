@@ -47,6 +47,7 @@ Servidor de desarrollo en `http://localhost:3000`.
 ## Estructura
 
 ```
+assets/                       # Fuentes de diseño a inlinear a mano (ver su README)
 app/                          # App Router: solo enrutado
 ├── layout.jsx                # Layout raíz (html/body + tokens + CSS global)
 ├── page.jsx                  # "/"         -> <HomePage/>

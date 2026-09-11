@@ -5,11 +5,13 @@ import styles from './Ilustracion404.module.css';
  *
  * Son DOS SVG hechos a mano, uno por tema (fondo y contraste de los resaltes
  * ajustados para cada uno) — no la misma ilustración recoloreada por tokens.
- * Se inlinean tal cual las entregaron; el CSS decide cuál se ve, con el mismo
- * criterio que `tokens.css`: claro por defecto, oscuro por
- * `prefers-color-scheme` o por [data-theme] en <html> (ver
- * Ilustracion404.module.css). Las dos se montan siempre — solo cambia
- * `display` — para que el cambio de tema sea instantáneo y sin parpadeo.
+ * Fuente: `assets/404-claro.svg` y `assets/404-oscuro.svg` (ver ese README
+ * para cómo regenerar este archivo si se editan). Se inlinean tal cual las
+ * entregaron; el CSS decide cuál se ve, con el mismo criterio que
+ * `tokens.css`: claro por defecto, oscuro por `prefers-color-scheme` o por
+ * [data-theme] en <html> (ver Ilustracion404.module.css). Las dos se montan
+ * siempre — solo cambia `display` — para que el cambio de tema sea
+ * instantáneo y sin parpadeo.
  *
  * Puramente decorativa (el texto de al lado ya explica el error) -> aria-hidden.
  *
