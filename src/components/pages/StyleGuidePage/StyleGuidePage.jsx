@@ -5,6 +5,7 @@ import Button from '../../atoms/Button';
 import Input from '../../atoms/Input';
 import Alert from '../../atoms/Alert';
 import FormField from '../../molecules/FormField';
+import RequisitosCampo from '../../molecules/RequisitosCampo';
 import styles from './StyleGuidePage.module.css';
 
 const COLORES = [
@@ -184,7 +185,26 @@ const StyleGuidePage = () => (
           value=""
           onChange={() => {}}
         />
+        <FormField
+          id="sg-req"
+          label="Campo con requisitos (enfócalo)"
+          value="ab"
+          requisitos={[
+            { id: 'a', texto: 'Al menos 3 caracteres', cumplido: false },
+            { id: 'b', texto: 'Solo letras y números', cumplido: true },
+          ]}
+          onChange={() => {}}
+        />
       </div>
+    </Section>
+
+    <Section title="Requisitos de campo">
+      <RequisitosCampo
+        requisitos={[
+          { id: 'a', texto: 'Requisito cumplido', cumplido: true },
+          { id: 'b', texto: 'Requisito pendiente', cumplido: false },
+        ]}
+      />
     </Section>
   </DefaultLayout>
 );

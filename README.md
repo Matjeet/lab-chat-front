@@ -63,7 +63,7 @@ src/
 │   └── global.css            # Reset y estilos base
 └── components/               # Atomic Design
     ├── atoms/       Button, Input, Alert
-    ├── molecules/   FormField, ThemeToggle
+    ├── molecules/   FormField, ThemeToggle, RequisitosCampo
     ├── organisms/   Header, RegistroForm
     ├── templates/   DefaultLayout
     └── pages/       HomePage, RegistroPage, StyleGuidePage

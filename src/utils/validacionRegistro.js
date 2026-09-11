@@ -40,6 +40,35 @@ export const validarPassword = (valor = '') => {
 };
 
 /**
+ * Requisitos de un campo, con su estado de cumplimiento en vivo.
+ * Se muestran bajo el input mientras tiene el foco (ver `FormField`).
+ * @returns {{id: string, texto: string, cumplido: boolean}[]}
+ */
+export const requisitosUsername = (valor = '') => {
+  const v = valor.trim();
+  return [
+    {
+      id: 'longitud',
+      texto: 'Entre 3 y 50 caracteres',
+      cumplido: v.length >= 3 && v.length <= 50,
+    },
+    {
+      id: 'formato',
+      texto: 'Solo letras, números y los signos . _ -',
+      cumplido: v.length > 0 && USERNAME_RE.test(v),
+    },
+  ];
+};
+
+export const requisitosPassword = (valor = '') => [
+  {
+    id: 'longitud',
+    texto: 'Entre 8 y 100 caracteres',
+    cumplido: valor.length >= 8 && valor.length <= 100,
+  },
+];
+
+/**
  * Valida el formulario completo.
  * @param {{username: string, email: string, password: string}} valores
  * @returns {Record<string, string>} errores por campo; objeto vacío si todo es válido.

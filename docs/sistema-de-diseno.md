@@ -123,8 +123,16 @@ contenido no crece, solo el margen.
 - [ ] Interacción por teclado equivalente a la del ratón.
 - [ ] Área clicable ≥ 40×40px en controles táctiles.
 - [ ] Texto alternativo / `aria-label` en controles sin texto visible.
-- [ ] Nada depende solo del color (añadir icono/texto).
+- [ ] Nada depende solo del color (añadir icono/texto). Ej.: `RequisitosCampo`
+      marca lo cumplido con `--color-success` **y** un `✓` **y** un texto
+      `(cumplido)` para lectores de pantalla (clase global `.sr-only`).
 - [ ] Animaciones vía `--transition-*` (se anulan con `prefers-reduced-motion`).
+
+### Helpers globales (`global.css`)
+
+| Clase | Uso |
+|-------|-----|
+| `.sr-only` | Contenido solo para lectores de pantalla; oculto visualmente. |
 
 ## Gobernanza — cambiar el sistema
 

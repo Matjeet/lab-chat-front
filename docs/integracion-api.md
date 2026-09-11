@@ -19,7 +19,7 @@ CORS lo resuelve el gateway / reverse proxy, no el servicio (ver contrato §1).
 |---------|-----------------|
 | `src/api/config.js` | `API_BASE_URL`. |
 | `src/api/registro.js` | `registrarUsuario(datos)` → `POST /api/v1/registro`. |
-| `src/utils/validacionRegistro.js` | Validación de cliente (funciones puras). |
+| `src/utils/validacionRegistro.js` | Validación de cliente + `requisitos{Username,Password}` (estado en vivo de cada requisito). |
 | `src/components/organisms/RegistroForm/` | Estado del formulario + reparto de errores. |
 | `src/components/pages/RegistroPage/` | Alterna formulario ↔ confirmación. |
 

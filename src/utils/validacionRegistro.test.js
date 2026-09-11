@@ -3,7 +3,11 @@ import {
   validarEmail,
   validarPassword,
   validarFormularioRegistro,
+  requisitosUsername,
+  requisitosPassword,
 } from './validacionRegistro';
+
+const estadoDe = (requisitos, id) => requisitos.find((r) => r.id === id).cumplido;
 
 describe('validarUsername', () => {
   it('acepta un usuario válido', () => {
@@ -72,5 +76,41 @@ describe('validarFormularioRegistro', () => {
       password: '123',
     });
     expect(Object.keys(errores).sort()).toEqual(['email', 'password', 'username']);
+  });
+});
+
+describe('requisitosUsername', () => {
+  it('marca todo pendiente con el campo vacío', () => {
+    const reqs = requisitosUsername('');
+    expect(reqs.every((r) => !r.cumplido)).toBe(true);
+  });
+
+  it('marca formato cumplido pero longitud pendiente con 2 caracteres válidos', () => {
+    const reqs = requisitosUsername('ab');
+    expect(estadoDe(reqs, 'formato')).toBe(true);
+    expect(estadoDe(reqs, 'longitud')).toBe(false);
+  });
+
+  it('marca todo cumplido con un usuario válido', () => {
+    const reqs = requisitosUsername('mateo.29');
+    expect(reqs.every((r) => r.cumplido)).toBe(true);
+  });
+
+  it('marca formato pendiente si hay caracteres no permitidos', () => {
+    expect(estadoDe(requisitosUsername('mateo!'), 'formato')).toBe(false);
+  });
+});
+
+describe('requisitosPassword', () => {
+  it('pendiente con menos de 8 caracteres', () => {
+    expect(estadoDe(requisitosPassword('corta'), 'longitud')).toBe(false);
+  });
+
+  it('cumplido entre 8 y 100 caracteres', () => {
+    expect(estadoDe(requisitosPassword('secretpass'), 'longitud')).toBe(true);
+  });
+
+  it('pendiente con más de 100 caracteres', () => {
+    expect(estadoDe(requisitosPassword('x'.repeat(101)), 'longitud')).toBe(false);
   });
 });

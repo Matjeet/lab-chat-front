@@ -33,6 +33,22 @@ describe('RegistroForm', () => {
     expect(registrarUsuario).not.toHaveBeenCalled();
   });
 
+  it('muestra los requisitos del usuario al enfocar y los marca al cumplirlos', async () => {
+    const user = userEvent.setup();
+    render(<RegistroForm onRegistroCompleto={jest.fn()} />);
+    const usuario = screen.getByLabelText('Nombre de usuario');
+
+    await user.click(usuario);
+    const longitud = screen.getByText('Entre 3 y 50 caracteres').closest('li');
+    expect(longitud).toHaveAttribute('data-estado', 'pendiente');
+
+    await user.type(usuario, 'mateo');
+    expect(longitud).toHaveAttribute('data-estado', 'cumplido');
+
+    await user.tab();
+    expect(screen.queryByText('Entre 3 y 50 caracteres')).not.toBeInTheDocument();
+  });
+
   it('envía los datos normalizados y avisa al completar', async () => {
     const user = userEvent.setup();
     const onRegistroCompleto = jest.fn();

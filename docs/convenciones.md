@@ -35,6 +35,8 @@
   (Stylelint) rechaza hex sueltos. Detalle en [`sistema-de-diseno.md`](./sistema-de-diseno.md).
 - Selectores de CSS Modules: deben contener una clase local (nada de `code {}`
   suelto; usar `.seccion code {}`).
+- Clase global `.sr-only` (en `global.css`) para texto solo de lectores de
+  pantalla.
 
 ## Imports
 

@@ -8,6 +8,8 @@ import Alert from '../../atoms/Alert';
 import { registrarUsuario } from '../../../api/registro';
 import {
   REGLAS,
+  requisitosPassword,
+  requisitosUsername,
   validarFormularioRegistro,
 } from '../../../utils/validacionRegistro';
 import styles from './RegistroForm.module.css';
@@ -94,10 +96,10 @@ const RegistroForm = ({ onRegistroCompleto }) => {
         id="username"
         name="username"
         label="Nombre de usuario"
-        hint={REGLAS.username}
         autoComplete="username"
         value={valores.username}
         error={errores.username}
+        requisitos={requisitosUsername(valores.username)}
         onChange={alCambiar('username')}
       />
 
@@ -117,10 +119,10 @@ const RegistroForm = ({ onRegistroCompleto }) => {
         name="password"
         type="password"
         label="Contraseña"
-        hint={REGLAS.password}
         autoComplete="new-password"
         value={valores.password}
         error={errores.password}
+        requisitos={requisitosPassword(valores.password)}
         onChange={alCambiar('password')}
       />
 
