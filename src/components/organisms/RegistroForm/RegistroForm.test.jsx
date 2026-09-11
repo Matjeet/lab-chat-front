@@ -15,7 +15,7 @@ const rellenarFormulario = async (user, { username, email, password }) => {
 const DATOS_VALIDOS = {
   username: 'mateo29',
   email: 'Mateo@Example.com',
-  password: 'secretpass',
+  password: 'Passw0rd!',
 };
 
 afterEach(() => {
@@ -49,6 +49,24 @@ describe('RegistroForm', () => {
     expect(screen.queryByText('Entre 3 y 50 caracteres')).not.toBeInTheDocument();
   });
 
+  it('marca en vivo los requisitos de fortaleza de la contraseña', async () => {
+    const user = userEvent.setup();
+    render(<RegistroForm onRegistroCompleto={jest.fn()} />);
+    const password = screen.getByLabelText('Contraseña');
+
+    await user.click(password);
+    const mayuscula = screen
+      .getByText('Al menos una letra mayúscula')
+      .closest('li');
+    expect(mayuscula).toHaveAttribute('data-estado', 'pendiente');
+
+    await user.type(password, 'Passw0rd!');
+    expect(mayuscula).toHaveAttribute('data-estado', 'cumplido');
+    expect(
+      screen.getByText('Al menos un carácter especial').closest('li'),
+    ).toHaveAttribute('data-estado', 'cumplido');
+  });
+
   it('envía los datos normalizados y avisa al completar', async () => {
     const user = userEvent.setup();
     const onRegistroCompleto = jest.fn();
@@ -65,7 +83,7 @@ describe('RegistroForm', () => {
     expect(registrarUsuario).toHaveBeenCalledWith({
       username: 'mateo29',
       email: 'mateo@example.com',
-      password: 'secretpass',
+      password: 'Passw0rd!',
     });
   });
 

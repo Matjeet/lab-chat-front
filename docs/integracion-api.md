@@ -65,6 +65,11 @@ El organismo hace `if (resultado.ok) … else switch (resultado.error.kind)`.
 5. **Validación de cliente = espejo** de las reglas, solo para feedback
    inmediato. En un `400`, los textos que se muestran salen de `REGLAS[campo]`
    (nuestros), no del `message` del servidor (orientativo).
+   **Excepción: `password`.** El cliente exige además una política de
+   fortaleza (mayúscula, minúscula, número, especial, sin repetición 4+ y
+   máximo 20 caracteres) que el contrato **no** exige — el backend solo valida
+   8–100 caracteres. Es una capa extra solo en este frontend; si se quiere
+   igual de estricta en el servidor, es un cambio aparte en `chat-registro`.
 6. **La unicidad no se puede pre-comprobar** (no hay endpoint): se descubre con
    el `409` del `POST`.
 
