@@ -44,4 +44,24 @@
 
 ## Commits
 
-- Mensajes en imperativo y en español: "añade átomo Button", "corrige layout del Header".
+Este repo usa **[Conventional Commits](https://www.conventionalcommits.org/)**:
+
+```
+<tipo>(<scope opcional>): <descripción>
+```
+
+- Tipos: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`, `build`,
+  `ci`, `perf`.
+- La descripción va en **español e imperativo**, en minúscula, sin punto final:
+  `feat(registro): valida el formulario antes de enviar`.
+- Cambio incompatible: `feat!: ...` o un pie `BREAKING CHANGE: ...`.
+- El cuerpo (opcional) explica el porqué; una línea en blanco lo separa del asunto.
+
+Ejemplos:
+
+```
+feat(atoms): añade el átomo Alert
+fix(header): corrige el layout en móvil
+docs: actualiza la guía del sistema de diseño
+test(registro): cubre el caso de conflicto 409
+```
