@@ -21,4 +21,27 @@ describe('DefaultLayout', () => {
     const main = screen.getByRole('main');
     expect(main).toHaveTextContent('Contenido de prueba');
   });
+
+  it('sin `centered` no envuelve el contenido en una tarjeta centrada', () => {
+    render(
+      <DefaultLayout title="Chat">
+        <p>Contenido</p>
+      </DefaultLayout>,
+    );
+    expect(screen.getByRole('main').firstElementChild.tagName).toBe('P');
+  });
+
+  it('con `centered` envuelve el contenido para centrarlo en la pantalla', () => {
+    render(
+      <DefaultLayout title="Chat" centered>
+        <p>Contenido</p>
+      </DefaultLayout>,
+    );
+    const main = screen.getByRole('main');
+    expect(main).toHaveTextContent('Contenido');
+    // El contenido queda dentro de un contenedor extra (la tarjeta centrada),
+    // no como hijo directo del <p> del main.
+    expect(main.firstElementChild.tagName).not.toBe('P');
+    expect(main.firstElementChild).toContainElement(screen.getByText('Contenido'));
+  });
 });

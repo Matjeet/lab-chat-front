@@ -73,6 +73,7 @@
 
   /* --- Layout ---------------------------------------------------- */
   --layout-max-width: 640px;
+  --layout-form-width: 420px;
 
   /* --- COLOR · tema claro (por defecto) --------------------------- */
   --color-bg: #f5f6f8;

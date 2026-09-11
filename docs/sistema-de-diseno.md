@@ -75,6 +75,7 @@ Escala de base **4px**. Usar solo estos valores para `margin`, `padding` y `gap`
 | `--focus-ring-width` / `-offset` | 2px / 2px |
 | `--z-header` / `--z-overlay` / `--z-toast` | 100 / 1000 / 1100 |
 | `--layout-max-width` | 640px (ancho de contenido en `DefaultLayout`) |
+| `--layout-form-width` | 420px (ancho de la tarjeta en `DefaultLayout centered`) |
 
 ## Temas (claro / oscuro)
 
@@ -103,7 +104,10 @@ hay token porque CSS no permite `var()` en condiciones):
 | `xl` | 1280px |
 
 `DefaultLayout` centra el contenido a `--layout-max-width`; por encima de eso el
-contenido no crece, solo el margen.
+contenido no crece, solo el margen. Con la prop `centered` (pantallas de un
+solo formulario/tarjeta, p. ej. registro), el contenido además se centra
+**verticalmente** en el espacio entre cabecera y pie, dentro de una tarjeta de
+`--layout-form-width`.
 
 ## Reglas por nivel de Atomic Design
 

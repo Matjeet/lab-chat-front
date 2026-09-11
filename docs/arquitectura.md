@@ -99,6 +99,14 @@ chat-frontend/
 └── package.json
 ```
 
+## Variantes de `DefaultLayout`
+
+`DefaultLayout` acepta `centered` (booleano, por defecto `false`): centra su
+`children` vertical y horizontalmente en el espacio entre cabecera y pie,
+dentro de una tarjeta de ancho `--layout-form-width`. Pensado para pantallas de
+un único formulario (registro, login...); el resto sigue fluyendo normal desde
+arriba con el ancho de `--layout-max-width`. Ejemplo: `RegistroPage`.
+
 ## Anatomía de un componente
 
 Cada componente vive en su propia carpeta con estos archivos:
