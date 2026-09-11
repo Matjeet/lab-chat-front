@@ -69,6 +69,8 @@ helper en `src/utils/`.
 ```
 chat-frontend/
 ├── docs/                      # Documentación (este directorio)
+├── public/                    # Assets estáticos, servidos tal cual en "/"
+│   └── not-found.svg          # Ilustración de NotFoundPage
 ├── app/                       # App Router (solo enrutado)
 │   ├── layout.jsx             # html/body + tokens + global.css + tema inicial
 │   ├── page.jsx               # "/"         -> <HomePage/>
@@ -102,6 +104,14 @@ chat-frontend/
 ├── .stylelintrc.json
 └── package.json
 ```
+
+## Assets estáticos
+
+Lo que vaya en `public/` se sirve tal cual desde la raíz del sitio: un archivo
+`public/not-found.svg` se referencia como `/not-found.svg` (sin `public/` en
+la ruta), con un `<img>` normal — no hace falta `next/image` para un SVG
+estático en export mode. Usar solo para imágenes/ilustraciones que no
+necesitan pasar por Webpack (no se versionan con hash de contenido).
 
 ## Variantes de `DefaultLayout`
 
