@@ -67,32 +67,35 @@ helper en `src/utils/`.
 chat-frontend/
 ├── docs/                      # Documentación (este directorio)
 ├── app/                       # App Router (solo enrutado)
-│   ├── layout.jsx
-│   ├── page.jsx               # "/" -> <HomePage/>
-│   └── page.test.jsx
+│   ├── layout.jsx             # html/body + tokens + global.css + tema inicial
+│   ├── page.jsx               # "/"         -> <HomePage/>
+│   ├── registro/page.jsx      # "/registro" -> <RegistroPage/>
+│   └── estilos/page.jsx       # "/estilos"  -> <StyleGuidePage/> (guía viva)
 ├── src/
 │   ├── setupTests.js          # Setup global de Jest (matchers de jest-dom)
+│   ├── api/                   # Acceso a los servicios backend
+│   │   ├── config.js          # API_BASE_URL (NEXT_PUBLIC_API_BASE_URL)
+│   │   └── registro.js        # POST /api/v1/registro -> resultado tipado
+│   ├── utils/                 # Helpers puros (sin React)
+│   │   └── validacionRegistro.js
 │   ├── styles/
+│   │   ├── tokens.css         # Tokens de diseño (ver sistema-de-diseno.md)
 │   │   └── global.css         # Reset y estilos base
 │   └── components/
-│       ├── atoms/
-│       │   ├── Button/
-│       │   │   ├── Button.jsx
-│       │   │   ├── Button.module.css
-│       │   │   ├── Button.test.jsx
-│       │   │   └── index.js   # barrel: export { default } from './Button'
-│       │   └── Input/
-│       ├── molecules/
-│       │   └── FormField/
-│       ├── organisms/
-│       │   └── Header/
-│       ├── templates/
-│       │   └── DefaultLayout/
-│       └── pages/
-│           └── HomePage/
+│       ├── atoms/             Button · Input · Alert
+│       ├── molecules/         FormField · ThemeToggle
+│       ├── organisms/         Header · RegistroForm
+│       ├── templates/         DefaultLayout
+│       └── pages/             HomePage · RegistroPage · StyleGuidePage
+│           └── Button/
+│               ├── Button.jsx
+│               ├── Button.module.css
+│               ├── Button.test.jsx
+│               └── index.js   # barrel: export { default } from './Button'
 ├── jsconfig.json              # alias "@/*" -> "src/*"
 ├── next.config.js
 ├── jest.config.js
+├── .stylelintrc.json
 └── package.json
 ```
 
@@ -118,3 +121,17 @@ Cada componente vive en su propia carpeta con estos archivos:
 1. Crea `app/mi-ruta/page.jsx`.
 2. Que solo renderice la `page` de Atomic Design correspondiente
    (`src/components/pages/MiPantalla`).
+
+## Integración con la API
+
+- `src/api/` concentra las llamadas HTTP a los microservicios. Cada función
+  devuelve un **resultado tipado** (`{ ok: true, data }` | `{ ok: false, error }`)
+  en vez de lanzar; el organismo que la usa decide qué mostrar.
+- La base URL sale de `NEXT_PUBLIC_API_BASE_URL` (inyectada en build; ver
+  `.env.example`).
+- Los errores del backend son *Problem Details* (RFC 9457): se ramifica por
+  `error.type`, nunca por el código HTTP ni por textos.
+- La validación de formularios vive en `src/utils/` como funciones puras (fácil
+  de testear) y es **espejo** de las reglas del contrato; la autoritativa es la
+  del servidor.
+- Detalle en [`integracion-api.md`](./integracion-api.md).

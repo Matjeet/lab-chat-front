@@ -10,6 +10,11 @@
   color: var(--color-text-muted);
 }
 
+.hint {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-subtle);
+}
+
 .error {
   font-size: var(--font-size-xs);
   color: var(--color-danger);

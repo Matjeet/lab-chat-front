@@ -36,7 +36,7 @@ Los tokens de color son **roles**, no nombres de color (`--color-primary`, no
 | `--color-primary-soft` / `--color-primary-soft-text` | Botón `secondary`, badges. |
 | `--color-on-primary` | Texto/icono sobre `--color-primary`. |
 | `--color-success` / `--color-warning` / `--color-danger` | Estados semánticos. |
-| `--color-danger-soft` | Fondo de avisos de error. |
+| `--color-success-soft` / `--color-danger-soft` | Fondo de avisos (`Alert` de éxito / error). |
 | `--color-on-danger` | Texto sobre `--color-danger`. |
 | `--color-focus-ring` | Color del anillo de foco. |
 

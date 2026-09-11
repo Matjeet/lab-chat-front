@@ -10,3 +10,14 @@
   font-size: var(--font-size-lg);
   font-weight: var(--font-weight-semibold);
 }
+
+.registro {
+  margin-top: var(--space-6);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.enlace {
+  color: var(--color-primary);
+  font-weight: var(--font-weight-semibold);
+}

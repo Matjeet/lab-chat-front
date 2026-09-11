@@ -49,20 +49,24 @@ Servidor de desarrollo en `http://localhost:3000`.
 ```
 app/                          # App Router: solo enrutado
 ├── layout.jsx                # Layout raíz (html/body + tokens + CSS global)
-├── page.jsx                  # Ruta "/" -> renderiza <HomePage/>
-├── page.test.jsx
-└── estilos/page.jsx          # Ruta "/estilos" -> guía viva del sistema de diseño
+├── page.jsx                  # "/"         -> <HomePage/>
+├── registro/page.jsx         # "/registro" -> <RegistroPage/>
+└── estilos/page.jsx          # "/estilos"  -> guía viva del sistema de diseño
 src/
 ├── setupTests.js             # Setup de Jest
+├── api/                      # Llamadas a los microservicios backend
+│   ├── config.js             #   base URL (NEXT_PUBLIC_API_BASE_URL)
+│   └── registro.js           #   POST /api/v1/registro
+├── utils/                    # Helpers puros (validación de formularios...)
 ├── styles/
 │   ├── tokens.css            # Tokens de diseño (color, tipografía, espaciado...)
 │   └── global.css            # Reset y estilos base
 └── components/               # Atomic Design
-    ├── atoms/       Button, Input
+    ├── atoms/       Button, Input, Alert
     ├── molecules/   FormField, ThemeToggle
-    ├── organisms/   Header
+    ├── organisms/   Header, RegistroForm
     ├── templates/   DefaultLayout
-    └── pages/       HomePage, StyleGuidePage
+    └── pages/       HomePage, RegistroPage, StyleGuidePage
 ```
 
 `app/` solo conecta URLs con componentes. Toda la UI y su lógica viven en
@@ -87,6 +91,13 @@ tipografía, espaciado, radios, temas claro/oscuro). Ningún componente usa valo
 literales — se referencian con `var(--token)` y `npm run lint` lo comprueba. Hay
 una guía viva en [`/estilos`](http://localhost:3000/estilos) y la documentación
 en [`docs/sistema-de-diseno.md`](./docs/sistema-de-diseno.md).
+
+## Backend
+
+La ruta `/registro` consume `POST /api/v1/registro` de **chat-registro**. La base
+URL sale de `NEXT_PUBLIC_API_BASE_URL` (por defecto `http://localhost:8080`);
+copia `.env.example` a `.env.local` para cambiarla. Detalle del patrón de
+llamadas y manejo de errores en [`docs/integracion-api.md`](./docs/integracion-api.md).
 
 ## Tests
 

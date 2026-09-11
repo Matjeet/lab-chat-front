@@ -1,0 +1,38 @@
+.intro {
+  margin-bottom: var(--space-5);
+  color: var(--color-text-muted);
+}
+
+.exito {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  align-items: flex-start;
+}
+
+.datos {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.datos div {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.datos dt {
+  min-width: var(--space-8);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-muted);
+}
+
+.datos dd {
+  margin: 0;
+}
+
+.enlace {
+  color: var(--color-primary);
+  font-weight: var(--font-weight-semibold);
+}

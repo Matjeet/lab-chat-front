@@ -93,6 +93,7 @@
   --color-on-primary: #ffffff;
 
   --color-success: #15803d;
+  --color-success-soft: #e7f6ec;
   --color-warning: #b45309;
   --color-danger: #c02626;
   --color-danger-hover: #a01f1f;
@@ -127,6 +128,7 @@
     --color-on-primary: #14121f;
 
     --color-success: #4ade80;
+    --color-success-soft: #14281b;
     --color-warning: #fbbf24;
     --color-danger: #f87171;
     --color-danger-hover: #fca5a5;
@@ -156,6 +158,7 @@
   --color-on-primary: #14121f;
 
   --color-success: #4ade80;
+  --color-success-soft: #14281b;
   --color-warning: #fbbf24;
   --color-danger: #f87171;
   --color-danger-hover: #fca5a5;

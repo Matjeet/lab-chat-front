@@ -11,6 +11,7 @@ import styles from './Input.module.css';
  * @param {string} [props.placeholder]
  * @param {boolean} [props.disabled=false]
  * @param {(event: React.ChangeEvent<HTMLInputElement>) => void} props.onChange
+ * @param {object} [props.rest]  Resto de atributos nativos (autoComplete, aria-*, maxLength, ...).
  */
 const Input = ({
   id,
@@ -20,6 +21,7 @@ const Input = ({
   placeholder,
   disabled = false,
   onChange,
+  ...rest
 }) => (
   <input
     id={id}
@@ -30,6 +32,7 @@ const Input = ({
     placeholder={placeholder}
     disabled={disabled}
     onChange={onChange}
+    {...rest}
   />
 );
 

@@ -3,6 +3,7 @@
 import DefaultLayout from '../../templates/DefaultLayout';
 import Button from '../../atoms/Button';
 import Input from '../../atoms/Input';
+import Alert from '../../atoms/Alert';
 import FormField from '../../molecules/FormField';
 import styles from './StyleGuidePage.module.css';
 
@@ -21,6 +22,7 @@ const COLORES = [
   '--color-primary-soft',
   '--color-on-primary',
   '--color-success',
+  '--color-success-soft',
   '--color-warning',
   '--color-danger',
   '--color-danger-soft',
@@ -154,6 +156,14 @@ const StyleGuidePage = () => (
         <Button variant="primary" disabled>
           Disabled
         </Button>
+      </div>
+    </Section>
+
+    <Section title="Avisos">
+      <div className={styles.stack}>
+        <Alert tipo="info">Mensaje informativo.</Alert>
+        <Alert tipo="success">Operación completada correctamente.</Alert>
+        <Alert tipo="error">No se pudo completar la operación.</Alert>
       </div>
     </Section>
 

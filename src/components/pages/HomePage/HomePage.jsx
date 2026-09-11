@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 
 import DefaultLayout from '../../templates/DefaultLayout';
 import FormField from '../../molecules/FormField';
@@ -36,6 +37,13 @@ const HomePage = () => {
       </form>
 
       {greeting && <p className={styles.greeting}>{greeting}</p>}
+
+      <p className={styles.registro}>
+        ¿Aún no tienes cuenta?{' '}
+        <Link href="/registro" className={styles.enlace}>
+          Crear una cuenta
+        </Link>
+      </p>
     </DefaultLayout>
   );
 };
