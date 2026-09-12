@@ -82,7 +82,11 @@ chat-frontend/
 │   ├── setupTests.js          # Setup global de Jest (matchers de jest-dom)
 │   ├── api/                   # Acceso a los servicios backend
 │   │   ├── config.js          # API_BASE_URL (NEXT_PUBLIC_API_BASE_URL)
-│   │   └── registro.js        # POST /api/v1/registro -> resultado tipado
+│   │   └── registro.js        # Orquesta Firebase -> backend -> resultado tipado
+│   ├── firebase/               # Firebase Auth (identidad: email + password)
+│   │   ├── config.js           # FIREBASE_CONFIG (NEXT_PUBLIC_FIREBASE_*)
+│   │   ├── client.js           # obtenerAuth() — getter perezoso (ver integracion-api.md)
+│   │   └── auth.js             # crearUsuarioFirebase / borrarUsuarioFirebase
 │   ├── utils/                 # Helpers puros (sin React)
 │   │   └── validacionRegistro.js
 │   ├── styles/
@@ -163,11 +167,20 @@ Cada componente vive en su propia carpeta con estos archivos:
 - `src/api/` concentra las llamadas HTTP a los microservicios. Cada función
   devuelve un **resultado tipado** (`{ ok: true, data }` | `{ ok: false, error }`)
   en vez de lanzar; el organismo que la usa decide qué mostrar.
-- La base URL sale de `NEXT_PUBLIC_API_BASE_URL` (inyectada en build; ver
+- El alta de usuario es dos pasos: `src/firebase/` crea la identidad
+  (email + password) en **Firebase Auth**, y `src/api/registro.js` guarda
+  `username`/`email` en `chat-registro` enlazados por el `uid` de Firebase —
+  la contraseña no llega al backend. Si el backend rechaza el alta, se
+  revierte el usuario de Firebase.
+- La base URL del backend sale de `NEXT_PUBLIC_API_BASE_URL`; la config de
+  Firebase, de `NEXT_PUBLIC_FIREBASE_*` (las dos inyectadas en build; ver
   `.env.example`).
 - Los errores del backend son *Problem Details* (RFC 9457): se ramifica por
-  `error.type`, nunca por el código HTTP ni por textos.
+  `error.type`, nunca por el código HTTP ni por textos. Los de Firebase se
+  traducen al mismo vocabulario (`kind`) para que la UI no distinga el origen.
 - La validación de formularios vive en `src/utils/` como funciones puras (fácil
   de testear) y es **espejo** de las reglas del contrato; la autoritativa es la
-  del servidor.
-- Detalle en [`integracion-api.md`](./integracion-api.md).
+  del servidor (salvo la política de fortaleza de `password`, más estricta
+  solo en el cliente).
+- Detalle en [`integracion-api.md`](./integracion-api.md), incluida la nota de
+  que el backend actual todavía no acepta el contrato sin `password`.
