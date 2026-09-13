@@ -41,10 +41,12 @@ Cómo consume este frontend los microservicios backend. Contrato completo:
 | `src/components/pages/RegistroPage/` | Alterna formulario ↔ confirmación. |
 | `src/utils/validacionLogin.js` | Validación de cliente del login: email válido, contraseña no vacía. Sin política de fortaleza — no aplica a una cuenta ya existente. |
 | `src/firebase/config.js` | Inicializa el SDK de cliente de Firebase (variables `NEXT_PUBLIC_FIREBASE_*`). |
-| `src/firebase/auth.js` | `iniciarSesion({email, password})` → Firebase Authentication (Email/Password). Es lo único que llama `LoginPage`. |
+| `src/firebase/auth.js` | `iniciarSesion({email, password})` + `observarSesion(callback)` → Firebase Authentication (Email/Password). |
+| `src/hooks/useRequiereSesion.js` | Hook para pantallas que exigen sesión: `{ verificando }`, navega a `/login` si no hay usuario. |
 | `src/components/organisms/LoginForm/` | Formulario de login: valida, llama a `onIniciarSesion` y muestra el aviso según `error.kind` si falla. |
-| `src/components/pages/LoginPage/` | Monta `LoginForm`, le pasa `onIniciarSesion` (llama a `iniciarSesion` y navega a `/home` si sale bien) + enlace a `/registro`. |
-| `src/components/pages/HomePage/` | Destino tras un login correcto. Placeholder: solo confirma la sesión, sin contenido real todavía. |
+| `src/components/pages/LoginPage/` | Monta `LoginForm`, le pasa `onIniciarSesion` (llama a `iniciarSesion` y navega a `/home` si sale bien) + enlace a `/registro`. También navega a `/home` si ya hay sesión, antes de mostrar el formulario. |
+| `src/components/pages/HomePage/` | Destino tras un login correcto. Exige sesión (`useRequiereSesion`). Placeholder: solo confirma la sesión, sin contenido real todavía. |
+| `src/components/pages/StyleGuidePage/` | Guía de estilo. Exige sesión (`useRequiereSesion`) — no es pública. |
 
 ## Quién habla con Firebase
 
@@ -99,11 +101,38 @@ formulario.
 **Pendiente, a propósito:** qué hacer con el `idToken` frente a
 `chat-registro` (¿lo valida un endpoint nuevo? ¿el backend confía en Firebase
 y solo le importa el `uid`?) — `HomePage` hoy no recibe ni usa ese token, es
-solo la confirmación visual de que el login funcionó. Tampoco hay protección
-de ruta en sentido contrario: `/home` sigue siendo accesible sin haber
-iniciado sesión (solo se resolvió que `/login` no lo pida dos veces). Ambas
-cosas dependen
-de esa decisión, todavía sin tomar.
+solo la confirmación visual de que el login funcionó.
+
+## Rutas que exigen sesión
+
+`/` y `/login` (la misma `LoginPage`) y `/registro` son las únicas rutas
+públicas. Cualquier otra —hoy `/home` y `/estilos`— exige una sesión de
+Firebase activa: usa el hook `useRequiereSesion` (`src/hooks/`), que envuelve
+`observarSesion` en sentido contrario a como lo usa `LoginPage`:
+
+```jsx
+const { verificando } = useRequiereSesion(); // navega a /login si no hay sesión
+
+if (verificando) return <DefaultLayout ...><Alert tipo="info">Comprobando sesión…</Alert></DefaultLayout>;
+return <DefaultLayout ...>{/* contenido real */}</DefaultLayout>;
+```
+
+`verificando` solo pasa a `false` cuando SÍ hay un usuario autenticado —
+mientras es `true`, la pantalla no debe pintar su contenido real (ni un
+`return null`, tampoco: eso dejaría la página en blanco un instante antes de
+redirigir en vez de mostrar el mismo aviso que usa `LoginPage`).
+
+**Importante — esto es una guardia de UX, no un límite de seguridad.** El
+export estático (`output: 'export'`) no tiene servidor: `out/home.html` es un
+archivo público como cualquier otro, descargable sin pasar por React ni por
+`useRequiereSesion` — el guard solo actúa una vez que el JS carga en el
+navegador. Hoy no importa (`HomePage` no tiene datos reales todavía), pero
+en cuanto una pantalla protegida muestre algo sensible, ese dato **no puede
+depender de que el cliente decida ocultarlo** — tiene que venir de una
+llamada a un backend que exija sus propias credenciales (el `idToken`, un
+header, lo que decida el contrato). `useRequiereSesion` evita que alguien sin
+sesión *use* la pantalla; no reemplaza la autorización del lado del
+servidor para los datos que esa pantalla vaya a pedir.
 
 ## Patrón: resultado tipado
 

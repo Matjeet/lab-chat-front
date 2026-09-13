@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
 import DefaultLayout from '../../templates/DefaultLayout';
+import Alert from '../../atoms/Alert';
 import TextoAleatorio from '../../atoms/TextoAleatorio';
 import LoginForm from '../../organisms/LoginForm';
 import { iniciarSesion, observarSesion } from '../../../firebase/auth';
@@ -30,6 +31,8 @@ const FRASES_INTRO = [
  * directamente. Mientras se resuelve esa comprobación (siempre asíncrona,
  * nunca se sabe de forma síncrona al cargar la página) no se pinta el
  * formulario, para no mostrarlo un instante de más a quien ya tiene sesión.
+ * Es el mismo mecanismo que `useRequiereSesion` usa en sentido contrario
+ * para las pantallas que sí exigen sesión (`HomePage`, `StyleGuidePage`).
  *
  * `LoginForm` maneja los campos y la validación; esta página solo decide
  * qué pasa con el resultado de `iniciarSesion` (Firebase Authentication):
@@ -64,7 +67,7 @@ const LoginPage = () => {
   if (comprobandoSesion) {
     return (
       <DefaultLayout title="Iniciar sesión" centered tarjeta>
-        <p className={styles.comprobando}>Comprobando sesión…</p>
+        <Alert tipo="info">Comprobando sesión…</Alert>
       </DefaultLayout>
     );
   }

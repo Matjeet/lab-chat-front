@@ -98,6 +98,8 @@ chat-frontend/
 │   ├── firebase/               # SDK de cliente de Firebase (solo login, ver integracion-api.md)
 │   │   ├── config.js           # Inicializa la app (variables NEXT_PUBLIC_FIREBASE_*)
 │   │   └── auth.js             # iniciarSesion(...) + observarSesion(cb) -> resultado tipado
+│   ├── hooks/                   # Hooks compartidos (no encajan en Atomic Design)
+│   │   └── useRequiereSesion.js # {verificando}; navega a /login si no hay sesión
 │   ├── utils/                  # Helpers puros (sin React)
 │   │   ├── validacionRegistro.js
 │   │   └── validacionLogin.js
@@ -220,4 +222,13 @@ Cada componente vive en su propia carpeta con estos archivos:
   (`observarSesion`, `src/firebase/auth.js`) — si la hay, navega a `/home`
   con `router.replace` en vez de mostrar el formulario. Mientras se resuelve
   esa comprobación (siempre asíncrona) se ve "Comprobando sesión…".
+- **Toda ruta que no sea `/`, `/login` o `/registro` exige sesión** —hoy
+  `/home` y `/estilos`— vía el hook `useRequiereSesion` (`src/hooks/`, mismo
+  mecanismo que `LoginPage` pero en sentido contrario). Es una guardia de
+  **UX en el cliente**, no un límite de seguridad: en export estático el
+  HTML de esas rutas es un archivo público igual que cualquier otro, el
+  guard solo actúa cuando el JS ya cargó en el navegador. El día que una
+  pantalla protegida muestre datos reales, esos datos deben venir de una
+  llamada a un backend que los autorice él mismo — ver
+  [`integracion-api.md`](./integracion-api.md#rutas-que-exigen-sesión).
 - Detalle en [`integracion-api.md`](./integracion-api.md).
