@@ -17,4 +17,11 @@ describe('Header', () => {
     render(<Header title="Chat" />);
     expect(screen.queryByRole('navigation')).not.toBeInTheDocument();
   });
+
+  it('muestra el logo y el nombre de la app, enlazando a /', () => {
+    render(<Header title="Iniciar sesión" />);
+    const enlace = screen.getByRole('link', { name: 'Chat' });
+    expect(enlace).toHaveAttribute('href', '/');
+    expect(enlace.querySelector('img')).toHaveAttribute('src', '/chat-logo.webp');
+  });
 });

@@ -82,6 +82,8 @@ chat-frontend/
 ├── assets/                    # Fuentes de diseño a inlinear a mano (ver su README)
 │   ├── 404-claro.svg
 │   └── 404-oscuro.svg
+├── public/                    # Estáticos servidos tal cual (URL "/archivo.ext")
+│   └── chat-logo.webp         # Logo de marca, usado por Header
 ├── app/                       # App Router (solo enrutado)
 │   ├── layout.jsx             # html/body + tokens + global.css + tema inicial
 │   ├── page.jsx               # "/"         -> <LoginPage/> (arranque de la app)
@@ -132,7 +134,9 @@ Tres formas de meter una imagen, según si debe adaptarse al tema:
 - **No necesita re-tematizarse** (foto, ilustración con paleta fija, logo de
   marca): archivo en `public/`, referenciado como `/archivo.ext` (sin
   `public/` en la ruta) con un `<img>` normal — no hace falta `next/image`
-  para algo estático en export mode.
+  para algo estático en export mode. Ejemplo real: `public/chat-logo.webp`,
+  el logo de la marca en `Header` — su degradado es fijo, no cambia con el
+  tema, así que no hace falta inlinearlo.
 - **Solo cambian algunos colores puntuales del mismo dibujo**: SVG **en
   línea**, como componente JSX. Un `<img src="...svg">` no puede leer
   `var(--token)` — el navegador no aplica el CSS de la página dentro del
