@@ -20,9 +20,26 @@
   justify-content: center;
 }
 
+/* Solo cuando además hay `tarjeta`: recorta el fondo animado de burbujas
+ * (PatronBurbujas se pinta más grande que este contenedor a propósito). */
+.conPatron {
+  position: relative;
+  overflow: hidden;
+}
+
 .centeredInner {
+  position: relative;
   width: 100%;
   max-width: var(--layout-form-width);
+}
+
+/* Tarjeta: fondo sólido y bordes redondeados sobre el patrón de burbujas. */
+.tarjeta {
+  background-color: var(--color-surface);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  padding: var(--space-6);
 }
 
 .footer {

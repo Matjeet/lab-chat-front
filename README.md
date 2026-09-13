@@ -65,7 +65,7 @@ src/
 │   ├── tokens.css            # Tokens de diseño (color, tipografía, espaciado...)
 │   └── global.css            # Reset y estilos base
 └── components/               # Atomic Design
-    ├── atoms/       Button, Input, Alert, Ilustracion404
+    ├── atoms/       Button, Input, Alert, Ilustracion404, PatronBurbujas
     ├── molecules/   FormField, ThemeToggle, RequisitosCampo
     ├── organisms/   Header, RegistroForm, LoginForm
     ├── templates/   DefaultLayout

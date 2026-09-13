@@ -1,5 +1,6 @@
 import Header from '../../organisms/Header';
 import ThemeToggle from '../../molecules/ThemeToggle';
+import PatronBurbujas from '../../atoms/PatronBurbujas';
 import styles from './DefaultLayout.module.css';
 
 /**
@@ -14,9 +15,20 @@ import styles from './DefaultLayout.module.css';
  *   horizontalmente en el espacio disponible (para pantallas de un solo
  *   formulario/tarjeta, p. ej. registro o login). Por defecto el contenido
  *   fluye normal desde arriba.
+ * @param {boolean} [props.tarjeta=false]   Solo tiene efecto junto a `centered`:
+ *   pone `children` dentro de una tarjeta (fondo sólido, bordes redondeados)
+ *   sobre un fondo animado de burbujas (`PatronBurbujas`). Pensado para
+ *   pantallas de login/registro; el 404 (con su propia ilustración) usa
+ *   `centered` sin `tarjeta`.
  * @param {React.ReactNode} props.children  Contenido principal de la pantalla.
  */
-const DefaultLayout = ({ title, headerActions, centered = false, children }) => (
+const DefaultLayout = ({
+  title,
+  headerActions,
+  centered = false,
+  tarjeta = false,
+  children,
+}) => (
   <div className={styles.layout}>
     <Header
       title={title}
@@ -28,9 +40,20 @@ const DefaultLayout = ({ title, headerActions, centered = false, children }) => 
       }
     />
     <main
-      className={`${styles.content} ${centered ? styles.centered : ''}`.trim()}
+      className={`${styles.content} ${centered ? styles.centered : ''} ${
+        centered && tarjeta ? styles.conPatron : ''
+      }`.trim()}
     >
-      {centered ? <div className={styles.centeredInner}>{children}</div> : children}
+      {centered && tarjeta && <PatronBurbujas />}
+      {centered ? (
+        <div
+          className={`${styles.centeredInner} ${tarjeta ? styles.tarjeta : ''}`.trim()}
+        >
+          {children}
+        </div>
+      ) : (
+        children
+      )}
     </main>
     <footer className={styles.footer}>
       <small>Proyecto Chat · Atomic Design</small>

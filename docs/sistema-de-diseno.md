@@ -105,9 +105,34 @@ hay token porque CSS no permite `var()` en condiciones):
 
 `DefaultLayout` centra el contenido a `--layout-max-width`; por encima de eso el
 contenido no crece, solo el margen. Con la prop `centered` (pantallas de un
-solo formulario/tarjeta, p. ej. registro), el contenido además se centra
-**verticalmente** en el espacio entre cabecera y pie, dentro de una tarjeta de
-`--layout-form-width`.
+solo formulario, p. ej. registro/login), el contenido además se centra
+**verticalmente** en el espacio entre cabecera y pie, en un contenedor de
+`--layout-form-width`. Con `tarjeta` (ver siguiente sección), ese contenedor
+se convierte en una tarjeta visual sobre un fondo animado.
+
+## Tarjeta y fondo animado (pantallas de login/registro)
+
+`DefaultLayout` con `centered` + `tarjeta` (ver "Variantes de `DefaultLayout`"
+en `arquitectura.md`) pone el formulario dentro de una tarjeta sobre un fondo
+de burbujas de chat en movimiento:
+
+- **Tarjeta**: `--color-surface` de fondo, borde `--color-border`, esquinas
+  `--radius-lg`, sombra `--shadow-md`, relleno `--space-6`. Los mismos tokens
+  que ya usa cualquier superficie elevada — no es una paleta nueva.
+- **Fondo**: `PatronBurbujas` (átomo, SVG en línea) — 4 iconos de burbuja
+  distintos rellenos con `--color-border`, en un `<pattern>` que se repite y
+  se anima con `transform` en bucle infinito (la ilustración se pinta más
+  grande que su contenedor y se traslada exactamente un mosaico; al llegar al
+  final queda pixel a pixel donde empezó). Como es SVG en línea (no una imagen
+  de fondo por CSS), el color sigue el tema solo.
+- **La animación es un placeholder a propósito** ("de momento cualquiera, ya
+  veremos cuál"): vive entera en `@keyframes deriva-burbujas` de
+  `PatronBurbujas.module.css`. Cambiarla — velocidad, dirección, otro tipo de
+  movimiento — no toca ni el SVG ni `DefaultLayout`.
+- Se anula con `prefers-reduced-motion: reduce` (igual que `--transition-*`).
+- **No** se usa en `NotFoundPage`: su ilustración ya está pensada para
+  fundirse con el fondo de la página (ver más abajo), y superponerle esta
+  tarjeta rompería ese efecto.
 
 ## Reglas por nivel de Atomic Design
 
@@ -130,7 +155,9 @@ solo formulario/tarjeta, p. ej. registro), el contenido además se centra
 - [ ] Nada depende solo del color (añadir icono/texto). Ej.: `RequisitosCampo`
       marca lo cumplido con `--color-success` **y** un `✓` **y** un texto
       `(cumplido)` para lectores de pantalla (clase global `.sr-only`).
-- [ ] Animaciones vía `--transition-*` (se anulan con `prefers-reduced-motion`).
+- [ ] Animaciones vía `--transition-*` (transiciones) o `@keyframes` propio
+      (animaciones más largas, p. ej. `PatronBurbujas`) — en los dos casos, se
+      anulan con `@media (prefers-reduced-motion: reduce)`.
 
 ### Helpers globales (`global.css`)
 

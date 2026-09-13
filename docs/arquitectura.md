@@ -91,7 +91,7 @@ chat-frontend/
 │   │   ├── tokens.css         # Tokens de diseño (ver sistema-de-diseno.md)
 │   │   └── global.css         # Reset y estilos base
 │   └── components/
-│       ├── atoms/             Button · Input · Alert · Ilustracion404
+│       ├── atoms/             Button · Input · Alert · Ilustracion404 · PatronBurbujas
 │       ├── molecules/         FormField · ThemeToggle · RequisitosCampo
 │       ├── organisms/         Header · RegistroForm · LoginForm
 │       ├── templates/         DefaultLayout
@@ -131,11 +131,21 @@ cual, así que no pertenece ahí. Ver `assets/README.md`.
 
 ## Variantes de `DefaultLayout`
 
-`DefaultLayout` acepta `centered` (booleano, por defecto `false`): centra su
-`children` vertical y horizontalmente en el espacio entre cabecera y pie,
-dentro de una tarjeta de ancho `--layout-form-width`. Pensado para pantallas de
-un único formulario (registro, login...); el resto sigue fluyendo normal desde
-arriba con el ancho de `--layout-max-width`. Ejemplo: `RegistroPage`.
+Dos props booleanas, independientes:
+
+- **`centered`** (por defecto `false`): centra `children` vertical y
+  horizontalmente en el espacio entre cabecera y pie, dentro de un contenedor
+  de ancho `--layout-form-width`. Sin esto, el contenido fluye normal desde
+  arriba con el ancho de `--layout-max-width`.
+- **`tarjeta`** (por defecto `false`, solo tiene efecto junto a `centered`):
+  además, pone ese contenedor dentro de una **tarjeta visual** — fondo sólido
+  (`--color-surface`), borde, esquinas redondeadas y sombra — sobre un fondo
+  animado de burbujas de chat (`PatronBurbujas`, ver `sistema-de-diseno.md`).
+
+Pensadas para pantallas de un único formulario. `LoginPage`/`RegistroPage`
+usan las dos (formulario en tarjeta sobre el patrón animado); `NotFoundPage`
+usa solo `centered` — su ilustración ya tiene su propio fondo pensado para
+fundirse con la página, así que no lleva `tarjeta`.
 
 ## Anatomía de un componente
 

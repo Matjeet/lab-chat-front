@@ -10,7 +10,7 @@ import styles from './LoginPage.module.css';
  * Todavía no hay servicio de autenticación conectado (ver `LoginForm`).
  */
 const LoginPage = () => (
-  <DefaultLayout title="Iniciar sesión" centered>
+  <DefaultLayout title="Iniciar sesión" centered tarjeta>
     <p className={styles.intro}>Inicia sesión para continuar.</p>
     <LoginForm />
     <p className={styles.registro}>

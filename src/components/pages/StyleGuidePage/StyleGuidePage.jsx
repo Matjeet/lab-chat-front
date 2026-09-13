@@ -4,6 +4,7 @@ import DefaultLayout from '../../templates/DefaultLayout';
 import Button from '../../atoms/Button';
 import Input from '../../atoms/Input';
 import Alert from '../../atoms/Alert';
+import PatronBurbujas from '../../atoms/PatronBurbujas';
 import FormField from '../../molecules/FormField';
 import RequisitosCampo from '../../molecules/RequisitosCampo';
 import styles from './StyleGuidePage.module.css';
@@ -206,6 +207,18 @@ const StyleGuidePage = () => (
           { id: 'b', texto: 'Requisito pendiente', cumplido: false },
         ]}
       />
+    </Section>
+
+    <Section title="Tarjeta y fondo animado">
+      <p className={styles.intro}>
+        <code>DefaultLayout centered tarjeta</code> — usado en /login y
+        /registro. El patrón de burbujas se anima en bucle; se anula con
+        <code>prefers-reduced-motion</code>.
+      </p>
+      <div className={styles.vitrinaPatron}>
+        <PatronBurbujas />
+        <p className={styles.vitrinaTarjeta}>Contenido dentro de la tarjeta</p>
+      </div>
     </Section>
   </DefaultLayout>
 );

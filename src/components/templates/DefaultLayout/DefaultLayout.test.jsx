@@ -44,4 +44,22 @@ describe('DefaultLayout', () => {
     expect(main.firstElementChild.tagName).not.toBe('P');
     expect(main.firstElementChild).toContainElement(screen.getByText('Contenido'));
   });
+
+  it('sin `tarjeta` no dibuja el patrón de burbujas', () => {
+    const { container } = render(
+      <DefaultLayout title="Chat" centered>
+        <p>Contenido</p>
+      </DefaultLayout>,
+    );
+    expect(container.querySelector('svg[aria-hidden="true"]')).not.toBeInTheDocument();
+  });
+
+  it('con `centered` y `tarjeta` monta el fondo de burbujas', () => {
+    const { container } = render(
+      <DefaultLayout title="Chat" centered tarjeta>
+        <p>Contenido</p>
+      </DefaultLayout>,
+    );
+    expect(container.querySelector('svg[aria-hidden="true"]')).toBeInTheDocument();
+  });
 });
