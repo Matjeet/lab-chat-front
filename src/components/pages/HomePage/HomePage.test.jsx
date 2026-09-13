@@ -20,4 +20,17 @@ describe('HomePage', () => {
 
     expect(screen.getByText('Escribe tu nombre para continuar')).toBeInTheDocument();
   });
+
+  it('enlaza a registro y a login', () => {
+    render(<HomePage />);
+
+    expect(screen.getByRole('link', { name: 'Crear una cuenta' })).toHaveAttribute(
+      'href',
+      '/registro',
+    );
+    expect(screen.getByRole('link', { name: 'Iniciar sesión' })).toHaveAttribute(
+      'href',
+      '/login',
+    );
+  });
 });

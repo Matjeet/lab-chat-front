@@ -76,6 +76,7 @@ chat-frontend/
 │   ├── layout.jsx             # html/body + tokens + global.css + tema inicial
 │   ├── page.jsx               # "/"         -> <HomePage/>
 │   ├── registro/page.jsx      # "/registro" -> <RegistroPage/>
+│   ├── login/page.jsx         # "/login"    -> <LoginPage/>
 │   ├── estilos/page.jsx       # "/estilos"  -> <StyleGuidePage/> (guía viva)
 │   └── not-found.jsx          # 404 (ruta inexistente o notFound()) -> <NotFoundPage/>
 ├── src/
@@ -91,9 +92,9 @@ chat-frontend/
 │   └── components/
 │       ├── atoms/             Button · Input · Alert · Ilustracion404
 │       ├── molecules/         FormField · ThemeToggle · RequisitosCampo
-│       ├── organisms/         Header · RegistroForm
+│       ├── organisms/         Header · RegistroForm · LoginForm
 │       ├── templates/         DefaultLayout
-│       └── pages/             HomePage · RegistroPage · StyleGuidePage · NotFoundPage
+│       └── pages/             HomePage · RegistroPage · LoginPage · StyleGuidePage · NotFoundPage
 │           └── Button/
 │               ├── Button.jsx
 │               ├── Button.module.css
@@ -177,4 +178,11 @@ Cada componente vive en su propia carpeta con estos archivos:
   (fácil de testear) y es **espejo** de las reglas del contrato, incluida la
   política de fortaleza de `password` — el contrato la exige igual. La
   autoritativa sigue siendo la del servidor.
+- **Login (`LoginForm`) todavía no llama a ningún servicio** — es solo la
+  UI/UX: valida en cliente (email válido, contraseña no vacía; a propósito
+  *sin* la política de fortaleza de registro, no aplica a una cuenta ya
+  existente) y, si no se le pasa `onIniciarSesion`, se limita a avisar que
+  falta conectar el backend. Cuando exista el endpoint de login, se conecta
+  ahí (mismo patrón de resultado tipado que `registro.js`), sin tocar
+  `LoginForm`.
 - Detalle en [`integracion-api.md`](./integracion-api.md).

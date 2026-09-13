@@ -39,6 +39,9 @@ Cómo consume este frontend los microservicios backend. Contrato completo:
 | `src/utils/validacionRegistro.js` | Validación de cliente + `requisitos{Username,Password}` (estado en vivo de cada requisito). |
 | `src/components/organisms/RegistroForm/` | Estado del formulario + reparto de errores. |
 | `src/components/pages/RegistroPage/` | Alterna formulario ↔ confirmación. |
+| `src/utils/validacionLogin.js` | Validación de cliente del login: email válido, contraseña no vacía. Sin política de fortaleza — no aplica a una cuenta ya existente. |
+| `src/components/organisms/LoginForm/` | Formulario de login. **No llama a ningún servicio todavía** (ver más abajo). |
+| `src/components/pages/LoginPage/` | Monta `LoginForm` + enlace a `/registro`. |
 
 ## Quién habla con Firebase
 
@@ -55,6 +58,26 @@ importa el SDK de Firebase para esto.
 > hace falta el SDK de Firebase en el cliente (login, sesión...), es una
 > integración nueva e independiente de este alta — no revivir `src/firebase/`
 > solo para esto.
+
+## Login — solo UI/UX por ahora
+
+`LoginForm` existe y valida (email con formato válido, contraseña no vacía),
+pero **no hay endpoint de login todavía**, así que no llama a `src/api/`. Su
+prop `onIniciarSesion(datos)`, si se pasa, recibe `{ email, password }` ya
+validados y normalizados; sin ella, el propio formulario muestra un aviso de
+que falta conectar el backend — para que se pueda revisar/usar la pantalla ya
+mismo sin fingir un inicio de sesión real.
+
+Cuando exista el contrato del endpoint de login:
+
+1. Crear `src/api/login.js` con el mismo patrón de resultado tipado que
+   `registro.js` (probablemente `{ ok, data }` con un token de sesión, o lo
+   que defina el contrato).
+2. `LoginPage` pasa `onIniciarSesion` a `LoginForm`, llamando a esa función y
+   decidiendo qué hacer con el resultado (redirigir, guardar el token,
+   mostrar el error) — no hace falta tocar `LoginForm` para esto.
+3. Si el login devuelve algo tipo Problem Details, reutilizar
+   `mapearErrorBackend`-style: ramificar por `type`, no por `status`.
 
 ## Patrón: resultado tipado
 

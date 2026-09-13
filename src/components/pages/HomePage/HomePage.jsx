@@ -38,12 +38,20 @@ const HomePage = () => {
 
       {greeting && <p className={styles.greeting}>{greeting}</p>}
 
-      <p className={styles.registro}>
-        ¿Aún no tienes cuenta?{' '}
-        <Link href="/registro" className={styles.enlace}>
-          Crear una cuenta
-        </Link>
-      </p>
+      <div className={styles.enlaces}>
+        <p>
+          ¿Aún no tienes cuenta?{' '}
+          <Link href="/registro" className={styles.enlace}>
+            Crear una cuenta
+          </Link>
+        </p>
+        <p>
+          ¿Ya tienes cuenta?{' '}
+          <Link href="/login" className={styles.enlace}>
+            Iniciar sesión
+          </Link>
+        </p>
+      </div>
     </DefaultLayout>
   );
 };
