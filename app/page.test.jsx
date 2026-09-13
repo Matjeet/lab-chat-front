@@ -7,9 +7,13 @@ import Page from './page';
 // un App Router de verdad para next/navigation.
 jest.mock('../src/firebase/auth', () => ({
   iniciarSesion: jest.fn(),
+  observarSesion: jest.fn((callback) => {
+    callback(null); // como si no hubiera sesión: estos tests ejercitan el formulario.
+    return jest.fn();
+  }),
 }));
 jest.mock('next/navigation', () => ({
-  useRouter: () => ({ push: jest.fn() }),
+  useRouter: () => ({ push: jest.fn(), replace: jest.fn() }),
 }));
 
 describe('Ruta /', () => {

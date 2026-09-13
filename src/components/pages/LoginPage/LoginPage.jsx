@@ -1,12 +1,13 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
 import DefaultLayout from '../../templates/DefaultLayout';
 import TextoAleatorio from '../../atoms/TextoAleatorio';
 import LoginForm from '../../organisms/LoginForm';
-import { iniciarSesion } from '../../../firebase/auth';
+import { iniciarSesion, observarSesion } from '../../../firebase/auth';
 import styles from './LoginPage.module.css';
 
 // Una distinta cada vez que se abre o recarga la página (ver TextoAleatorio).
@@ -23,6 +24,13 @@ const FRASES_INTRO = [
 /**
  * Página: inicio de sesión.
  *
+ * Antes de mostrar el formulario, comprueba si ya hay una sesión de Firebase
+ * activa (`observarSesion`, persistida por el propio SDK en el navegador) —
+ * si la hay, no tiene sentido pedir credenciales de nuevo: navega a `/home`
+ * directamente. Mientras se resuelve esa comprobación (siempre asíncrona,
+ * nunca se sabe de forma síncrona al cargar la página) no se pinta el
+ * formulario, para no mostrarlo un instante de más a quien ya tiene sesión.
+ *
  * `LoginForm` maneja los campos y la validación; esta página solo decide
  * qué pasa con el resultado de `iniciarSesion` (Firebase Authentication):
  * si sale bien, navega a `/home` — si no, `LoginForm` ya muestra el aviso
@@ -32,6 +40,18 @@ const FRASES_INTRO = [
  */
 const LoginPage = () => {
   const router = useRouter();
+  const [comprobandoSesion, setComprobandoSesion] = useState(true);
+
+  useEffect(() => {
+    const cancelar = observarSesion((usuario) => {
+      if (usuario) {
+        router.replace('/home');
+        return;
+      }
+      setComprobandoSesion(false);
+    });
+    return cancelar;
+  }, [router]);
 
   const alIniciarSesion = async (datos) => {
     const resultado = await iniciarSesion(datos);
@@ -40,6 +60,14 @@ const LoginPage = () => {
     }
     return resultado;
   };
+
+  if (comprobandoSesion) {
+    return (
+      <DefaultLayout title="Iniciar sesión" centered tarjeta>
+        <p className={styles.comprobando}>Comprobando sesión…</p>
+      </DefaultLayout>
+    );
+  }
 
   return (
     <DefaultLayout title="Iniciar sesión" centered tarjeta>

@@ -84,11 +84,25 @@ y llama a `onIniciarSesion(datos)` con `{ email, password }` ya normalizados.
    `credenciales` — igual que el `409` de registro, nunca se distingue si
    falló el email o la contraseña).
 
+### Ya con sesión activa, `/login` no vuelve a pedir credenciales
+
+Firebase persiste la sesión solo en el navegador (no es cosa de esta app). Al
+montarse, `LoginPage` se suscribe con `observarSesion` (`src/firebase/auth.js`,
+envuelve `onAuthStateChanged`) antes de pintar nada: si ya hay un usuario,
+navega a `/home` con `router.replace` (no `push`, para no dejar en el
+historial una pantalla de login que nunca llegó a usarse) sin mostrar el
+formulario ni un instante; si no hay sesión, recién ahí se pinta. Como esa
+comprobación es siempre asíncrona (nunca se sabe de forma síncrona al cargar
+la página), mientras se resuelve se muestra "Comprobando sesión…" en vez del
+formulario.
+
 **Pendiente, a propósito:** qué hacer con el `idToken` frente a
 `chat-registro` (¿lo valida un endpoint nuevo? ¿el backend confía en Firebase
 y solo le importa el `uid`?) — `HomePage` hoy no recibe ni usa ese token, es
 solo la confirmación visual de que el login funcionó. Tampoco hay protección
-de ruta: `/home` es accesible sin haber iniciado sesión. Ambas cosas dependen
+de ruta en sentido contrario: `/home` sigue siendo accesible sin haber
+iniciado sesión (solo se resolvió que `/login` no lo pida dos veces). Ambas
+cosas dependen
 de esa decisión, todavía sin tomar.
 
 ## Patrón: resultado tipado

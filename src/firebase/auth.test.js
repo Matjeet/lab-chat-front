@@ -7,11 +7,12 @@ jest.mock('firebase/app', () => ({
 jest.mock('firebase/auth', () => ({
   getAuth: jest.fn(() => ({})),
   signInWithEmailAndPassword: jest.fn(),
+  onAuthStateChanged: jest.fn(),
 }));
 
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { onAuthStateChanged, signInWithEmailAndPassword } from 'firebase/auth';
 
-import { iniciarSesion } from './auth';
+import { iniciarSesion, observarSesion } from './auth';
 
 describe('iniciarSesion', () => {
   afterEach(() => {
@@ -55,5 +56,22 @@ describe('iniciarSesion', () => {
     });
 
     expect(resultado).toEqual({ ok: false, error: { kind } });
+  });
+});
+
+describe('observarSesion', () => {
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('delega en onAuthStateChanged y devuelve su función de cancelación', () => {
+    const cancelar = jest.fn();
+    onAuthStateChanged.mockReturnValue(cancelar);
+    const callback = jest.fn();
+
+    const resultado = observarSesion(callback);
+
+    expect(onAuthStateChanged).toHaveBeenCalledWith(expect.anything(), callback);
+    expect(resultado).toBe(cancelar);
   });
 });

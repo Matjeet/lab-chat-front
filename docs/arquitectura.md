@@ -97,7 +97,7 @@ chat-frontend/
 │   │   └── registro.js        # POST /api/v1/registro -> resultado tipado
 │   ├── firebase/               # SDK de cliente de Firebase (solo login, ver integracion-api.md)
 │   │   ├── config.js           # Inicializa la app (variables NEXT_PUBLIC_FIREBASE_*)
-│   │   └── auth.js             # iniciarSesion({email, password}) -> resultado tipado
+│   │   └── auth.js             # iniciarSesion(...) + observarSesion(cb) -> resultado tipado
 │   ├── utils/                  # Helpers puros (sin React)
 │   │   ├── validacionRegistro.js
 │   │   └── validacionLogin.js
@@ -216,4 +216,8 @@ Cada componente vive en su propia carpeta con estos archivos:
   `/home`. Sin `onIniciarSesion`, `LoginForm` se limita a avisar que falta
   conectar el backend — así sigue sirviendo como pantalla standalone en los
   tests que no la conectan.
+- **`LoginPage` también comprueba, antes de pintar nada, si ya hay sesión**
+  (`observarSesion`, `src/firebase/auth.js`) — si la hay, navega a `/home`
+  con `router.replace` en vez de mostrar el formulario. Mientras se resuelve
+  esa comprobación (siempre asíncrona) se ve "Comprobando sesión…".
 - Detalle en [`integracion-api.md`](./integracion-api.md).

@@ -1,4 +1,4 @@
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { onAuthStateChanged, signInWithEmailAndPassword } from 'firebase/auth';
 
 import { auth } from './config';
 
@@ -55,3 +55,22 @@ export const iniciarSesion = async ({ email, password }) => {
     }
   }
 };
+
+/**
+ * Se suscribe al estado de sesión de Firebase Authentication. `callback`
+ * recibe el usuario autenticado o `null` si no hay sesión — la primera
+ * llamada llega en cuanto el SDK termina de restaurar la sesión persistida
+ * (Firebase la guarda sola en el navegador, no es cosa de esta app), nunca
+ * antes; las siguientes, en cada cambio (login, logout, expiración). No hay
+ * forma de saber "hay sesión o no" de forma síncrona al cargar la página —
+ * quien la use debe esperar a esta primera llamada antes de decidir qué
+ * pintar (ver `LoginPage`).
+ *
+ * Devuelve la función para cancelar la suscripción; hay que invocarla al
+ * desmontar quien la use (limpieza de un `useEffect`), o la suscripción
+ * sigue viva después de que el componente ya no exista.
+ *
+ * @param {(usuario: import('firebase/auth').User | null) => void} callback
+ * @returns {() => void}
+ */
+export const observarSesion = (callback) => onAuthStateChanged(auth, callback);
