@@ -1,0 +1,35 @@
+.contenedor {
+  display: block;
+}
+
+.claro,
+.oscuro {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* Claro por defecto; oscuro se activa con el mismo criterio que tokens.css:
+ * automático por prefers-color-scheme (si no se forzó claro) o explícito
+ * con [data-theme="dark"] en <html>, puesto por ThemeToggle. */
+.oscuro {
+  display: none;
+}
+
+@media (prefers-color-scheme: dark) {
+  :global(:root:not([data-theme='light'])) .claro {
+    display: none;
+  }
+
+  :global(:root:not([data-theme='light'])) .oscuro {
+    display: block;
+  }
+}
+
+:global(:root[data-theme='dark']) .claro {
+  display: none;
+}
+
+:global(:root[data-theme='dark']) .oscuro {
+  display: block;
+}

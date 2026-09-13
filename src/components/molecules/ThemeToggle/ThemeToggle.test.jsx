@@ -40,4 +40,18 @@ describe('ThemeToggle', () => {
       screen.getByRole('button', { name: /actual: oscuro/i }),
     ).toBeInTheDocument();
   });
+
+  it('muestra un símbolo en vez de texto, y lo oculta a lectores de pantalla', async () => {
+    const user = userEvent.setup();
+    render(<ThemeToggle />);
+    const boton = screen.getByRole('button');
+
+    // El texto visible es solo el símbolo; la etiqueta completa vive en aria-label.
+    expect(boton).toHaveTextContent('◐');
+    expect(boton).not.toHaveTextContent('Sistema');
+    expect(boton.querySelector('[aria-hidden="true"]')).toHaveTextContent('◐');
+
+    await user.click(boton);
+    expect(boton).toHaveTextContent('☀');
+  });
 });

@@ -34,7 +34,7 @@ describe('RegistroPage', () => {
 
     await user.type(screen.getByLabelText('Nombre de usuario'), 'mateo29');
     await user.type(screen.getByLabelText('Correo electrónico'), 'mateo@example.com');
-    await user.type(screen.getByLabelText('Contraseña'), 'secretpass');
+    await user.type(screen.getByLabelText('Contraseña'), 'Passw0rd!');
     await user.click(screen.getByRole('button', { name: 'Crear cuenta' }));
 
     expect(

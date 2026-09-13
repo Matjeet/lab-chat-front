@@ -47,11 +47,13 @@ Servidor de desarrollo en `http://localhost:3000`.
 ## Estructura
 
 ```
+assets/                       # Fuentes de diseño a inlinear a mano (ver su README)
 app/                          # App Router: solo enrutado
 ├── layout.jsx                # Layout raíz (html/body + tokens + CSS global)
 ├── page.jsx                  # "/"         -> <HomePage/>
 ├── registro/page.jsx         # "/registro" -> <RegistroPage/>
-└── estilos/page.jsx          # "/estilos"  -> guía viva del sistema de diseño
+├── estilos/page.jsx          # "/estilos"  -> guía viva del sistema de diseño
+└── not-found.jsx             # 404 -> <NotFoundPage/> (se exporta como out/404.html)
 src/
 ├── setupTests.js             # Setup de Jest
 ├── api/                      # Llamadas a los microservicios backend
@@ -62,11 +64,11 @@ src/
 │   ├── tokens.css            # Tokens de diseño (color, tipografía, espaciado...)
 │   └── global.css            # Reset y estilos base
 └── components/               # Atomic Design
-    ├── atoms/       Button, Input, Alert
+    ├── atoms/       Button, Input, Alert, Ilustracion404
     ├── molecules/   FormField, ThemeToggle, RequisitosCampo
     ├── organisms/   Header, RegistroForm
     ├── templates/   DefaultLayout
-    └── pages/       HomePage, RegistroPage, StyleGuidePage
+    └── pages/       HomePage, RegistroPage, StyleGuidePage, NotFoundPage
 ```
 
 `app/` solo conecta URLs con componentes. Toda la UI y su lógica viven en
@@ -94,10 +96,14 @@ en [`docs/sistema-de-diseno.md`](./docs/sistema-de-diseno.md).
 
 ## Backend
 
-La ruta `/registro` consume `POST /api/v1/registro` de **chat-registro**. La base
-URL sale de `NEXT_PUBLIC_API_BASE_URL` (por defecto `http://localhost:8080`);
-copia `.env.example` a `.env.local` para cambiarla. Detalle del patrón de
-llamadas y manejo de errores en [`docs/integracion-api.md`](./docs/integracion-api.md).
+La ruta `/registro` consume `POST /api/v1/registro` de **chat-registro** con
+`{ username, email, password }`. Es el backend quien crea la cuenta en
+Firebase Auth antes de guardar el perfil — este frontend no habla con
+Firebase directamente. Copia `.env.example` a `.env.local` para configurar
+`NEXT_PUBLIC_API_BASE_URL`.
+
+Detalle del patrón de llamadas y manejo de errores en
+[`docs/integracion-api.md`](./docs/integracion-api.md).
 
 ## Tests
 

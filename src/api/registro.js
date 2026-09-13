@@ -5,6 +5,7 @@ import { API_BASE_URL } from './config';
  * @property {number} id
  * @property {string} username
  * @property {string} email
+ * @property {string} proveedor  Proveedor de identidad usado en el alta (hoy siempre "password").
  * @property {boolean} activo
  * @property {string} createdAt  ISO-8601 UTC
  */
@@ -20,8 +21,13 @@ import { API_BASE_URL } from './config';
 /**
  * Llama a `POST /api/v1/registro` de chat-registro.
  *
+ * El propio backend crea la cuenta en el proveedor de identidad (Firebase
+ * Auth) antes de persistir el perfil — este frontend **no** habla con
+ * Firebase por su cuenta: solo manda `username`, `email` y `password` (ver
+ * chat-registro/docs/contratos-api.md §3.1 y §6).
+ *
  * Ramifica por el `type` del Problem Details (RFC 9457), nunca por `status` ni
- * por textos — ver chat-registro/docs/contratos-api.md §4.
+ * por textos — ver contrato §4.
  *
  * @param {{username: string, email: string, password: string}} datos
  * @returns {Promise<ResultadoRegistro>}
