@@ -58,8 +58,7 @@ src/
 ├── setupTests.js             # Setup de Jest
 ├── api/                      # Llamadas a los microservicios backend
 │   ├── config.js             #   base URL (NEXT_PUBLIC_API_BASE_URL)
-│   └── registro.js           #   orquesta Firebase -> POST /api/v1/registro
-├── firebase/                 # Firebase Auth (identidad: email + password)
+│   └── registro.js           #   POST /api/v1/registro
 ├── utils/                    # Helpers puros (validación de formularios...)
 ├── styles/
 │   ├── tokens.css            # Tokens de diseño (color, tipografía, espaciado...)
@@ -95,18 +94,13 @@ literales — se referencian con `var(--token)` y `npm run lint` lo comprueba. H
 una guía viva en [`/estilos`](http://localhost:3000/estilos) y la documentación
 en [`docs/sistema-de-diseno.md`](./docs/sistema-de-diseno.md).
 
-## Backend y autenticación
+## Backend
 
-La ruta `/registro` crea la identidad en **Firebase Auth** (email + password)
-y guarda `username`/`email` en **chat-registro**, enlazados por el `uid` de
-Firebase. Copia `.env.example` a `.env.local` y completa tanto
-`NEXT_PUBLIC_API_BASE_URL` como `NEXT_PUBLIC_FIREBASE_*` — sin las dos, el
-registro falla.
-
-> ⚠️ El backend actual (`chat-registro`) todavía exige `password` en el
-> cuerpo y no conoce `uid`; hasta que se actualice ahí, el registro llega a
-> crear el usuario en Firebase pero el backend lo rechaza y se revierte. Ver
-> [`docs/integracion-api.md`](./docs/integracion-api.md).
+La ruta `/registro` consume `POST /api/v1/registro` de **chat-registro** con
+`{ username, email, password }`. Es el backend quien crea la cuenta en
+Firebase Auth antes de guardar el perfil — este frontend no habla con
+Firebase directamente. Copia `.env.example` a `.env.local` para configurar
+`NEXT_PUBLIC_API_BASE_URL`.
 
 Detalle del patrón de llamadas y manejo de errores en
 [`docs/integracion-api.md`](./docs/integracion-api.md).
@@ -127,7 +121,6 @@ La documentación del proyecto está en [`docs/`](./docs/). Empieza por
 |------|-------------|
 | Framework / build | Next.js 16 (App Router, `output: 'export'`) |
 | UI | React 19 |
-| Autenticación | Firebase Auth (SDK de cliente) |
 | Estilos | CSS Modules + tokens de diseño (CSS custom properties) |
 | Lint de estilos | Stylelint |
 | Tests | Jest + Testing Library (vía `next/jest`) |

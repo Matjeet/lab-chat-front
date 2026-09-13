@@ -1,14 +1,10 @@
 /**
  * Validación de cliente del formulario de registro.
- *
- * `username` y `email` son el ESPEJO de las reglas de `POST /api/v1/registro`
- * (chat-registro/docs/contratos-api.md §3.1).
- *
- * `password` es más estricta que el contrato (que solo exige 8–100
- * caracteres): añade una política de fortaleza que hoy **solo se aplica en
- * este frontend** — el backend seguiría aceptando una contraseña de 8+
- * caracteres sin mayúscula/número/símbolo. Si se quiere reforzar también en
- * el servidor, es un cambio aparte en chat-registro.
+ * Es el ESPEJO de las reglas de `POST /api/v1/registro`
+ * (chat-registro/docs/contratos-api.md §3.1), incluida la política de
+ * fortaleza de `password` (8–20 caracteres, mayúscula, minúscula, número,
+ * especial, sin un carácter repetido 4+ veces seguidas): el contrato la
+ * exige igual, no es una capa extra solo del cliente.
  *
  * La validación autoritativa sigue siendo la del servidor (devuelve 400 con
  * `errors[]`); esto es solo para feedback inmediato.
