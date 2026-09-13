@@ -20,6 +20,10 @@
     sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
     monospace;
+  /* Decorativa, para texto puntual (no el cuerpo del texto). La carga como
+   * webfont (Google Fonts "Unkempt") vive en app/layout.jsx vía next/font,
+   * que expone --font-unkempt; aquí solo se referencia con su fallback. */
+  --font-display: var(--font-unkempt), cursive, var(--font-sans);
 
   --font-size-xs: 0.75rem; /* 12px */
   --font-size-sm: 0.875rem; /* 14px */

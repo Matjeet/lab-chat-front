@@ -49,9 +49,19 @@ componentes) en ambos temas. Al añadir o cambiar un color, verificarlo.
 |-------|-------|-----|
 | `--font-sans` | stack del sistema | Todo el texto. |
 | `--font-mono` | stack mono del sistema | Código, tokens. |
+| `--font-display` | webfont "Unkempt" (Google Fonts) + fallback | Texto decorativo puntual — hoy, la frase de bienvenida de `LoginPage`. **No** es para cuerpo de texto ni para nada que deba leerse en bloque: es una fuente manuscrita/display, pensada para un titular corto. |
 | `--font-size-xs` … `--font-size-3xl` | 12 / 14 / 16 / 18 / 24 / 32 / 48 px | Escala tipográfica. `md` = base. `3xl` para números/splash grandes (p. ej. el "404"). |
 | `--font-weight-regular` … `-bold` | 400 / 500 / 600 / 700 | Pesos. |
 | `--line-height-tight` / `-base` | 1.25 / 1.5 | Titulares / cuerpo. |
+
+`--font-display` es distinto de `--font-sans`/`--font-mono`: esos dos son stacks
+de fuentes del sistema (siempre disponibles, cero coste de carga); "Unkempt" es
+un webfont real, cargado con `next/font/google` en `app/layout.jsx` (se
+autoaloja en el build — sin llamada a Google Fonts en runtime, compatible con
+el export estático) y expuesto como variable CSS (`--font-unkempt`) en la
+clase que ese layout pone en `<html>`. El token en `tokens.css` solo envuelve
+esa variable con su *fallback* (`cursive`, luego `--font-sans`) por si la
+carga del webfont fallara.
 
 ### Espaciado
 

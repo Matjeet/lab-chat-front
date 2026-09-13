@@ -1,6 +1,7 @@
 .intro {
   margin-bottom: var(--space-5);
   color: var(--color-text-muted);
+  font-family: var(--font-display);
   font-weight: var(--font-weight-semibold);
 }
 
