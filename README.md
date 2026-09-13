@@ -50,8 +50,9 @@ Servidor de desarrollo en `http://localhost:3000`.
 assets/                       # Fuentes de diseño a inlinear a mano (ver su README)
 app/                          # App Router: solo enrutado
 ├── layout.jsx                # Layout raíz (html/body + tokens + CSS global)
-├── page.jsx                  # "/"         -> <HomePage/>
+├── page.jsx                  # "/"         -> <LoginPage/> (arranque de la app)
 ├── registro/page.jsx         # "/registro" -> <RegistroPage/>
+├── login/page.jsx            # "/login"    -> <LoginPage/> (sin backend conectado aún)
 ├── estilos/page.jsx          # "/estilos"  -> guía viva del sistema de diseño
 └── not-found.jsx             # 404 -> <NotFoundPage/> (se exporta como out/404.html)
 src/
@@ -64,11 +65,11 @@ src/
 │   ├── tokens.css            # Tokens de diseño (color, tipografía, espaciado...)
 │   └── global.css            # Reset y estilos base
 └── components/               # Atomic Design
-    ├── atoms/       Button, Input, Alert, Ilustracion404
+    ├── atoms/       Button, Input, Alert, Ilustracion404, PatronBurbujas
     ├── molecules/   FormField, ThemeToggle, RequisitosCampo
-    ├── organisms/   Header, RegistroForm
+    ├── organisms/   Header, RegistroForm, LoginForm
     ├── templates/   DefaultLayout
-    └── pages/       HomePage, RegistroPage, StyleGuidePage, NotFoundPage
+    └── pages/       LoginPage, RegistroPage, StyleGuidePage, NotFoundPage
 ```
 
 `app/` solo conecta URLs con componentes. Toda la UI y su lógica viven en
@@ -101,6 +102,9 @@ La ruta `/registro` consume `POST /api/v1/registro` de **chat-registro** con
 Firebase Auth antes de guardar el perfil — este frontend no habla con
 Firebase directamente. Copia `.env.example` a `.env.local` para configurar
 `NEXT_PUBLIC_API_BASE_URL`.
+
+La ruta `/login` es, de momento, **solo UI/UX**: valida en cliente pero no
+llama a ningún servicio — todavía no hay endpoint de login.
 
 Detalle del patrón de llamadas y manejo de errores en
 [`docs/integracion-api.md`](./docs/integracion-api.md).

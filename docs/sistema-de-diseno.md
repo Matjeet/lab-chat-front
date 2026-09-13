@@ -49,9 +49,19 @@ componentes) en ambos temas. Al añadir o cambiar un color, verificarlo.
 |-------|-------|-----|
 | `--font-sans` | stack del sistema | Todo el texto. |
 | `--font-mono` | stack mono del sistema | Código, tokens. |
+| `--font-display` | webfont "Comic Neue" (Google Fonts) + fallback | Texto decorativo puntual — hoy, la frase de bienvenida de `LoginPage`. **No** es para cuerpo de texto ni para nada que deba leerse en bloque: es una fuente informal/display, pensada para un titular corto. |
 | `--font-size-xs` … `--font-size-3xl` | 12 / 14 / 16 / 18 / 24 / 32 / 48 px | Escala tipográfica. `md` = base. `3xl` para números/splash grandes (p. ej. el "404"). |
 | `--font-weight-regular` … `-bold` | 400 / 500 / 600 / 700 | Pesos. |
 | `--line-height-tight` / `-base` | 1.25 / 1.5 | Titulares / cuerpo. |
+
+`--font-display` es distinto de `--font-sans`/`--font-mono`: esos dos son stacks
+de fuentes del sistema (siempre disponibles, cero coste de carga); "Comic Neue"
+es un webfont real, cargado con `next/font/google` en `app/layout.jsx` (se
+autoaloja en el build — sin llamada a Google Fonts en runtime, compatible con
+el export estático) y expuesto como variable CSS (`--font-comic-neue`) en la
+clase que ese layout pone en `<html>`. El token en `tokens.css` solo envuelve
+esa variable con su *fallback* (`cursive`, luego `--font-sans`) por si la
+carga del webfont fallara.
 
 ### Espaciado
 
@@ -105,9 +115,42 @@ hay token porque CSS no permite `var()` en condiciones):
 
 `DefaultLayout` centra el contenido a `--layout-max-width`; por encima de eso el
 contenido no crece, solo el margen. Con la prop `centered` (pantallas de un
-solo formulario/tarjeta, p. ej. registro), el contenido además se centra
-**verticalmente** en el espacio entre cabecera y pie, dentro de una tarjeta de
-`--layout-form-width`.
+solo formulario, p. ej. registro/login), el contenido además se centra
+**verticalmente** en el espacio entre cabecera y pie, en un contenedor de
+`--layout-form-width`. Con `tarjeta` (ver siguiente sección), ese contenedor
+se convierte en una tarjeta visual sobre un fondo animado.
+
+## Tarjeta y fondo animado (pantallas de login/registro)
+
+`DefaultLayout` con `centered` + `tarjeta` (ver "Variantes de `DefaultLayout`"
+en `arquitectura.md`) pone el formulario dentro de una tarjeta sobre un fondo
+de burbujas de chat en movimiento:
+
+- **Tarjeta**: `--color-surface` de fondo, borde `--color-border`, esquinas
+  `--radius-lg`, sombra `--shadow-md`, relleno `--space-6`. Los mismos tokens
+  que ya usa cualquier superficie elevada — no es una paleta nueva.
+- **Fondo**: `PatronBurbujas` (átomo, SVG en línea) — 4 iconos de burbuja
+  distintos rellenos con `--color-border`, en un `<pattern>` que se repite y
+  se anima con `transform` en bucle infinito (la ilustración se pinta más
+  grande que su contenedor y se traslada exactamente un mosaico; al llegar al
+  final queda pixel a pixel donde empezó). Como es SVG en línea (no una imagen
+  de fondo por CSS), el color sigue el tema solo. Cubre **toda la pantalla**
+  (vive en `.layout`, no en `.content`): se ve detrás de la cabecera, del
+  contenido y del pie. La cabecera y el pie mantienen su propio fondo sólido
+  (`--color-surface`) encima, como barras fijas; `z-index: -1` en el SVG
+  asegura que quede detrás pese a ser el primer hijo en el DOM. El fondo
+  sólido del pie no es solo estético: sin él, al pintarse por encima del SVG
+  en el orden de apilamiento pero ser transparente, la animación se vería a
+  través suyo igualmente — cualquier banda que se superponga al patrón
+  necesita su propio `--color-surface`, no basta con estar "por encima".
+- **La animación es un placeholder a propósito** ("de momento cualquiera, ya
+  veremos cuál"): vive entera en `@keyframes deriva-burbujas` de
+  `PatronBurbujas.module.css`. Cambiarla — velocidad, dirección, otro tipo de
+  movimiento — no toca ni el SVG ni `DefaultLayout`.
+- Se anula con `prefers-reduced-motion: reduce` (igual que `--transition-*`).
+- **No** se usa en `NotFoundPage`: su ilustración ya está pensada para
+  fundirse con el fondo de la página (ver más abajo), y superponerle esta
+  tarjeta rompería ese efecto.
 
 ## Reglas por nivel de Atomic Design
 
@@ -130,7 +173,9 @@ solo formulario/tarjeta, p. ej. registro), el contenido además se centra
 - [ ] Nada depende solo del color (añadir icono/texto). Ej.: `RequisitosCampo`
       marca lo cumplido con `--color-success` **y** un `✓` **y** un texto
       `(cumplido)` para lectores de pantalla (clase global `.sr-only`).
-- [ ] Animaciones vía `--transition-*` (se anulan con `prefers-reduced-motion`).
+- [ ] Animaciones vía `--transition-*` (transiciones) o `@keyframes` propio
+      (animaciones más largas, p. ej. `PatronBurbujas`) — en los dos casos, se
+      anulan con `@media (prefers-reduced-motion: reduce)`.
 
 ### Helpers globales (`global.css`)
 

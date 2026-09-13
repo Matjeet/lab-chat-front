@@ -44,4 +44,37 @@ describe('DefaultLayout', () => {
     expect(main.firstElementChild.tagName).not.toBe('P');
     expect(main.firstElementChild).toContainElement(screen.getByText('Contenido'));
   });
+
+  it('sin `tarjeta` no dibuja el patrón de burbujas', () => {
+    const { container } = render(
+      <DefaultLayout title="Chat" centered>
+        <p>Contenido</p>
+      </DefaultLayout>,
+    );
+    expect(container.querySelector('svg[aria-hidden="true"]')).not.toBeInTheDocument();
+  });
+
+  it('con `centered` y `tarjeta` monta el fondo de burbujas', () => {
+    const { container } = render(
+      <DefaultLayout title="Chat" centered tarjeta>
+        <p>Contenido</p>
+      </DefaultLayout>,
+    );
+    expect(container.querySelector('svg[aria-hidden="true"]')).toBeInTheDocument();
+  });
+
+  it('el fondo de burbujas cubre toda la pantalla, no solo el contenido', () => {
+    const { container } = render(
+      <DefaultLayout title="Chat" centered tarjeta>
+        <p>Contenido</p>
+      </DefaultLayout>,
+    );
+    const svg = container.querySelector('svg[aria-hidden="true"]');
+    const main = screen.getByRole('main');
+
+    // Va fuera del <main> (hermano de la cabecera, el contenido y el pie),
+    // no recortado dentro del área de contenido.
+    expect(main.contains(svg)).toBe(false);
+    expect(container.firstChild).toContainElement(svg);
+  });
 });

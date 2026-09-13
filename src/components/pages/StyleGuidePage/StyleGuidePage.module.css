@@ -96,3 +96,28 @@
   font-size: var(--font-size-xs);
   color: var(--color-text-muted);
 }
+
+.vitrinaPatron {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 220px;
+  overflow: hidden;
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.vitrinaTarjeta {
+  position: relative;
+  z-index: 1;
+  max-width: 240px;
+  padding: var(--space-4);
+  background-color: var(--color-surface);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  text-align: center;
+}

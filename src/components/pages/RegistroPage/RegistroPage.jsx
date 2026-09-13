@@ -17,12 +17,15 @@ const RegistroPage = () => {
   const [usuario, setUsuario] = useState(null);
 
   return (
-    <DefaultLayout title="Crear cuenta" centered>
+    <DefaultLayout title="Crear cuenta" centered tarjeta>
       {usuario ? (
         <div className={styles.exito}>
           <Alert tipo="success">
-            Cuenta creada correctamente. Ya puedes iniciar sesión con{' '}
-            <strong>{usuario.username}</strong>.
+            Cuenta creada correctamente. Ya puedes{' '}
+            <Link href="/login" className={styles.enlace}>
+              iniciar sesión
+            </Link>{' '}
+            con <strong>{usuario.username}</strong>.
           </Alert>
           <dl className={styles.datos}>
             <div>

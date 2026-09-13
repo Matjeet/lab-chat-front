@@ -4,8 +4,10 @@ import DefaultLayout from '../../templates/DefaultLayout';
 import Button from '../../atoms/Button';
 import Input from '../../atoms/Input';
 import Alert from '../../atoms/Alert';
+import PatronBurbujas from '../../atoms/PatronBurbujas';
 import FormField from '../../molecules/FormField';
 import RequisitosCampo from '../../molecules/RequisitosCampo';
+import useRequiereSesion from '../../../hooks/useRequiereSesion';
 import styles from './StyleGuidePage.module.css';
 
 const COLORES = [
@@ -72,142 +74,167 @@ const Section = ({ title, children }) => (
  * Página: guía de estilo viva.
  * Renderiza los tokens de `tokens.css` y los componentes en sus variantes.
  * Sirve de referencia visual y para detectar regresiones (incl. en modo oscuro,
- * usando el selector de tema de la cabecera).
+ * usando el selector de tema de la cabecera). Exige sesión activa
+ * (`useRequiereSesion`) — sin ella, navega a `/login`.
  */
-const StyleGuidePage = () => (
-  <DefaultLayout title="Sistema de diseño">
-    <p className={styles.intro}>
-      Fuente de verdad: <code>src/styles/tokens.css</code>. Cambia el tema desde
-      la cabecera para revisar el modo oscuro.
-    </p>
+const StyleGuidePage = () => {
+  const { verificando } = useRequiereSesion();
 
-    <Section title="Colores">
-      <ul className={styles.swatches}>
-        {COLORES.map((token) => (
-          <li key={token} className={styles.swatch}>
-            <span
-              className={styles.swatchColor}
-              style={{ backgroundColor: `var(${token})` }}
-            />
-            <code>{token}</code>
-          </li>
-        ))}
-      </ul>
-    </Section>
+  if (verificando) {
+    return (
+      <DefaultLayout title="Sistema de diseño">
+        <Alert tipo="info">Comprobando sesión…</Alert>
+      </DefaultLayout>
+    );
+  }
 
-    <Section title="Tipografía">
-      <ul className={styles.stack}>
-        {TEXTOS.map(([token, ejemplo]) => (
-          <li key={token} style={{ fontSize: `var(${token})` }}>
-            {ejemplo} <code>{token}</code>
-          </li>
-        ))}
-      </ul>
-      <ul className={styles.stack}>
-        {PESOS.map(([token, ejemplo]) => (
-          <li key={token} style={{ fontWeight: `var(${token})` }}>
-            {ejemplo} <code>{token}</code>
-          </li>
-        ))}
-      </ul>
-    </Section>
+  return (
+    <DefaultLayout title="Sistema de diseño">
+      <p className={styles.intro}>
+        Fuente de verdad: <code>src/styles/tokens.css</code>. Cambia el tema desde
+        la cabecera para revisar el modo oscuro.
+      </p>
 
-    <Section title="Espaciado">
-      <ul className={styles.stack}>
-        {ESPACIOS.map((token) => (
-          <li key={token} className={styles.spaceRow}>
-            <span
-              className={styles.spaceBar}
-              style={{ width: `var(${token})` }}
-            />
-            <code>{token}</code>
-          </li>
-        ))}
-      </ul>
-    </Section>
+      <Section title="Colores">
+        <ul className={styles.swatches}>
+          {COLORES.map((token) => (
+            <li key={token} className={styles.swatch}>
+              <span
+                className={styles.swatchColor}
+                style={{ backgroundColor: `var(${token})` }}
+              />
+              <code>{token}</code>
+            </li>
+          ))}
+        </ul>
+      </Section>
 
-    <Section title="Radios y sombras">
-      <div className={styles.boxes}>
-        {RADIOS.map((token) => (
-          <div
-            key={token}
-            className={styles.box}
-            style={{ borderRadius: `var(${token})` }}
-          >
-            <code>{token}</code>
-          </div>
-        ))}
-        {SOMBRAS.map((token) => (
-          <div
-            key={token}
-            className={styles.box}
-            style={{ boxShadow: `var(${token})` }}
-          >
-            <code>{token}</code>
-          </div>
-        ))}
-      </div>
-    </Section>
+      <Section title="Tipografía">
+        <ul className={styles.stack}>
+          {TEXTOS.map(([token, ejemplo]) => (
+            <li key={token} style={{ fontSize: `var(${token})` }}>
+              {ejemplo} <code>{token}</code>
+            </li>
+          ))}
+        </ul>
+        <ul className={styles.stack}>
+          {PESOS.map(([token, ejemplo]) => (
+            <li key={token} style={{ fontWeight: `var(${token})` }}>
+              {ejemplo} <code>{token}</code>
+            </li>
+          ))}
+        </ul>
+      </Section>
 
-    <Section title="Botones">
-      <div className={styles.row}>
-        <Button variant="primary">Primary</Button>
-        <Button variant="secondary">Secondary</Button>
-        <Button variant="ghost">Ghost</Button>
-        <Button variant="danger">Danger</Button>
-        <Button variant="primary" disabled>
-          Disabled
-        </Button>
-      </div>
-    </Section>
+      <Section title="Espaciado">
+        <ul className={styles.stack}>
+          {ESPACIOS.map((token) => (
+            <li key={token} className={styles.spaceRow}>
+              <span
+                className={styles.spaceBar}
+                style={{ width: `var(${token})` }}
+              />
+              <code>{token}</code>
+            </li>
+          ))}
+        </ul>
+      </Section>
 
-    <Section title="Avisos">
-      <div className={styles.stack}>
-        <Alert tipo="info">Mensaje informativo.</Alert>
-        <Alert tipo="success">Operación completada correctamente.</Alert>
-        <Alert tipo="error">No se pudo completar la operación.</Alert>
-      </div>
-    </Section>
+      <Section title="Radios y sombras">
+        <div className={styles.boxes}>
+          {RADIOS.map((token) => (
+            <div
+              key={token}
+              className={styles.box}
+              style={{ borderRadius: `var(${token})` }}
+            >
+              <code>{token}</code>
+            </div>
+          ))}
+          {SOMBRAS.map((token) => (
+            <div
+              key={token}
+              className={styles.box}
+              style={{ boxShadow: `var(${token})` }}
+            >
+              <code>{token}</code>
+            </div>
+          ))}
+        </div>
+      </Section>
 
-    <Section title="Campos de formulario">
-      <div className={styles.stack}>
-        <Input value="" onChange={() => {}} placeholder="Input suelto" />
-        <FormField
-          id="sg-ok"
-          label="Campo con label"
-          placeholder="Escribe algo"
-          value=""
-          onChange={() => {}}
-        />
-        <FormField
-          id="sg-error"
-          label="Campo con error"
-          error="Mensaje de validación"
-          value=""
-          onChange={() => {}}
-        />
-        <FormField
-          id="sg-req"
-          label="Campo con requisitos (enfócalo)"
-          value="ab"
+      <Section title="Botones">
+        <div className={styles.row}>
+          <Button variant="primary">Primary</Button>
+          <Button variant="secondary">Secondary</Button>
+          <Button variant="ghost">Ghost</Button>
+          <Button variant="danger">Danger</Button>
+          <Button variant="primary" disabled>
+            Disabled
+          </Button>
+        </div>
+      </Section>
+
+      <Section title="Avisos">
+        <div className={styles.stack}>
+          <Alert tipo="info">Mensaje informativo.</Alert>
+          <Alert tipo="success">Operación completada correctamente.</Alert>
+          <Alert tipo="error">No se pudo completar la operación.</Alert>
+        </div>
+      </Section>
+
+      <Section title="Campos de formulario">
+        <div className={styles.stack}>
+          <Input value="" onChange={() => {}} placeholder="Input suelto" />
+          <FormField
+            id="sg-ok"
+            label="Campo con label"
+            placeholder="Escribe algo"
+            value=""
+            onChange={() => {}}
+          />
+          <FormField
+            id="sg-error"
+            label="Campo con error"
+            error="Mensaje de validación"
+            value=""
+            onChange={() => {}}
+          />
+          <FormField
+            id="sg-req"
+            label="Campo con requisitos (enfócalo)"
+            value="ab"
+            requisitos={[
+              { id: 'a', texto: 'Al menos 3 caracteres', cumplido: false },
+              { id: 'b', texto: 'Solo letras y números', cumplido: true },
+            ]}
+            onChange={() => {}}
+          />
+        </div>
+      </Section>
+
+      <Section title="Requisitos de campo">
+        <RequisitosCampo
           requisitos={[
-            { id: 'a', texto: 'Al menos 3 caracteres', cumplido: false },
-            { id: 'b', texto: 'Solo letras y números', cumplido: true },
+            { id: 'a', texto: 'Requisito cumplido', cumplido: true },
+            { id: 'b', texto: 'Requisito pendiente', cumplido: false },
           ]}
-          onChange={() => {}}
         />
-      </div>
-    </Section>
+      </Section>
 
-    <Section title="Requisitos de campo">
-      <RequisitosCampo
-        requisitos={[
-          { id: 'a', texto: 'Requisito cumplido', cumplido: true },
-          { id: 'b', texto: 'Requisito pendiente', cumplido: false },
-        ]}
-      />
-    </Section>
-  </DefaultLayout>
-);
+      <Section title="Tarjeta y fondo animado">
+        <p className={styles.intro}>
+          <code>DefaultLayout centered tarjeta</code> — usado en /login y
+          /registro. El patrón de burbujas se anima en bucle; se anula con
+          <code>prefers-reduced-motion</code>.
+        </p>
+        <div className={styles.vitrinaPatron}>
+          <PatronBurbujas />
+          <p className={styles.vitrinaTarjeta}>Contenido dentro de la tarjeta</p>
+        </div>
+      </Section>
+    </DefaultLayout>
+  );
+};
 
 export default StyleGuidePage;

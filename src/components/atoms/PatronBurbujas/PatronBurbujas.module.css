@@ -1,0 +1,36 @@
+/*
+ * El SVG se pinta más grande que su contenedor (inset negativo, exactamente
+ * un mosaico de sobra en cada lado) y se traslada esa misma distancia: al
+ * llegar al final del recorrido el patrón queda pixel a pixel donde empezó,
+ * así que el bucle no se nota. El contenedor (.conPatron en DefaultLayout,
+ * la página entera) recorta lo que sobra con overflow: hidden.
+ *
+ * z-index: -1 para quedar detrás de la cabecera, el contenido y el pie
+ * aunque sea el primer hijo en el DOM (un position: absolute sin z-index
+ * pintaría POR ENCIMA del resto, que no está posicionado).
+ */
+.patron {
+  position: absolute;
+  z-index: -1;
+  inset: -200px;
+  width: calc(100% + 400px);
+  height: calc(100% + 400px);
+  animation: deriva-burbujas 45s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes deriva-burbujas {
+  from {
+    transform: translate(0, 0);
+  }
+
+  to {
+    transform: translate(-200px, -200px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .patron {
+    animation: none;
+  }
+}

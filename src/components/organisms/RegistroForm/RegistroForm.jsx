@@ -126,7 +126,19 @@ const RegistroForm = ({ onRegistroCompleto }) => {
         onChange={alCambiar('password')}
       />
 
-      <Button type="submit" disabled={enviando}>
+      <Button
+        type="submit"
+        disabled={enviando}
+        // Sin esto, el mousedown sobre el botón desenfoca antes la contraseña
+        // (comportamiento por defecto del navegador al mover el foco), lo que
+        // oculta RequisitosCampo y recoloca el botón entre el mousedown y el
+        // mouseup — el click se pierde y hay que darle dos veces. Al evitar
+        // el foco por defecto del mousedown, el layout no se mueve a mitad
+        // del click y el primero ya envía el formulario. (jsdom no simula
+        // este comportamiento del navegador, así que no hay forma fiable de
+        // cubrirlo con un test — se verificó a mano en el navegador real.)
+        onMouseDown={(evento) => evento.preventDefault()}
+      >
         {enviando ? 'Creando cuenta…' : 'Crear cuenta'}
       </Button>
     </form>

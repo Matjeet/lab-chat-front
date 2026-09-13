@@ -39,22 +39,100 @@ Cómo consume este frontend los microservicios backend. Contrato completo:
 | `src/utils/validacionRegistro.js` | Validación de cliente + `requisitos{Username,Password}` (estado en vivo de cada requisito). |
 | `src/components/organisms/RegistroForm/` | Estado del formulario + reparto de errores. |
 | `src/components/pages/RegistroPage/` | Alterna formulario ↔ confirmación. |
+| `src/utils/validacionLogin.js` | Validación de cliente del login: email válido, contraseña no vacía. Sin política de fortaleza — no aplica a una cuenta ya existente. |
+| `src/firebase/config.js` | Inicializa el SDK de cliente de Firebase (variables `NEXT_PUBLIC_FIREBASE_*`). |
+| `src/firebase/auth.js` | `iniciarSesion({email, password})` + `observarSesion(callback)` → Firebase Authentication (Email/Password). |
+| `src/hooks/useRequiereSesion.js` | Hook para pantallas que exigen sesión: `{ verificando }`, navega a `/login` si no hay usuario. |
+| `src/components/organisms/LoginForm/` | Formulario de login: valida, llama a `onIniciarSesion` y muestra el aviso según `error.kind` si falla. |
+| `src/components/pages/LoginPage/` | Monta `LoginForm`, le pasa `onIniciarSesion` (llama a `iniciarSesion` y navega a `/home` si sale bien) + enlace a `/registro`. También navega a `/home` si ya hay sesión, antes de mostrar el formulario. |
+| `src/components/pages/HomePage/` | Destino tras un login correcto. Exige sesión (`useRequiereSesion`). Placeholder: solo confirma la sesión, sin contenido real todavía. |
+| `src/components/pages/StyleGuidePage/` | Guía de estilo. Exige sesión (`useRequiereSesion`) — no es pública. |
 
 ## Quién habla con Firebase
 
-**Nadie, en este frontend — y así debe quedar por ahora.** El registro es una
-única llamada: `POST /api/v1/registro` con `{ username, email, password }`.
-Es **`chat-registro`** quien crea la cuenta en Firebase Auth (Admin SDK) antes
-de guardar el perfil; el cliente nunca ve un `uid` ni un proveedor, y no
-importa el SDK de Firebase para esto.
+**Depende de la operación — y es a propósito, no una inconsistencia:**
 
-> Este proyecto sí tuvo, brevemente, una versión donde el frontend creaba el
-> usuario en Firebase con el SDK de cliente y mandaba el `uid` al backend
-> (`src/firebase/`, ya eliminado). Se revirtió por decisión explícita: el
-> backend pasó a orquestar la creación en Firebase él mismo. Si en el futuro
-> hace falta el SDK de Firebase en el cliente (login, sesión...), es una
-> integración nueva e independiente de este alta — no revivir `src/firebase/`
-> solo para esto.
+- **Alta de usuario**: nadie, en este frontend. Es una única llamada,
+  `POST /api/v1/registro` con `{ username, email, password }`; es
+  **`chat-registro`** quien crea la cuenta en Firebase Auth (Admin SDK) antes
+  de guardar el perfil. El cliente nunca ve un `uid` ni un proveedor, y no
+  importa el SDK de Firebase para esto.
+- **Inicio de sesión**: sí, este frontend, con el **SDK de cliente** de
+  Firebase Authentication (`firebase/auth`, `signInWithEmailAndPassword`) —
+  ver `src/firebase/auth.js`. No hay endpoint de login en `chat-registro`;
+  el frontend valida las credenciales directamente contra Firebase.
+
+> Este proyecto tuvo, brevemente, una versión donde el frontend también creaba
+> el usuario en Firebase (con el SDK de cliente) durante el **alta**, y
+> mandaba el `uid` al backend. Se revirtió por decisión explícita: el backend
+> pasó a orquestar la creación en Firebase él mismo para el alta. El SDK de
+> cliente que existe ahora en `src/firebase/` es una integración **distinta e
+> independiente** de aquella — solo para login, nunca para crear cuentas.
+
+## Login — conectado a Firebase Authentication
+
+`LoginForm` valida en cliente (email con formato válido, contraseña no vacía)
+y llama a `onIniciarSesion(datos)` con `{ email, password }` ya normalizados.
+`LoginPage` le pasa una función que:
+
+1. Llama a `iniciarSesion(datos)` (`src/firebase/auth.js`), que envuelve
+   `signInWithEmailAndPassword` con el mismo patrón de resultado tipado que
+   `src/api/*.js`: `{ ok: true, data: {uid, email, idToken} }` o
+   `{ ok: false, error: { kind } }` con `kind` en
+   `credenciales | demasiados-intentos | red | desconocido`.
+2. Si `ok: true`, navega a `/home` (`useRouter().push`, App Router).
+3. Devuelve el resultado a `LoginForm`, que si `ok: false` muestra el aviso
+   correspondiente a `error.kind` (un solo mensaje genérico para
+   `credenciales` — igual que el `409` de registro, nunca se distingue si
+   falló el email o la contraseña).
+
+### Ya con sesión activa, `/login` no vuelve a pedir credenciales
+
+Firebase persiste la sesión solo en el navegador (no es cosa de esta app). Al
+montarse, `LoginPage` se suscribe con `observarSesion` (`src/firebase/auth.js`,
+envuelve `onAuthStateChanged`) antes de pintar nada: si ya hay un usuario,
+navega a `/home` con `router.replace` (no `push`, para no dejar en el
+historial una pantalla de login que nunca llegó a usarse) sin mostrar el
+formulario ni un instante; si no hay sesión, recién ahí se pinta. Como esa
+comprobación es siempre asíncrona (nunca se sabe de forma síncrona al cargar
+la página), mientras se resuelve se muestra "Comprobando sesión…" en vez del
+formulario.
+
+**Pendiente, a propósito:** qué hacer con el `idToken` frente a
+`chat-registro` (¿lo valida un endpoint nuevo? ¿el backend confía en Firebase
+y solo le importa el `uid`?) — `HomePage` hoy no recibe ni usa ese token, es
+solo la confirmación visual de que el login funcionó.
+
+## Rutas que exigen sesión
+
+`/` y `/login` (la misma `LoginPage`) y `/registro` son las únicas rutas
+públicas. Cualquier otra —hoy `/home` y `/estilos`— exige una sesión de
+Firebase activa: usa el hook `useRequiereSesion` (`src/hooks/`), que envuelve
+`observarSesion` en sentido contrario a como lo usa `LoginPage`:
+
+```jsx
+const { verificando } = useRequiereSesion(); // navega a /login si no hay sesión
+
+if (verificando) return <DefaultLayout ...><Alert tipo="info">Comprobando sesión…</Alert></DefaultLayout>;
+return <DefaultLayout ...>{/* contenido real */}</DefaultLayout>;
+```
+
+`verificando` solo pasa a `false` cuando SÍ hay un usuario autenticado —
+mientras es `true`, la pantalla no debe pintar su contenido real (ni un
+`return null`, tampoco: eso dejaría la página en blanco un instante antes de
+redirigir en vez de mostrar el mismo aviso que usa `LoginPage`).
+
+**Importante — esto es una guardia de UX, no un límite de seguridad.** El
+export estático (`output: 'export'`) no tiene servidor: `out/home.html` es un
+archivo público como cualquier otro, descargable sin pasar por React ni por
+`useRequiereSesion` — el guard solo actúa una vez que el JS carga en el
+navegador. Hoy no importa (`HomePage` no tiene datos reales todavía), pero
+en cuanto una pantalla protegida muestre algo sensible, ese dato **no puede
+depender de que el cliente decida ocultarlo** — tiene que venir de una
+llamada a un backend que exija sus propias credenciales (el `idToken`, un
+header, lo que decida el contrato). `useRequiereSesion` evita que alguien sin
+sesión *use* la pantalla; no reemplaza la autorización del lado del
+servidor para los datos que esa pantalla vaya a pedir.
 
 ## Patrón: resultado tipado
 

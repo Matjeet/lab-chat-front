@@ -3,10 +3,11 @@
 Instancias concretas de una plantilla con datos y lógica reales. Son el punto
 donde se conecta el estado, las llamadas a la API y la navegación.
 
-Ejemplos: `HomePage`, `ChatPage`, `LoginPage`.
+Ejemplos en este repo: `LoginPage`, `RegistroPage`.
 
 Reglas:
 
 - Pueden importar plantillas, organismos, moléculas y átomos.
 - Aquí vive el estado de la vista, los hooks de datos y los handlers.
-- Es lo que consume `App.jsx` (o el router).
+- Cada una la monta un `page.jsx` de `app/` (App Router) — ver
+  `docs/arquitectura.md`.
