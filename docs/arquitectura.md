@@ -42,6 +42,15 @@ que use estado, efectos o handlers de eventos necesita `'use client'` en la
 primera línea (p. ej. `RegistroForm`, `LoginForm`). Sus hijos heredan el modo
 cliente.
 
+Un valor que debe cambiar en cada apertura/recarga (p. ej. `TextoAleatorio`,
+que sortea una frase distinta cada vez que se monta) **no puede** sortearse
+durante el render: en export estático el HTML sale fijado desde el build, así
+que un `Math.random()` ahí produciría un mismatch de hidratación entre ese
+HTML y lo que calcula el navegador. El patrón correcto (mismo que ya usa
+`ThemeToggle` para leer `localStorage`): estado inicial fijo e igual en build
+y cliente, y el valor real se calcula en un `useEffect` — así el primer
+render coincide siempre y el cambio ocurre ya en el navegador, sin conflicto.
+
 ## Atomic Design
 
 La interfaz se organiza en cinco niveles, de menor a mayor complejidad. Cada
@@ -91,7 +100,8 @@ chat-frontend/
 │   │   ├── tokens.css         # Tokens de diseño (ver sistema-de-diseno.md)
 │   │   └── global.css         # Reset y estilos base
 │   └── components/
-│       ├── atoms/             Button · Input · Alert · Ilustracion404 · PatronBurbujas
+│       ├── atoms/             Button · Input · Alert · Ilustracion404 · PatronBurbujas ·
+│       │                      TextoAleatorio
 │       ├── molecules/         FormField · ThemeToggle · RequisitosCampo
 │       ├── organisms/         Header · RegistroForm · LoginForm
 │       ├── templates/         DefaultLayout
