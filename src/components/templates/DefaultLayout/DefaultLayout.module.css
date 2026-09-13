@@ -5,6 +5,17 @@
   background-color: var(--color-bg);
 }
 
+/* Solo cuando hay `tarjeta`: el fondo animado de burbujas cubre TODA la
+ * pantalla (va aquí, en .layout, no dentro de .content) — por eso el recorte
+ * (PatronBurbujas se pinta más grande que su contenedor a propósito) y el
+ * contexto de apilamiento (para que quede detrás de cabecera/contenido/pie
+ * pase lo que pase con su z-index) viven en el contenedor de página entera. */
+.conPatron {
+  position: relative;
+  z-index: 0;
+  overflow: hidden;
+}
+
 .content {
   flex: 1;
   width: 100%;
@@ -13,22 +24,14 @@
   padding: var(--space-6) var(--space-5);
 }
 
-/* Variante para pantallas de un solo formulario/tarjeta: centra en ambos ejes. */
+/* Variante para pantallas de un solo formulario: centra en ambos ejes. */
 .centered {
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-/* Solo cuando además hay `tarjeta`: recorta el fondo animado de burbujas
- * (PatronBurbujas se pinta más grande que este contenedor a propósito). */
-.conPatron {
-  position: relative;
-  overflow: hidden;
-}
-
 .centeredInner {
-  position: relative;
   width: 100%;
   max-width: var(--layout-form-width);
 }

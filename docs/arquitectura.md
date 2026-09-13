@@ -139,8 +139,10 @@ Dos props booleanas, independientes:
   arriba con el ancho de `--layout-max-width`.
 - **`tarjeta`** (por defecto `false`, solo tiene efecto junto a `centered`):
   además, pone ese contenedor dentro de una **tarjeta visual** — fondo sólido
-  (`--color-surface`), borde, esquinas redondeadas y sombra — sobre un fondo
-  animado de burbujas de chat (`PatronBurbujas`, ver `sistema-de-diseno.md`).
+  (`--color-surface`), borde, esquinas redondeadas y sombra — y añade
+  `PatronBurbujas`: un fondo animado que cubre **toda la pantalla** (va en
+  `.layout`, detrás de cabecera, contenido y pie — no solo detrás de la
+  tarjeta), ver `sistema-de-diseno.md`.
 
 Pensadas para pantallas de un único formulario. `LoginPage`/`RegistroPage`
 usan las dos (formulario en tarjeta sobre el patrón animado); `NotFoundPage`

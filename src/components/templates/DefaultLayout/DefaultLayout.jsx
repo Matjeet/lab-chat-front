@@ -12,14 +12,15 @@ import styles from './DefaultLayout.module.css';
  * @param {string} props.title              Título para la cabecera.
  * @param {React.ReactNode} [props.headerActions] Acciones extra a la izquierda del selector de tema.
  * @param {boolean} [props.centered=false]  Centra `children` vertical y
- *   horizontalmente en el espacio disponible (para pantallas de un solo
- *   formulario/tarjeta, p. ej. registro o login). Por defecto el contenido
+ *   horizontalmente en el espacio entre cabecera y pie (para pantallas de un
+ *   solo formulario, p. ej. registro o login). Por defecto el contenido
  *   fluye normal desde arriba.
  * @param {boolean} [props.tarjeta=false]   Solo tiene efecto junto a `centered`:
  *   pone `children` dentro de una tarjeta (fondo sólido, bordes redondeados)
- *   sobre un fondo animado de burbujas (`PatronBurbujas`). Pensado para
- *   pantallas de login/registro; el 404 (con su propia ilustración) usa
- *   `centered` sin `tarjeta`.
+ *   y añade `PatronBurbujas` — un fondo animado que cubre **toda la pantalla**
+ *   (detrás de cabecera, contenido y pie, no solo del área centrada). Pensado
+ *   para login/registro; el 404 (con su propia ilustración) usa `centered`
+ *   sin `tarjeta`.
  * @param {React.ReactNode} props.children  Contenido principal de la pantalla.
  */
 const DefaultLayout = ({
@@ -29,7 +30,8 @@ const DefaultLayout = ({
   tarjeta = false,
   children,
 }) => (
-  <div className={styles.layout}>
+  <div className={`${styles.layout} ${tarjeta ? styles.conPatron : ''}`.trim()}>
+    {tarjeta && <PatronBurbujas />}
     <Header
       title={title}
       actions={
@@ -39,16 +41,9 @@ const DefaultLayout = ({
         </>
       }
     />
-    <main
-      className={`${styles.content} ${centered ? styles.centered : ''} ${
-        centered && tarjeta ? styles.conPatron : ''
-      }`.trim()}
-    >
-      {centered && tarjeta && <PatronBurbujas />}
+    <main className={`${styles.content} ${centered ? styles.centered : ''}`.trim()}>
       {centered ? (
-        <div
-          className={`${styles.centeredInner} ${tarjeta ? styles.tarjeta : ''}`.trim()}
-        >
+        <div className={`${styles.centeredInner} ${tarjeta ? styles.tarjeta : ''}`.trim()}>
           {children}
         </div>
       ) : (

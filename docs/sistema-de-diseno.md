@@ -124,7 +124,11 @@ de burbujas de chat en movimiento:
   se anima con `transform` en bucle infinito (la ilustración se pinta más
   grande que su contenedor y se traslada exactamente un mosaico; al llegar al
   final queda pixel a pixel donde empezó). Como es SVG en línea (no una imagen
-  de fondo por CSS), el color sigue el tema solo.
+  de fondo por CSS), el color sigue el tema solo. Cubre **toda la pantalla**
+  (vive en `.layout`, no en `.content`): se ve detrás de la cabecera, del
+  contenido y del pie. La cabecera mantiene su propio fondo sólido
+  (`--color-surface`) encima, como una barra fija; `z-index: -1` en el SVG
+  asegura que quede detrás pese a ser el primer hijo en el DOM.
 - **La animación es un placeholder a propósito** ("de momento cualquiera, ya
   veremos cuál"): vive entera en `@keyframes deriva-burbujas` de
   `PatronBurbujas.module.css`. Cambiarla — velocidad, dirección, otro tipo de
