@@ -40,44 +40,56 @@ Cómo consume este frontend los microservicios backend. Contrato completo:
 | `src/components/organisms/RegistroForm/` | Estado del formulario + reparto de errores. |
 | `src/components/pages/RegistroPage/` | Alterna formulario ↔ confirmación. |
 | `src/utils/validacionLogin.js` | Validación de cliente del login: email válido, contraseña no vacía. Sin política de fortaleza — no aplica a una cuenta ya existente. |
-| `src/components/organisms/LoginForm/` | Formulario de login. **No llama a ningún servicio todavía** (ver más abajo). |
-| `src/components/pages/LoginPage/` | Monta `LoginForm` + enlace a `/registro`. |
+| `src/firebase/config.js` | Inicializa el SDK de cliente de Firebase (variables `NEXT_PUBLIC_FIREBASE_*`). |
+| `src/firebase/auth.js` | `iniciarSesion({email, password})` → Firebase Authentication (Email/Password). Es lo único que llama `LoginPage`. |
+| `src/components/organisms/LoginForm/` | Formulario de login: valida, llama a `onIniciarSesion` y muestra el aviso según `error.kind` si falla. |
+| `src/components/pages/LoginPage/` | Monta `LoginForm`, le pasa `onIniciarSesion` (llama a `iniciarSesion` y navega a `/home` si sale bien) + enlace a `/registro`. |
+| `src/components/pages/HomePage/` | Destino tras un login correcto. Placeholder: solo confirma la sesión, sin contenido real todavía. |
 
 ## Quién habla con Firebase
 
-**Nadie, en este frontend — y así debe quedar por ahora.** El registro es una
-única llamada: `POST /api/v1/registro` con `{ username, email, password }`.
-Es **`chat-registro`** quien crea la cuenta en Firebase Auth (Admin SDK) antes
-de guardar el perfil; el cliente nunca ve un `uid` ni un proveedor, y no
-importa el SDK de Firebase para esto.
+**Depende de la operación — y es a propósito, no una inconsistencia:**
 
-> Este proyecto sí tuvo, brevemente, una versión donde el frontend creaba el
-> usuario en Firebase con el SDK de cliente y mandaba el `uid` al backend
-> (`src/firebase/`, ya eliminado). Se revirtió por decisión explícita: el
-> backend pasó a orquestar la creación en Firebase él mismo. Si en el futuro
-> hace falta el SDK de Firebase en el cliente (login, sesión...), es una
-> integración nueva e independiente de este alta — no revivir `src/firebase/`
-> solo para esto.
+- **Alta de usuario**: nadie, en este frontend. Es una única llamada,
+  `POST /api/v1/registro` con `{ username, email, password }`; es
+  **`chat-registro`** quien crea la cuenta en Firebase Auth (Admin SDK) antes
+  de guardar el perfil. El cliente nunca ve un `uid` ni un proveedor, y no
+  importa el SDK de Firebase para esto.
+- **Inicio de sesión**: sí, este frontend, con el **SDK de cliente** de
+  Firebase Authentication (`firebase/auth`, `signInWithEmailAndPassword`) —
+  ver `src/firebase/auth.js`. No hay endpoint de login en `chat-registro`;
+  el frontend valida las credenciales directamente contra Firebase.
 
-## Login — solo UI/UX por ahora
+> Este proyecto tuvo, brevemente, una versión donde el frontend también creaba
+> el usuario en Firebase (con el SDK de cliente) durante el **alta**, y
+> mandaba el `uid` al backend. Se revirtió por decisión explícita: el backend
+> pasó a orquestar la creación en Firebase él mismo para el alta. El SDK de
+> cliente que existe ahora en `src/firebase/` es una integración **distinta e
+> independiente** de aquella — solo para login, nunca para crear cuentas.
 
-`LoginForm` existe y valida (email con formato válido, contraseña no vacía),
-pero **no hay endpoint de login todavía**, así que no llama a `src/api/`. Su
-prop `onIniciarSesion(datos)`, si se pasa, recibe `{ email, password }` ya
-validados y normalizados; sin ella, el propio formulario muestra un aviso de
-que falta conectar el backend — para que se pueda revisar/usar la pantalla ya
-mismo sin fingir un inicio de sesión real.
+## Login — conectado a Firebase Authentication
 
-Cuando exista el contrato del endpoint de login:
+`LoginForm` valida en cliente (email con formato válido, contraseña no vacía)
+y llama a `onIniciarSesion(datos)` con `{ email, password }` ya normalizados.
+`LoginPage` le pasa una función que:
 
-1. Crear `src/api/login.js` con el mismo patrón de resultado tipado que
-   `registro.js` (probablemente `{ ok, data }` con un token de sesión, o lo
-   que defina el contrato).
-2. `LoginPage` pasa `onIniciarSesion` a `LoginForm`, llamando a esa función y
-   decidiendo qué hacer con el resultado (redirigir, guardar el token,
-   mostrar el error) — no hace falta tocar `LoginForm` para esto.
-3. Si el login devuelve algo tipo Problem Details, reutilizar
-   `mapearErrorBackend`-style: ramificar por `type`, no por `status`.
+1. Llama a `iniciarSesion(datos)` (`src/firebase/auth.js`), que envuelve
+   `signInWithEmailAndPassword` con el mismo patrón de resultado tipado que
+   `src/api/*.js`: `{ ok: true, data: {uid, email, idToken} }` o
+   `{ ok: false, error: { kind } }` con `kind` en
+   `credenciales | demasiados-intentos | red | desconocido`.
+2. Si `ok: true`, navega a `/home` (`useRouter().push`, App Router).
+3. Devuelve el resultado a `LoginForm`, que si `ok: false` muestra el aviso
+   correspondiente a `error.kind` (un solo mensaje genérico para
+   `credenciales` — igual que el `409` de registro, nunca se distingue si
+   falló el email o la contraseña).
+
+**Pendiente, a propósito:** qué hacer con el `idToken` frente a
+`chat-registro` (¿lo valida un endpoint nuevo? ¿el backend confía en Firebase
+y solo le importa el `uid`?) — `HomePage` hoy no recibe ni usa ese token, es
+solo la confirmación visual de que el login funcionó. Tampoco hay protección
+de ruta: `/home` es accesible sin haber iniciado sesión. Ambas cosas dependen
+de esa decisión, todavía sin tomar.
 
 ## Patrón: resultado tipado
 

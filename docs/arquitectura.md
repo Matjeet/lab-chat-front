@@ -87,6 +87,7 @@ chat-frontend/
 │   ├── page.jsx               # "/"         -> <LoginPage/> (arranque de la app)
 │   ├── registro/page.jsx      # "/registro" -> <RegistroPage/>
 │   ├── login/page.jsx         # "/login"    -> <LoginPage/> (misma pantalla que "/")
+│   ├── home/page.jsx          # "/home"     -> <HomePage/> (destino tras login correcto)
 │   ├── estilos/page.jsx       # "/estilos"  -> <StyleGuidePage/> (guía viva)
 │   └── not-found.jsx          # 404 (ruta inexistente o notFound()) -> <NotFoundPage/>
 ├── src/
@@ -94,8 +95,12 @@ chat-frontend/
 │   ├── api/                   # Acceso a los servicios backend
 │   │   ├── config.js          # API_BASE_URL (NEXT_PUBLIC_API_BASE_URL)
 │   │   └── registro.js        # POST /api/v1/registro -> resultado tipado
-│   ├── utils/                 # Helpers puros (sin React)
-│   │   └── validacionRegistro.js
+│   ├── firebase/               # SDK de cliente de Firebase (solo login, ver integracion-api.md)
+│   │   ├── config.js           # Inicializa la app (variables NEXT_PUBLIC_FIREBASE_*)
+│   │   └── auth.js             # iniciarSesion({email, password}) -> resultado tipado
+│   ├── utils/                  # Helpers puros (sin React)
+│   │   ├── validacionRegistro.js
+│   │   └── validacionLogin.js
 │   ├── styles/
 │   │   ├── tokens.css         # Tokens de diseño (ver sistema-de-diseno.md)
 │   │   └── global.css         # Reset y estilos base
@@ -105,7 +110,7 @@ chat-frontend/
 │       ├── molecules/         FormField · ThemeToggle · RequisitosCampo
 │       ├── organisms/         Header · RegistroForm · LoginForm
 │       ├── templates/         DefaultLayout
-│       └── pages/             LoginPage · RegistroPage · StyleGuidePage · NotFoundPage
+│       └── pages/             LoginPage · RegistroPage · HomePage · StyleGuidePage · NotFoundPage
 │           └── Button/
 │               ├── Button.jsx
 │               ├── Button.module.css
@@ -202,11 +207,13 @@ Cada componente vive en su propia carpeta con estos archivos:
   (fácil de testear) y es **espejo** de las reglas del contrato, incluida la
   política de fortaleza de `password` — el contrato la exige igual. La
   autoritativa sigue siendo la del servidor.
-- **Login (`LoginForm`) todavía no llama a ningún servicio** — es solo la
-  UI/UX: valida en cliente (email válido, contraseña no vacía; a propósito
-  *sin* la política de fortaleza de registro, no aplica a una cuenta ya
-  existente) y, si no se le pasa `onIniciarSesion`, se limita a avisar que
-  falta conectar el backend. Cuando exista el endpoint de login, se conecta
-  ahí (mismo patrón de resultado tipado que `registro.js`), sin tocar
-  `LoginForm`.
+- **Login (`LoginForm`) valida en cliente** (email válido, contraseña no
+  vacía; a propósito *sin* la política de fortaleza de registro, no aplica a
+  una cuenta ya existente) y llama a `onIniciarSesion(datos)`. `LoginPage` le
+  pasa una función que habla con el **SDK de cliente de Firebase
+  Authentication** (`src/firebase/auth.js`, no un endpoint de
+  `chat-registro`: no existe ninguno de login) y, si sale bien, navega a
+  `/home`. Sin `onIniciarSesion`, `LoginForm` se limita a avisar que falta
+  conectar el backend — así sigue sirviendo como pantalla standalone en los
+  tests que no la conectan.
 - Detalle en [`integracion-api.md`](./integracion-api.md).
