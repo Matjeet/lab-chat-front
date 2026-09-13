@@ -1,4 +1,4 @@
-import { Unkempt } from 'next/font/google';
+import { Comic_Neue } from 'next/font/google';
 import Script from 'next/script';
 
 import '@/styles/tokens.css';
@@ -10,12 +10,12 @@ export const metadata = {
 };
 
 // Fuente decorativa para texto puntual (ver --font-display en tokens.css).
-// next/font la autoalonja en el build (sin llamada a Google Fonts en runtime,
+// next/font la autoaloja en el build (sin llamada a Google Fonts en runtime,
 // compatible con el export estático) y la expone como variable CSS.
-const unkempt = Unkempt({
-  weight: ['400', '700'],
+const comicNeue = Comic_Neue({
+  weight: ['300', '400', '700'],
   subsets: ['latin'],
-  variable: '--font-unkempt',
+  variable: '--font-comic-neue',
   display: 'swap',
 });
 
@@ -28,7 +28,7 @@ const aplicarTemaGuardado = `(function(){try{var t=localStorage.getItem('theme')
  * Es el único sitio donde se importa CSS global (tokens + reset).
  */
 const RootLayout = ({ children }) => (
-  <html lang="es" className={unkempt.variable} suppressHydrationWarning>
+  <html lang="es" className={comicNeue.variable} suppressHydrationWarning>
     <body>
       <Script id="tema-inicial" strategy="beforeInteractive">
         {aplicarTemaGuardado}
