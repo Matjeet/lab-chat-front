@@ -50,7 +50,7 @@ Servidor de desarrollo en `http://localhost:3000`.
 assets/                       # Fuentes de diseño a inlinear a mano (ver su README)
 app/                          # App Router: solo enrutado
 ├── layout.jsx                # Layout raíz (html/body + tokens + CSS global)
-├── page.jsx                  # "/"         -> <HomePage/>
+├── page.jsx                  # "/"         -> <LoginPage/> (arranque de la app)
 ├── registro/page.jsx         # "/registro" -> <RegistroPage/>
 ├── login/page.jsx            # "/login"    -> <LoginPage/> (sin backend conectado aún)
 ├── estilos/page.jsx          # "/estilos"  -> guía viva del sistema de diseño
@@ -69,7 +69,7 @@ src/
     ├── molecules/   FormField, ThemeToggle, RequisitosCampo
     ├── organisms/   Header, RegistroForm, LoginForm
     ├── templates/   DefaultLayout
-    └── pages/       HomePage, RegistroPage, LoginPage, StyleGuidePage, NotFoundPage
+    └── pages/       LoginPage, RegistroPage, StyleGuidePage, NotFoundPage
 ```
 
 `app/` solo conecta URLs con componentes. Toda la UI y su lógica viven en

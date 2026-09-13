@@ -29,7 +29,7 @@ Nginx o una CDN, sin proceso Node en producción. Consecuencias:
 | Archivo | Rol |
 |---------|-----|
 | `app/layout.jsx` | Layout raíz: `<html>`, `<body>`, import del CSS global, metadata. |
-| `app/page.jsx` | Ruta `/`. Solo hace `return <HomePage/>`. |
+| `app/page.jsx` | Ruta `/`. Solo hace `return <LoginPage/>` — la app arranca en el login. |
 
 Toda la interfaz y su lógica viven en `src/components/` siguiendo Atomic Design.
 Añadir una pantalla nueva = crear `app/ruta/page.jsx` que renderiza la `page`
@@ -39,7 +39,8 @@ correspondiente de Atomic Design.
 
 Los componentes del App Router son Server Components por defecto. Un componente
 que use estado, efectos o handlers de eventos necesita `'use client'` en la
-primera línea (p. ej. `HomePage`). Sus hijos heredan el modo cliente.
+primera línea (p. ej. `RegistroForm`, `LoginForm`). Sus hijos heredan el modo
+cliente.
 
 ## Atomic Design
 
@@ -56,7 +57,7 @@ atoms  ->  molecules  ->  organisms  ->  templates  ->  pages
 | **molecules** | Grupos pequeños de átomos con una función. | `FormField` |
 | **organisms** | Secciones reconocibles de una pantalla. | `Header` |
 | **templates** | Estructura/layout de una pantalla, sin datos. | `DefaultLayout` |
-| **pages** | Plantilla + datos + lógica reales. | `HomePage` |
+| **pages** | Plantilla + datos + lógica reales. | `LoginPage` |
 
 ### Regla de dependencia
 
@@ -74,9 +75,9 @@ chat-frontend/
 │   └── 404-oscuro.svg
 ├── app/                       # App Router (solo enrutado)
 │   ├── layout.jsx             # html/body + tokens + global.css + tema inicial
-│   ├── page.jsx               # "/"         -> <HomePage/>
+│   ├── page.jsx               # "/"         -> <LoginPage/> (arranque de la app)
 │   ├── registro/page.jsx      # "/registro" -> <RegistroPage/>
-│   ├── login/page.jsx         # "/login"    -> <LoginPage/>
+│   ├── login/page.jsx         # "/login"    -> <LoginPage/> (misma pantalla que "/")
 │   ├── estilos/page.jsx       # "/estilos"  -> <StyleGuidePage/> (guía viva)
 │   └── not-found.jsx          # 404 (ruta inexistente o notFound()) -> <NotFoundPage/>
 ├── src/
@@ -94,7 +95,7 @@ chat-frontend/
 │       ├── molecules/         FormField · ThemeToggle · RequisitosCampo
 │       ├── organisms/         Header · RegistroForm · LoginForm
 │       ├── templates/         DefaultLayout
-│       └── pages/             HomePage · RegistroPage · LoginPage · StyleGuidePage · NotFoundPage
+│       └── pages/             LoginPage · RegistroPage · StyleGuidePage · NotFoundPage
 │           └── Button/
 │               ├── Button.jsx
 │               ├── Button.module.css
