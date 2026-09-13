@@ -1,49 +1,28 @@
 'use client';
 
-import { useState } from 'react';
-import Link from 'next/link';
-
 import DefaultLayout from '../../templates/DefaultLayout';
-import FormField from '../../molecules/FormField';
-import Button from '../../atoms/Button';
+import Alert from '../../atoms/Alert';
+import useRequiereSesion from '../../../hooks/useRequiereSesion';
 import styles from './HomePage.module.css';
 
 /**
- * Página: pantalla de entrada.
- * Ensambla plantilla + moléculas + átomos y añade el estado/lógica de la vista.
- * Sirve de ejemplo del flujo completo de Atomic Design.
+ * Página: destino tras un inicio de sesión correcto.
+ *
+ * Exige sesión activa (`useRequiereSesion`) — sin ella, navega a `/login` en
+ * vez de mostrar nada. Placeholder deliberado: de momento solo confirma que
+ * el login funcionó; el contenido real del chat (conversaciones,
+ * contactos...) es una iteración futura.
  */
 const HomePage = () => {
-  const [name, setName] = useState('');
-  const [greeting, setGreeting] = useState('');
-
-  const handleSubmit = (event) => {
-    event.preventDefault();
-    const trimmed = name.trim();
-    setGreeting(trimmed ? `Hola, ${trimmed} 👋` : 'Escribe tu nombre para continuar');
-  };
+  const { verificando } = useRequiereSesion();
 
   return (
-    <DefaultLayout title="Chat">
-      <form className={styles.form} onSubmit={handleSubmit}>
-        <FormField
-          id="nombre"
-          label="Tu nombre"
-          placeholder="Ada Lovelace"
-          value={name}
-          onChange={(event) => setName(event.target.value)}
-        />
-        <Button type="submit">Entrar</Button>
-      </form>
-
-      {greeting && <p className={styles.greeting}>{greeting}</p>}
-
-      <p className={styles.registro}>
-        ¿Aún no tienes cuenta?{' '}
-        <Link href="/registro" className={styles.enlace}>
-          Crear una cuenta
-        </Link>
-      </p>
+    <DefaultLayout title="Chat" centered>
+      {verificando ? (
+        <Alert tipo="info">Comprobando sesión…</Alert>
+      ) : (
+        <p className={styles.mensaje}>¡Sesión iniciada correctamente!</p>
+      )}
     </DefaultLayout>
   );
 };

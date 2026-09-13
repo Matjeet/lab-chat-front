@@ -29,7 +29,7 @@ Nginx o una CDN, sin proceso Node en producción. Consecuencias:
 | Archivo | Rol |
 |---------|-----|
 | `app/layout.jsx` | Layout raíz: `<html>`, `<body>`, import del CSS global, metadata. |
-| `app/page.jsx` | Ruta `/`. Solo hace `return <HomePage/>`. |
+| `app/page.jsx` | Ruta `/`. Solo hace `return <LoginPage/>` — la app arranca en el login. |
 
 Toda la interfaz y su lógica viven en `src/components/` siguiendo Atomic Design.
 Añadir una pantalla nueva = crear `app/ruta/page.jsx` que renderiza la `page`
@@ -39,7 +39,17 @@ correspondiente de Atomic Design.
 
 Los componentes del App Router son Server Components por defecto. Un componente
 que use estado, efectos o handlers de eventos necesita `'use client'` en la
-primera línea (p. ej. `HomePage`). Sus hijos heredan el modo cliente.
+primera línea (p. ej. `RegistroForm`, `LoginForm`). Sus hijos heredan el modo
+cliente.
+
+Un valor que debe cambiar en cada apertura/recarga (p. ej. `TextoAleatorio`,
+que sortea una frase distinta cada vez que se monta) **no puede** sortearse
+durante el render: en export estático el HTML sale fijado desde el build, así
+que un `Math.random()` ahí produciría un mismatch de hidratación entre ese
+HTML y lo que calcula el navegador. El patrón correcto (mismo que ya usa
+`ThemeToggle` para leer `localStorage`): estado inicial fijo e igual en build
+y cliente, y el valor real se calcula en un `useEffect` — así el primer
+render coincide siempre y el cambio ocurre ya en el navegador, sin conflicto.
 
 ## Atomic Design
 
@@ -56,7 +66,7 @@ atoms  ->  molecules  ->  organisms  ->  templates  ->  pages
 | **molecules** | Grupos pequeños de átomos con una función. | `FormField` |
 | **organisms** | Secciones reconocibles de una pantalla. | `Header` |
 | **templates** | Estructura/layout de una pantalla, sin datos. | `DefaultLayout` |
-| **pages** | Plantilla + datos + lógica reales. | `HomePage` |
+| **pages** | Plantilla + datos + lógica reales. | `LoginPage` |
 
 ### Regla de dependencia
 
@@ -74,8 +84,10 @@ chat-frontend/
 │   └── 404-oscuro.svg
 ├── app/                       # App Router (solo enrutado)
 │   ├── layout.jsx             # html/body + tokens + global.css + tema inicial
-│   ├── page.jsx               # "/"         -> <HomePage/>
+│   ├── page.jsx               # "/"         -> <LoginPage/> (arranque de la app)
 │   ├── registro/page.jsx      # "/registro" -> <RegistroPage/>
+│   ├── login/page.jsx         # "/login"    -> <LoginPage/> (misma pantalla que "/")
+│   ├── home/page.jsx          # "/home"     -> <HomePage/> (destino tras login correcto)
 │   ├── estilos/page.jsx       # "/estilos"  -> <StyleGuidePage/> (guía viva)
 │   └── not-found.jsx          # 404 (ruta inexistente o notFound()) -> <NotFoundPage/>
 ├── src/
@@ -83,17 +95,24 @@ chat-frontend/
 │   ├── api/                   # Acceso a los servicios backend
 │   │   ├── config.js          # API_BASE_URL (NEXT_PUBLIC_API_BASE_URL)
 │   │   └── registro.js        # POST /api/v1/registro -> resultado tipado
-│   ├── utils/                 # Helpers puros (sin React)
-│   │   └── validacionRegistro.js
+│   ├── firebase/               # SDK de cliente de Firebase (solo login, ver integracion-api.md)
+│   │   ├── config.js           # Inicializa la app (variables NEXT_PUBLIC_FIREBASE_*)
+│   │   └── auth.js             # iniciarSesion(...) + observarSesion(cb) -> resultado tipado
+│   ├── hooks/                   # Hooks compartidos (no encajan en Atomic Design)
+│   │   └── useRequiereSesion.js # {verificando}; navega a /login si no hay sesión
+│   ├── utils/                  # Helpers puros (sin React)
+│   │   ├── validacionRegistro.js
+│   │   └── validacionLogin.js
 │   ├── styles/
 │   │   ├── tokens.css         # Tokens de diseño (ver sistema-de-diseno.md)
 │   │   └── global.css         # Reset y estilos base
 │   └── components/
-│       ├── atoms/             Button · Input · Alert · Ilustracion404
+│       ├── atoms/             Button · Input · Alert · Ilustracion404 · PatronBurbujas ·
+│       │                      TextoAleatorio
 │       ├── molecules/         FormField · ThemeToggle · RequisitosCampo
-│       ├── organisms/         Header · RegistroForm
+│       ├── organisms/         Header · RegistroForm · LoginForm
 │       ├── templates/         DefaultLayout
-│       └── pages/             HomePage · RegistroPage · StyleGuidePage · NotFoundPage
+│       └── pages/             LoginPage · RegistroPage · HomePage · StyleGuidePage · NotFoundPage
 │           └── Button/
 │               ├── Button.jsx
 │               ├── Button.module.css
@@ -129,11 +148,24 @@ cual, así que no pertenece ahí. Ver `assets/README.md`.
 
 ## Variantes de `DefaultLayout`
 
-`DefaultLayout` acepta `centered` (booleano, por defecto `false`): centra su
-`children` vertical y horizontalmente en el espacio entre cabecera y pie,
-dentro de una tarjeta de ancho `--layout-form-width`. Pensado para pantallas de
-un único formulario (registro, login...); el resto sigue fluyendo normal desde
-arriba con el ancho de `--layout-max-width`. Ejemplo: `RegistroPage`.
+Dos props booleanas, independientes:
+
+- **`centered`** (por defecto `false`): centra `children` vertical y
+  horizontalmente en el espacio entre cabecera y pie, dentro de un contenedor
+  de ancho `--layout-form-width`. Sin esto, el contenido fluye normal desde
+  arriba con el ancho de `--layout-max-width`.
+- **`tarjeta`** (por defecto `false`, solo tiene efecto junto a `centered`):
+  además, pone ese contenedor dentro de una **tarjeta visual** — fondo sólido
+  (`--color-surface`), borde, esquinas redondeadas y sombra — y añade
+  `PatronBurbujas`: un fondo animado que cubre **toda la pantalla** (va en
+  `.layout`, detrás de cabecera, contenido y pie — no solo detrás de la
+  tarjeta). Cabecera y pie llevan su propio `--color-surface` de fondo para
+  no dejar pasar la animación por transparencia, ver `sistema-de-diseno.md`.
+
+Pensadas para pantallas de un único formulario. `LoginPage`/`RegistroPage`
+usan las dos (formulario en tarjeta sobre el patrón animado); `NotFoundPage`
+usa solo `centered` — su ilustración ya tiene su propio fondo pensado para
+fundirse con la página, así que no lleva `tarjeta`.
 
 ## Anatomía de un componente
 
@@ -177,4 +209,26 @@ Cada componente vive en su propia carpeta con estos archivos:
   (fácil de testear) y es **espejo** de las reglas del contrato, incluida la
   política de fortaleza de `password` — el contrato la exige igual. La
   autoritativa sigue siendo la del servidor.
+- **Login (`LoginForm`) valida en cliente** (email válido, contraseña no
+  vacía; a propósito *sin* la política de fortaleza de registro, no aplica a
+  una cuenta ya existente) y llama a `onIniciarSesion(datos)`. `LoginPage` le
+  pasa una función que habla con el **SDK de cliente de Firebase
+  Authentication** (`src/firebase/auth.js`, no un endpoint de
+  `chat-registro`: no existe ninguno de login) y, si sale bien, navega a
+  `/home`. Sin `onIniciarSesion`, `LoginForm` se limita a avisar que falta
+  conectar el backend — así sigue sirviendo como pantalla standalone en los
+  tests que no la conectan.
+- **`LoginPage` también comprueba, antes de pintar nada, si ya hay sesión**
+  (`observarSesion`, `src/firebase/auth.js`) — si la hay, navega a `/home`
+  con `router.replace` en vez de mostrar el formulario. Mientras se resuelve
+  esa comprobación (siempre asíncrona) se ve "Comprobando sesión…".
+- **Toda ruta que no sea `/`, `/login` o `/registro` exige sesión** —hoy
+  `/home` y `/estilos`— vía el hook `useRequiereSesion` (`src/hooks/`, mismo
+  mecanismo que `LoginPage` pero en sentido contrario). Es una guardia de
+  **UX en el cliente**, no un límite de seguridad: en export estático el
+  HTML de esas rutas es un archivo público igual que cualquier otro, el
+  guard solo actúa cuando el JS ya cargó en el navegador. El día que una
+  pantalla protegida muestre datos reales, esos datos deben venir de una
+  llamada a un backend que los autorice él mismo — ver
+  [`integracion-api.md`](./integracion-api.md#rutas-que-exigen-sesión).
 - Detalle en [`integracion-api.md`](./integracion-api.md).

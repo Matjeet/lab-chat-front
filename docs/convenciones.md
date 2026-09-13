@@ -2,7 +2,7 @@
 
 ## Nombres
 
-- Componentes en `PascalCase`: `FormField`, `HomePage`.
+- Componentes en `PascalCase`: `FormField`, `LoginPage`.
 - Carpeta del componente con el mismo nombre que el componente.
 - Archivos: `Componente.jsx`, `Componente.module.css`, `Componente.test.jsx`, `index.js`.
 - Hooks personalizados en `src/hooks/` con prefijo `use`: `useChatSocket`.
@@ -22,7 +22,7 @@
 - `app/` solo contiene enrutado; cada `page.jsx` renderiza la `page` de Atomic
   Design correspondiente y nada más.
 - Importar componentes de `src/` con el alias `@/`:
-  `import HomePage from '@/components/pages/HomePage';`
+  `import LoginPage from '@/components/pages/LoginPage';`
 
 ## Estilos
 
