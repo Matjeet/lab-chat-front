@@ -50,5 +50,6 @@
   text-align: center;
   font-size: var(--font-size-sm);
   color: var(--color-text-muted);
+  background-color: var(--color-surface);
   border-top: var(--border-width) solid var(--color-border);
 }

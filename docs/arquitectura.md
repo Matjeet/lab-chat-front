@@ -142,7 +142,8 @@ Dos props booleanas, independientes:
   (`--color-surface`), borde, esquinas redondeadas y sombra — y añade
   `PatronBurbujas`: un fondo animado que cubre **toda la pantalla** (va en
   `.layout`, detrás de cabecera, contenido y pie — no solo detrás de la
-  tarjeta), ver `sistema-de-diseno.md`.
+  tarjeta). Cabecera y pie llevan su propio `--color-surface` de fondo para
+  no dejar pasar la animación por transparencia, ver `sistema-de-diseno.md`.
 
 Pensadas para pantallas de un único formulario. `LoginPage`/`RegistroPage`
 usan las dos (formulario en tarjeta sobre el patrón animado); `NotFoundPage`

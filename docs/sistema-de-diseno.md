@@ -126,9 +126,13 @@ de burbujas de chat en movimiento:
   final queda pixel a pixel donde empezó). Como es SVG en línea (no una imagen
   de fondo por CSS), el color sigue el tema solo. Cubre **toda la pantalla**
   (vive en `.layout`, no en `.content`): se ve detrás de la cabecera, del
-  contenido y del pie. La cabecera mantiene su propio fondo sólido
-  (`--color-surface`) encima, como una barra fija; `z-index: -1` en el SVG
-  asegura que quede detrás pese a ser el primer hijo en el DOM.
+  contenido y del pie. La cabecera y el pie mantienen su propio fondo sólido
+  (`--color-surface`) encima, como barras fijas; `z-index: -1` en el SVG
+  asegura que quede detrás pese a ser el primer hijo en el DOM. El fondo
+  sólido del pie no es solo estético: sin él, al pintarse por encima del SVG
+  en el orden de apilamiento pero ser transparente, la animación se vería a
+  través suyo igualmente — cualquier banda que se superponga al patrón
+  necesita su propio `--color-surface`, no basta con estar "por encima".
 - **La animación es un placeholder a propósito** ("de momento cualquiera, ya
   veremos cuál"): vive entera en `@keyframes deriva-burbujas` de
   `PatronBurbujas.module.css`. Cambiarla — velocidad, dirección, otro tipo de
