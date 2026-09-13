@@ -3,9 +3,13 @@
 import { useEffect, useState } from 'react';
 
 import Button from '../../atoms/Button';
+import styles from './ThemeToggle.module.css';
 
 const ORDEN = ['system', 'light', 'dark'];
 const ETIQUETA = { system: 'Sistema', light: 'Claro', dark: 'Oscuro' };
+// Símbolos de texto (no emoji): heredan el color del botón vía currentColor,
+// así se ven bien en cualquier tema/variant. Un emoji a color no lo haría.
+const SIMBOLO = { system: '◐', light: '☀', dark: '☾' };
 
 /** Aplica el tema al elemento <html>. "system" = sin atributo (decide el SO). */
 const aplicarTema = (tema) => {
@@ -29,6 +33,8 @@ const leerTemaGuardado = () => {
 
 /**
  * Molécula: interruptor de tema. Cicla sistema → claro → oscuro y lo persiste.
+ * Se muestra como símbolo, no texto; el `aria-label` del botón lleva la
+ * etiqueta completa para quien use lector de pantalla.
  * El valor persistido lo re-aplica el script de `app/layout.jsx` en la carga
  * siguiente para evitar el parpadeo.
  */
@@ -60,7 +66,9 @@ const ThemeToggle = () => {
       onClick={cambiar}
       aria-label={`Cambiar tema. Actual: ${ETIQUETA[tema]}`}
     >
-      Tema: {ETIQUETA[tema]}
+      <span className={styles.icono} aria-hidden="true">
+        {SIMBOLO[tema]}
+      </span>
     </Button>
   );
 };

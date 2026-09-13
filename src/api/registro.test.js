@@ -3,7 +3,7 @@ import { registrarUsuario } from './registro';
 const datos = {
   username: 'mateo',
   email: 'mateo@example.com',
-  password: 'secretpass',
+  password: 'Passw0rd!',
 };
 
 const respuestaFake = (status, cuerpo) => ({
@@ -17,8 +17,14 @@ afterEach(() => {
 });
 
 describe('registrarUsuario', () => {
-  it('devuelve ok con los datos en un 201', async () => {
-    const creado = { id: 1, username: 'mateo', email: 'mateo@example.com', activo: true };
+  it('envía username, email y password directamente al backend', async () => {
+    const creado = {
+      id: 1,
+      username: 'mateo',
+      email: 'mateo@example.com',
+      proveedor: 'password',
+      activo: true,
+    };
     global.fetch = jest.fn().mockResolvedValue(respuestaFake(201, creado));
 
     const resultado = await registrarUsuario(datos);
@@ -26,7 +32,10 @@ describe('registrarUsuario', () => {
     expect(resultado).toEqual({ ok: true, data: creado });
     expect(global.fetch).toHaveBeenCalledWith(
       'http://localhost:8080/api/v1/registro',
-      expect.objectContaining({ method: 'POST' }),
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify(datos),
+      }),
     );
   });
 

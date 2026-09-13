@@ -17,7 +17,7 @@ const RegistroPage = () => {
   const [usuario, setUsuario] = useState(null);
 
   return (
-    <DefaultLayout title="Crear cuenta">
+    <DefaultLayout title="Crear cuenta" centered>
       {usuario ? (
         <div className={styles.exito}>
           <Alert tipo="success">

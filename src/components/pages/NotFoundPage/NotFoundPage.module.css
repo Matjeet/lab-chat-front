@@ -1,0 +1,30 @@
+.contenido {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  text-align: center;
+}
+
+.ilustracion {
+  width: 100%;
+  max-width: 220px;
+  height: auto;
+}
+
+.codigo {
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-tight);
+  color: var(--color-primary);
+}
+
+.mensaje {
+  color: var(--color-text-muted);
+}
+
+.enlace {
+  margin-top: var(--space-2);
+  color: var(--color-primary);
+  font-weight: var(--font-weight-semibold);
+}

@@ -49,7 +49,7 @@ componentes) en ambos temas. Al añadir o cambiar un color, verificarlo.
 |-------|-------|-----|
 | `--font-sans` | stack del sistema | Todo el texto. |
 | `--font-mono` | stack mono del sistema | Código, tokens. |
-| `--font-size-xs` … `--font-size-2xl` | 12 / 14 / 16 / 18 / 24 / 32 px | Escala tipográfica. `md` = base. |
+| `--font-size-xs` … `--font-size-3xl` | 12 / 14 / 16 / 18 / 24 / 32 / 48 px | Escala tipográfica. `md` = base. `3xl` para números/splash grandes (p. ej. el "404"). |
 | `--font-weight-regular` … `-bold` | 400 / 500 / 600 / 700 | Pesos. |
 | `--line-height-tight` / `-base` | 1.25 / 1.5 | Titulares / cuerpo. |
 
@@ -75,6 +75,7 @@ Escala de base **4px**. Usar solo estos valores para `margin`, `padding` y `gap`
 | `--focus-ring-width` / `-offset` | 2px / 2px |
 | `--z-header` / `--z-overlay` / `--z-toast` | 100 / 1000 / 1100 |
 | `--layout-max-width` | 640px (ancho de contenido en `DefaultLayout`) |
+| `--layout-form-width` | 420px (ancho de la tarjeta en `DefaultLayout centered`) |
 
 ## Temas (claro / oscuro)
 
@@ -103,7 +104,10 @@ hay token porque CSS no permite `var()` en condiciones):
 | `xl` | 1280px |
 
 `DefaultLayout` centra el contenido a `--layout-max-width`; por encima de eso el
-contenido no crece, solo el margen.
+contenido no crece, solo el margen. Con la prop `centered` (pantallas de un
+solo formulario/tarjeta, p. ej. registro), el contenido además se centra
+**verticalmente** en el espacio entre cabecera y pie, dentro de una tarjeta de
+`--layout-form-width`.
 
 ## Reglas por nivel de Atomic Design
 
@@ -143,6 +147,15 @@ contenido no crece, solo el margen.
    ambos temas antes de dar por bueno.
 3. **Nunca** introducir un color/tamaño literal en un `.module.css`: `npm run
    lint` (Stylelint, regla `color-no-hex`) lo rechaza.
+4. **Ilustraciones que cambian de tema, con dos SVG en línea:** cuando el
+   propio dibujo (no solo el color) está pensado distinto para cada tema —
+   ver `Ilustracion404`, con un SVG completo por tema en lugar de uno
+   recoloreado por tokens — se inlinean los dos y el CSS del componente
+   decide cuál se ve, con el mismo criterio que `tokens.css`: claro por
+   defecto, oscuro por `prefers-color-scheme` o por `[data-theme="dark"]`.
+   Las dos variantes se montan siempre (nunca se desmonta la que no toca) para
+   que el cambio de tema sea instantáneo. Sus colores quedan tal cual los
+   entregaron — no son tokens, es la paleta propia de esa ilustración.
 
 ## Herramientas
 

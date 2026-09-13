@@ -13,6 +13,18 @@
   padding: var(--space-6) var(--space-5);
 }
 
+/* Variante para pantallas de un solo formulario/tarjeta: centra en ambos ejes. */
+.centered {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.centeredInner {
+  width: 100%;
+  max-width: var(--layout-form-width);
+}
+
 .footer {
   padding: var(--space-4) var(--space-5);
   text-align: center;

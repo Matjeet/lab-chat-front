@@ -9,6 +9,10 @@ import {
 
 const estadoDe = (requisitos, id) => requisitos.find((r) => r.id === id).cumplido;
 
+// Cumple los 6 requisitos: 8-20 caracteres, mayúscula, minúscula, número,
+// especial, sin un carácter repetido 4+ veces seguidas.
+const PASSWORD_VALIDA = 'Passw0rd!';
+
 describe('validarUsername', () => {
   it('acepta un usuario válido', () => {
     expect(validarUsername('mateo_29')).toBeNull();
@@ -41,18 +45,22 @@ describe('validarEmail', () => {
 });
 
 describe('validarPassword', () => {
-  it('acepta una contraseña de 8 a 100 caracteres', () => {
-    expect(validarPassword('secretpass')).toBeNull();
+  it('acepta una contraseña que cumple todos los requisitos', () => {
+    expect(validarPassword(PASSWORD_VALIDA)).toBeNull();
   });
 
-  it('no recorta espacios (la contraseña se envía tal cual)', () => {
-    expect(validarPassword('  abcdef  ')).toBeNull();
+  it('exige la contraseña con un mensaje específico', () => {
+    expect(validarPassword('')).toBe('La contraseña es obligatoria.');
   });
 
   it.each([
-    ['muy corta', 'corta'],
-    ['muy larga', 'x'.repeat(101)],
-    ['vacía', ''],
+    ['sin minúscula', 'PASSW0RD!'],
+    ['sin mayúscula', 'passw0rd!'],
+    ['sin número', 'Password!'],
+    ['sin carácter especial', 'Password1'],
+    ['con un carácter repetido 4+ veces seguidas', 'Aa1!AAAA'],
+    ['muy corta', 'Pw1!'],
+    ['muy larga (21 caracteres)', 'Aa1!Aa1!Aa1!Aa1!Aa1!A'],
   ])('rechaza una contraseña %s', (_caso, valor) => {
     expect(validarPassword(valor)).not.toBeNull();
   });
@@ -64,7 +72,7 @@ describe('validarFormularioRegistro', () => {
       validarFormularioRegistro({
         username: 'mateo',
         email: 'mateo@example.com',
-        password: 'secretpass',
+        password: PASSWORD_VALIDA,
       }),
     ).toEqual({});
   });
@@ -102,15 +110,25 @@ describe('requisitosUsername', () => {
 });
 
 describe('requisitosPassword', () => {
-  it('pendiente con menos de 8 caracteres', () => {
-    expect(estadoDe(requisitosPassword('corta'), 'longitud')).toBe(false);
+  it('marca todo pendiente con el campo vacío', () => {
+    expect(requisitosPassword('').every((r) => !r.cumplido)).toBe(true);
   });
 
-  it('cumplido entre 8 y 100 caracteres', () => {
-    expect(estadoDe(requisitosPassword('secretpass'), 'longitud')).toBe(true);
+  it('marca todo cumplido con una contraseña que satisface la política', () => {
+    expect(requisitosPassword(PASSWORD_VALIDA).every((r) => r.cumplido)).toBe(true);
   });
 
-  it('pendiente con más de 100 caracteres', () => {
-    expect(estadoDe(requisitosPassword('x'.repeat(101)), 'longitud')).toBe(false);
+  it.each([
+    ['longitud', 'Pw1!'],
+    ['minuscula', 'PASSW0RD!'],
+    ['mayuscula', 'passw0rd!'],
+    ['numero', 'Password!'],
+    ['especial', 'Password1'],
+    ['repeticion', 'Aa1!AAAA'],
+  ])('marca "%s" pendiente cuando no se cumple, sin afectar al resto', (id, valor) => {
+    const reqs = requisitosPassword(valor);
+    expect(estadoDe(reqs, id)).toBe(false);
+    const otros = reqs.filter((r) => r.id !== id);
+    expect(otros.every((r) => r.cumplido)).toBe(true);
   });
 });
