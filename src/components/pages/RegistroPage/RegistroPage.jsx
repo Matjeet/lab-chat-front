@@ -4,7 +4,6 @@ import { useState } from 'react';
 import Link from 'next/link';
 
 import DefaultLayout from '../../templates/DefaultLayout';
-import CargandoSesion from '../../templates/CargandoSesion';
 import RegistroForm from '../../organisms/RegistroForm';
 import Alert from '../../atoms/Alert';
 import useRedirigirSiHaySesion from '../../../hooks/useRedirigirSiHaySesion';
@@ -13,12 +12,12 @@ import styles from './RegistroPage.module.css';
 /**
  * Página: alta de usuario.
  *
- * Antes de mostrar el formulario, `useRedirigirSiHaySesion` comprueba si ya
- * hay sesión de Firebase activa — si la hay, no tiene sentido crear otra
- * cuenta: navega a `/home` (mismo criterio que `LoginPage`). Mientras se
- * resuelve esa comprobación se ve `CargandoSesion`, con el mismo aspecto
- * exacto que usan `LoginPage`/`HomePage` en la suya — ver ese componente
- * para el porqué (evita que la transición se perciba como un parpadeo).
+ * El formulario se pinta siempre, de inmediato — nada aquí necesita esperar
+ * una respuesta de red. `useRedirigirSiHaySesion` sigue comprobando en
+ * segundo plano si ya hay sesión de Firebase activa y, si la hay, navega a
+ * `/home` (no tiene sentido crear otra cuenta estando ya autenticado), pero
+ * ya no bloquea el render mientras se resuelve esa comprobación — ver
+ * `LoginPage` para el razonamiento completo (mismo criterio aquí).
  *
  * El alta en sí **no** autentica al cliente contra Firebase (la crea
  * `chat-registro` con el Admin SDK, ver `src/api/registro.js`), así que
@@ -32,11 +31,7 @@ import styles from './RegistroPage.module.css';
  */
 const RegistroPage = () => {
   const [usuario, setUsuario] = useState(null);
-  const { comprobando } = useRedirigirSiHaySesion();
-
-  if (comprobando) {
-    return <CargandoSesion />;
-  }
+  useRedirigirSiHaySesion();
 
   return (
     <DefaultLayout title="Crear cuenta" centered tarjeta>

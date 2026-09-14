@@ -69,7 +69,14 @@ describe('RegistroPage', () => {
     );
   });
 
-  it('con una sesión de Firebase ya activa, navega a /home en vez de mostrar el formulario', async () => {
+  it('muestra el formulario de inmediato aunque la comprobación de sesión no haya resuelto', () => {
+    observarSesion.mockImplementation(() => jest.fn()); // nunca llama al callback
+    render(<RegistroPage />);
+
+    expect(screen.getByLabelText('Nombre de usuario')).toBeInTheDocument();
+  });
+
+  it('con una sesión de Firebase ya activa, navega a /home en segundo plano', async () => {
     observarSesion.mockImplementation((callback) => {
       callback({ uid: 'abc123', email: 'mateo@example.com' });
       return jest.fn();
@@ -78,14 +85,5 @@ describe('RegistroPage', () => {
     render(<RegistroPage />);
 
     await waitFor(() => expect(replace).toHaveBeenCalledWith('/home'));
-    expect(screen.queryByLabelText('Nombre de usuario')).not.toBeInTheDocument();
-  });
-
-  it('mientras comprueba la sesión, no muestra el formulario', () => {
-    observarSesion.mockImplementation(() => jest.fn()); // nunca llama al callback
-    render(<RegistroPage />);
-
-    expect(screen.queryByLabelText('Nombre de usuario')).not.toBeInTheDocument();
-    expect(screen.getByText('Comprobando sesión…')).toBeInTheDocument();
   });
 });

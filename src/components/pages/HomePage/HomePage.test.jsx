@@ -33,7 +33,7 @@ describe('HomePage', () => {
     expect(replace).not.toHaveBeenCalled();
   });
 
-  it('sin sesión, no muestra el mensaje y navega a /login', async () => {
+  it('sin sesión, navega a /login en segundo plano', async () => {
     observarSesion.mockImplementation((callback) => {
       callback(null);
       return jest.fn();
@@ -42,8 +42,12 @@ describe('HomePage', () => {
     render(<HomePage />);
 
     await waitFor(() => expect(replace).toHaveBeenCalledWith('/login'));
-    expect(
-      screen.queryByText('¡Sesión iniciada correctamente!'),
-    ).not.toBeInTheDocument();
+  });
+
+  it('muestra el contenido de inmediato aunque la comprobación de sesión no haya resuelto', () => {
+    observarSesion.mockImplementation(() => jest.fn()); // nunca llama al callback
+    render(<HomePage />);
+
+    expect(screen.getByText('¡Sesión iniciada correctamente!')).toBeInTheDocument();
   });
 });

@@ -4,7 +4,6 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
 import DefaultLayout from '../../templates/DefaultLayout';
-import CargandoSesion from '../../templates/CargandoSesion';
 import TextoAleatorio from '../../atoms/TextoAleatorio';
 import LoginForm from '../../organisms/LoginForm';
 import { iniciarSesion } from '../../../firebase/auth';
@@ -25,13 +24,16 @@ const FRASES_INTRO = [
 /**
  * Página: inicio de sesión.
  *
- * Antes de mostrar el formulario, `useRedirigirSiHaySesion` comprueba si ya
- * hay sesión de Firebase activa — si la hay, no tiene sentido pedir
- * credenciales de nuevo: navega a `/home` directamente. Mientras se resuelve
- * esa comprobación se ve `CargandoSesion`, con el mismo aspecto exacto que
- * `HomePage` muestra en la suya — así, si termina navegando a `/home`, la
- * transición no se percibe como un parpadeo (el contenido en pantalla no
- * cambia, solo la ruta por debajo). Ver `CargandoSesion` para el porqué.
+ * El formulario se pinta siempre, de inmediato — nada aquí necesita esperar
+ * una respuesta de red (es export estático, todo el HTML/JS/CSS ya está
+ * descargado). `useRedirigirSiHaySesion` sigue comprobando en segundo plano
+ * si ya hay sesión de Firebase activa y, si la hay, navega a `/home` — pero
+ * ya no bloquea el render mientras se resuelve esa comprobación: no tiene
+ * sentido demorar la carga de "toda la app" por una comprobación que, la
+ * mayoría de las veces (quien entra a `/` normalmente no tiene sesión
+ * todavía), termina en "no, sigue aquí". El caso contrario (si SÍ hay
+ * sesión) se resuelve con una navegación a `/home` casi inmediata, no con
+ * una espera visible de antemano.
  *
  * `LoginForm` maneja los campos y la validación; esta página solo decide
  * qué pasa con el resultado de `iniciarSesion` (Firebase Authentication):
@@ -42,7 +44,7 @@ const FRASES_INTRO = [
  */
 const LoginPage = () => {
   const router = useRouter();
-  const { comprobando } = useRedirigirSiHaySesion();
+  useRedirigirSiHaySesion();
 
   const alIniciarSesion = async (datos) => {
     const resultado = await iniciarSesion(datos);
@@ -51,10 +53,6 @@ const LoginPage = () => {
     }
     return resultado;
   };
-
-  if (comprobando) {
-    return <CargandoSesion />;
-  }
 
   return (
     <DefaultLayout title="Iniciar sesión" centered tarjeta>

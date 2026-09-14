@@ -8,17 +8,21 @@ import { observarSesion } from '../firebase/auth';
 /**
  * Exige una sesión de Firebase activa para la pantalla que lo use. Sin
  * sesión, navega a `/login` (`router.replace` — no deja la pantalla
- * protegida en el historial) en vez de dejar ver nada.
+ * protegida en el historial).
  *
- * Devuelve `{ verificando }`: mientras es `true`, todavía no se sabe si hay
- * sesión (o ya se decidió que no la hay y se está navegando fuera) — quien
- * use el hook debe mostrar un estado de carga, **nunca su contenido real**,
- * o lo estaría revelando un instante a quien no tiene sesión. Pasa a
- * `false` únicamente cuando SÍ hay un usuario autenticado.
+ * A propósito, este hook **no bloquea el render**: quien lo usa pinta su
+ * contenido real de inmediato (nada en export estático necesita esperar un
+ * fetch) y la redirección, si hace falta, ocurre en segundo plano — quien
+ * entra a una pantalla protegida normalmente ya tiene sesión (es el destino
+ * tras iniciarla), así que demorar la carga para cubrir el caso contrario
+ * no compensa. Es una guardia de UX, no un límite de seguridad — ver
+ * `docs/integracion-api.md` § "Rutas que exigen sesión". Devuelve
+ * `{ verificando }` solo por si alguna pantalla concreta sí necesitara
+ * reaccionar a ese estado (hoy ninguna lo consume).
  *
- * Es el mismo mecanismo que `LoginPage` ya usa en sentido contrario (ver
- * `src/firebase/auth.js#observarSesion`): allá redirige si SÍ hay sesión,
- * aquí si NO la hay.
+ * Es el mismo mecanismo que `LoginPage`/`RegistroPage` ya usan en sentido
+ * contrario (ver `src/firebase/auth.js#observarSesion`): allá redirigen si
+ * SÍ hay sesión, aquí si NO la hay.
  *
  * @returns {{ verificando: boolean }}
  */
