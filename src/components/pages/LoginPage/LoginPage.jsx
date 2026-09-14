@@ -1,14 +1,14 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
 import DefaultLayout from '../../templates/DefaultLayout';
-import Alert from '../../atoms/Alert';
+import CargandoSesion from '../../templates/CargandoSesion';
 import TextoAleatorio from '../../atoms/TextoAleatorio';
 import LoginForm from '../../organisms/LoginForm';
-import { iniciarSesion, observarSesion } from '../../../firebase/auth';
+import { iniciarSesion } from '../../../firebase/auth';
+import useRedirigirSiHaySesion from '../../../hooks/useRedirigirSiHaySesion';
 import styles from './LoginPage.module.css';
 
 // Una distinta cada vez que se abre o recarga la página (ver TextoAleatorio).
@@ -25,14 +25,13 @@ const FRASES_INTRO = [
 /**
  * Página: inicio de sesión.
  *
- * Antes de mostrar el formulario, comprueba si ya hay una sesión de Firebase
- * activa (`observarSesion`, persistida por el propio SDK en el navegador) —
- * si la hay, no tiene sentido pedir credenciales de nuevo: navega a `/home`
- * directamente. Mientras se resuelve esa comprobación (siempre asíncrona,
- * nunca se sabe de forma síncrona al cargar la página) no se pinta el
- * formulario, para no mostrarlo un instante de más a quien ya tiene sesión.
- * Es el mismo mecanismo que `useRequiereSesion` usa en sentido contrario
- * para las pantallas que sí exigen sesión (`HomePage`, `StyleGuidePage`).
+ * Antes de mostrar el formulario, `useRedirigirSiHaySesion` comprueba si ya
+ * hay sesión de Firebase activa — si la hay, no tiene sentido pedir
+ * credenciales de nuevo: navega a `/home` directamente. Mientras se resuelve
+ * esa comprobación se ve `CargandoSesion`, con el mismo aspecto exacto que
+ * `HomePage` muestra en la suya — así, si termina navegando a `/home`, la
+ * transición no se percibe como un parpadeo (el contenido en pantalla no
+ * cambia, solo la ruta por debajo). Ver `CargandoSesion` para el porqué.
  *
  * `LoginForm` maneja los campos y la validación; esta página solo decide
  * qué pasa con el resultado de `iniciarSesion` (Firebase Authentication):
@@ -43,18 +42,7 @@ const FRASES_INTRO = [
  */
 const LoginPage = () => {
   const router = useRouter();
-  const [comprobandoSesion, setComprobandoSesion] = useState(true);
-
-  useEffect(() => {
-    const cancelar = observarSesion((usuario) => {
-      if (usuario) {
-        router.replace('/home');
-        return;
-      }
-      setComprobandoSesion(false);
-    });
-    return cancelar;
-  }, [router]);
+  const { comprobando } = useRedirigirSiHaySesion();
 
   const alIniciarSesion = async (datos) => {
     const resultado = await iniciarSesion(datos);
@@ -64,12 +52,8 @@ const LoginPage = () => {
     return resultado;
   };
 
-  if (comprobandoSesion) {
-    return (
-      <DefaultLayout title="Iniciar sesión" centered tarjeta>
-        <Alert tipo="info">Comprobando sesión…</Alert>
-      </DefaultLayout>
-    );
+  if (comprobando) {
+    return <CargandoSesion />;
   }
 
   return (
