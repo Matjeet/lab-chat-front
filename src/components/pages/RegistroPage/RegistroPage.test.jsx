@@ -1,10 +1,31 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import RegistroPage from './RegistroPage';
 import { registrarUsuario } from '../../../api/registro';
+import { observarSesion } from '../../../firebase/auth';
 
 jest.mock('../../../api/registro');
+
+// Factory explícita: un automock sin factory cargaría el Firebase real (sin
+// las variables de entorno que solo existen en build/dev).
+jest.mock('../../../firebase/auth', () => ({
+  observarSesion: jest.fn(),
+}));
+
+const replace = jest.fn();
+jest.mock('next/navigation', () => ({
+  useRouter: () => ({ replace }),
+}));
+
+beforeEach(() => {
+  // Por defecto, como si no hubiera sesión: la mayoría de los tests
+  // ejercitan el formulario, no la comprobación de sesión en sí.
+  observarSesion.mockImplementation((callback) => {
+    callback(null);
+    return jest.fn();
+  });
+});
 
 afterEach(() => {
   jest.clearAllMocks();
@@ -46,5 +67,25 @@ describe('RegistroPage', () => {
       'href',
       '/',
     );
+  });
+
+  it('con una sesión de Firebase ya activa, navega a /home en vez de mostrar el formulario', async () => {
+    observarSesion.mockImplementation((callback) => {
+      callback({ uid: 'abc123', email: 'mateo@example.com' });
+      return jest.fn();
+    });
+
+    render(<RegistroPage />);
+
+    await waitFor(() => expect(replace).toHaveBeenCalledWith('/home'));
+    expect(screen.queryByLabelText('Nombre de usuario')).not.toBeInTheDocument();
+  });
+
+  it('mientras comprueba la sesión, no muestra el formulario', () => {
+    observarSesion.mockImplementation(() => jest.fn()); // nunca llama al callback
+    render(<RegistroPage />);
+
+    expect(screen.queryByLabelText('Nombre de usuario')).not.toBeInTheDocument();
+    expect(screen.getByText('Comprobando sesión…')).toBeInTheDocument();
   });
 });
