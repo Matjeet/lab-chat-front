@@ -99,7 +99,8 @@ chat-frontend/
 │   │   ├── config.js           # Inicializa la app (variables NEXT_PUBLIC_FIREBASE_*)
 │   │   └── auth.js             # iniciarSesion(...) + observarSesion(cb) -> resultado tipado
 │   ├── hooks/                   # Hooks compartidos (no encajan en Atomic Design)
-│   │   └── useRequiereSesion.js # {verificando}; navega a /login si no hay sesión
+│   │   ├── useRequiereSesion.js # {verificando}; navega a /login si no hay sesión
+│   │   └── useRedirigirSiHaySesion.js # {comprobando}; navega a /home si SÍ hay sesión
 │   ├── utils/                  # Helpers puros (sin React)
 │   │   ├── validacionRegistro.js
 │   │   └── validacionLogin.js
@@ -111,7 +112,7 @@ chat-frontend/
 │       │                      TextoAleatorio
 │       ├── molecules/         FormField · ThemeToggle · RequisitosCampo
 │       ├── organisms/         Header · RegistroForm · LoginForm
-│       ├── templates/         DefaultLayout
+│       ├── templates/         DefaultLayout · CargandoSesion
 │       └── pages/             LoginPage · RegistroPage · HomePage · StyleGuidePage · NotFoundPage
 │           └── Button/
 │               ├── Button.jsx
@@ -219,9 +220,13 @@ Cada componente vive en su propia carpeta con estos archivos:
   conectar el backend — así sigue sirviendo como pantalla standalone en los
   tests que no la conectan.
 - **`LoginPage` también comprueba, antes de pintar nada, si ya hay sesión**
-  (`observarSesion`, `src/firebase/auth.js`) — si la hay, navega a `/home`
-  con `router.replace` en vez de mostrar el formulario. Mientras se resuelve
-  esa comprobación (siempre asíncrona) se ve "Comprobando sesión…".
+  (`useRedirigirSiHaySesion`, `src/hooks/`) — si la hay, navega a `/home` con
+  `router.replace` en vez de mostrar el formulario. Mientras se resuelve esa
+  comprobación (siempre asíncrona) se ve `CargandoSesion` — la misma
+  plantilla, con el mismo aspecto exacto, que usa `HomePage` en su propia
+  comprobación (`useRequiereSesion`). Al ser idéntica en ambas, si termina
+  navegando de una a otra no se percibe ningún parpadeo: lo que hay en
+  pantalla no cambia en la transición, solo la ruta por debajo.
 - **Toda ruta que no sea `/`, `/login` o `/registro` exige sesión** —hoy
   `/home` y `/estilos`— vía el hook `useRequiereSesion` (`src/hooks/`, mismo
   mecanismo que `LoginPage` pero en sentido contrario). Es una guardia de
