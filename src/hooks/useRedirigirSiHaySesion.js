@@ -7,15 +7,18 @@ import { observarSesion } from '../firebase/auth';
 
 /**
  * Para pantallas públicas donde no tiene sentido seguir si ya hay sesión
- * (`LoginPage`): comprueba si hay una sesión de Firebase activa y, si la
- * hay, navega a `/home` (`router.replace` — no deja la pantalla pública en
- * el historial). Mismo mecanismo que `useRequiereSesion`, en sentido
- * contrario.
+ * (`LoginPage`, `RegistroPage`): comprueba si hay una sesión de Firebase
+ * activa y, si la hay, navega a `/home` (`router.replace` — no deja la
+ * pantalla pública en el historial). Mismo mecanismo que `useRequiereSesion`,
+ * en sentido contrario.
  *
- * Devuelve `{ comprobando }`: mientras es `true`, todavía no se sabe si hay
- * sesión (o ya se decidió que sí la hay y se está navegando fuera) — quien
- * use el hook debe mostrar `CargandoSesion`, **nunca su contenido real**.
- * Pasa a `false` únicamente cuando se confirma que NO hay sesión.
+ * A propósito, este hook **no bloquea el render**: quien lo usa pinta su
+ * contenido real de inmediato (nada en export estático necesita esperar un
+ * fetch) y la redirección, si hace falta, ocurre en segundo plano — la
+ * mayoría de las veces no hay sesión, así que demorar la carga para
+ * cubrir el caso contrario no compensa. Devuelve `{ comprobando }` solo
+ * por si alguna pantalla concreta sí necesitara reaccionar a ese estado
+ * (hoy ninguna lo consume).
  *
  * @returns {{ comprobando: boolean }}
  */

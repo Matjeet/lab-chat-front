@@ -44,7 +44,6 @@ Cómo consume este frontend los microservicios backend. Contrato completo:
 | `src/firebase/auth.js` | `iniciarSesion({email, password})` + `observarSesion(callback)` → Firebase Authentication (Email/Password). |
 | `src/hooks/useRequiereSesion.js` | Hook para pantallas que exigen sesión: `{ verificando }`, navega a `/login` si no hay usuario. |
 | `src/hooks/useRedirigirSiHaySesion.js` | Hook inverso, para pantallas públicas: `{ comprobando }`, navega a `/home` si SÍ hay usuario. |
-| `src/components/templates/CargandoSesion/` | Plantilla compartida (`LoginPage`, `RegistroPage`, `HomePage`, `StyleGuidePage`) mientras se resuelve cualquiera de los dos hooks — mismo aspecto en las cuatro, a propósito (ver más abajo). |
 | `src/components/organisms/LoginForm/` | Formulario de login: valida, llama a `onIniciarSesion` y muestra el aviso según `error.kind` si falla. |
 | `src/components/pages/LoginPage/` | Monta `LoginForm`, le pasa `onIniciarSesion` (llama a `iniciarSesion` y navega a `/home` si sale bien) + enlace a `/registro`. También navega a `/home` si ya hay sesión, antes de mostrar el formulario. |
 | `src/components/pages/HomePage/` | Destino tras un login correcto. Exige sesión (`useRequiereSesion`). Placeholder: solo confirma la sesión, sin contenido real todavía. |
@@ -92,13 +91,16 @@ y llama a `onIniciarSesion(datos)` con `{ email, password }` ya normalizados.
 
 Firebase persiste la sesión solo en el navegador (no es cosa de esta app). Al
 montarse, `LoginPage` usa `useRedirigirSiHaySesion` (`src/hooks/`, envuelve
-`observarSesion`) antes de pintar nada: si ya hay un usuario, navega a
-`/home` con `router.replace` (no `push`, para no dejar en el historial una
-pantalla de login que nunca llegó a usarse) sin mostrar el formulario ni un
-instante; si no hay sesión, recién ahí se pinta. Como esa comprobación es
-siempre asíncrona (nunca se sabe de forma síncrona al cargar la página),
-mientras se resuelve se muestra `CargandoSesion` en vez del formulario — ver
-más abajo "Por qué no se percibe como un parpadeo".
+`observarSesion`): si ya hay un usuario, navega a `/home` con
+`router.replace` (no `push`, para no dejar en el historial una pantalla de
+login que nunca llegó a usarse).
+
+**Esto no bloquea el render.** El formulario se pinta siempre, de inmediato
+— nada aquí necesita esperar una respuesta de red (es export estático, todo
+el HTML/JS/CSS ya está descargado). La comprobación de sesión es siempre
+asíncrona, pero como la mayoría de las veces quien entra a `/` no tiene
+sesión todavía, demorar la carga de toda la pantalla para cubrir el caso
+contrario no compensa — ver más abajo "Por qué no se retrasa la carga".
 
 **Pendiente, a propósito:** qué hacer con el `idToken` frente a
 `chat-registro` (¿lo valida un endpoint nuevo? ¿el backend confía en Firebase
@@ -120,35 +122,27 @@ otra cuenta si ya se está dentro. Es el criterio inverso al de abajo, con
 `useRedirigirSiHaySesion` en vez de `useRequiereSesion`.
 
 ```jsx
-const { verificando } = useRequiereSesion(); // navega a /login si no hay sesión
-
-if (verificando) return <CargandoSesion />;
-return <DefaultLayout ...>{/* contenido real */}</DefaultLayout>;
+useRequiereSesion(); // navega a /login en segundo plano si no hay sesión
+return <DefaultLayout ...>{/* contenido real, siempre */}</DefaultLayout>;
 ```
 
-`verificando` solo pasa a `false` cuando SÍ hay un usuario autenticado —
-mientras es `true`, la pantalla no debe pintar su contenido real (ni un
-`return null`, tampoco: eso dejaría la página en blanco un instante antes de
-redirigir en vez de mostrar el mismo aviso que usa `LoginPage`).
+### Por qué no se retrasa la carga con un estado "Comprobando sesión…"
 
-### Por qué la redirección `/` ↔ `/home` no se percibe como un parpadeo
-
-`LoginPage`/`RegistroPage` (con `useRedirigirSiHaySesion`) y
-`HomePage`/`StyleGuidePage` (con `useRequiereSesion`) resuelven casos
-opuestos, pero mientras están comprobando muestran **la misma plantilla**:
-`CargandoSesion`
-(`src/components/templates/`) — `DefaultLayout title="Chat" centered` +
-`Alert tipo="info">Comprobando sesión…`, sin `tarjeta` ni fondo animado, en
-las cuatro. Es a propósito: cuando alguien con sesión activa entra a `/` (o
-a `/registro`), lo que ve es `CargandoSesion` → `router.replace('/home')` →
-`CargandoSesion` (de `HomePage`, mientras confirma lo mismo) → el contenido
-real. Como el
-paso intermedio es **pixel a pixel idéntico** a ambos lados de la
-navegación, el cambio de ruta no se nota — lo único que cambia en pantalla
-es, una sola vez, al llegar al destino final. Si `CargandoSesion` cambia
-(texto, layout), cambia igual en las tres pantallas que la usan; si una
-necesitara verse distinta ahí, ya no cumpliría este propósito y no debería
-usarla.
+Los cuatro hooks-usuario (`LoginPage`/`RegistroPage` con
+`useRedirigirSiHaySesion`, `HomePage`/`StyleGuidePage` con
+`useRequiereSesion`) **no bloquean el render** a propósito: la pantalla pinta
+su contenido real desde el primer momento y la redirección, si hace falta,
+ocurre en segundo plano en cuanto la comprobación resuelve — normalmente tan
+rápido que no llega a percibirse ningún parpadeo (Firebase ya tiene el
+estado de sesión en memoria salvo la primerísima carga de la pestaña). Se
+descartó a propósito un estado de carga intermedio (hubo uno,
+`CargandoSesion`, con un aviso "Comprobando sesión…"): forzaba una demora
+visible en el caso común (la mayoría de las visitas a `/` no tienen sesión;
+la mayoría a `/home` sí la tienen) solo para cubrir mejor el caso raro. El
+resultado ahora es más rápido a costa de mostrar, en el caso raro
+(sesión activa en `/`, o sin sesión en `/home`), el contenido "equivocado"
+durante un instante antes de redirigir — un costo aceptable porque ese
+contenido nunca es sensible (ver el aviso de seguridad justo abajo).
 
 **Importante — esto es una guardia de UX, no un límite de seguridad.** El
 export estático (`output: 'export'`) no tiene servidor: `out/home.html` es un

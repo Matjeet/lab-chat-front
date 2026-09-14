@@ -1,29 +1,25 @@
 'use client';
 
 import DefaultLayout from '../../templates/DefaultLayout';
-import CargandoSesion from '../../templates/CargandoSesion';
 import useRequiereSesion from '../../../hooks/useRequiereSesion';
 import styles from './HomePage.module.css';
 
 /**
  * Página: destino tras un inicio de sesión correcto.
  *
- * Exige sesión activa (`useRequiereSesion`) — sin ella, navega a `/login` en
- * vez de mostrar nada. Mientras se comprueba, `CargandoSesion` (mismo
- * aspecto que usan `LoginPage`/`RegistroPage` en su propia comprobación,
- * a propósito — ver ese componente) evita que la llegada aquí desde una
- * redirección se perciba como un parpadeo.
+ * El contenido se pinta siempre, de inmediato — no depende de ningún fetch
+ * (es un placeholder estático). `useRequiereSesion` sigue comprobando en
+ * segundo plano si hay sesión activa y, si no la hay, navega a `/login`,
+ * pero ya no bloquea el render mientras se resuelve esa comprobación: quien
+ * entra a `/home` normalmente ya tiene sesión (es el destino tras iniciarla),
+ * así que demorar la carga para el caso común no compensa.
  *
  * Placeholder deliberado: de momento solo confirma que el login funcionó;
  * el contenido real del chat (conversaciones, contactos...) es una
  * iteración futura.
  */
 const HomePage = () => {
-  const { verificando } = useRequiereSesion();
-
-  if (verificando) {
-    return <CargandoSesion />;
-  }
+  useRequiereSesion();
 
   return (
     <DefaultLayout title="Chat" centered>

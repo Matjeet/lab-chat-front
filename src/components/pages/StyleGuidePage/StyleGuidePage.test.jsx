@@ -42,4 +42,13 @@ describe('StyleGuidePage', () => {
     expect(screen.getByRole('button', { name: 'Danger' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Disabled' })).toBeDisabled();
   });
+
+  it('muestra el contenido de inmediato aunque la comprobación de sesión no haya resuelto', () => {
+    observarSesion.mockImplementation(() => jest.fn()); // nunca llama al callback
+    render(<StyleGuidePage />);
+
+    expect(
+      screen.getByRole('heading', { name: 'Sistema de diseño' }),
+    ).toBeInTheDocument();
+  });
 });

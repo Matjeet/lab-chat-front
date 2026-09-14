@@ -75,18 +75,12 @@ const Section = ({ title, children }) => (
  * Renderiza los tokens de `tokens.css` y los componentes en sus variantes.
  * Sirve de referencia visual y para detectar regresiones (incl. en modo oscuro,
  * usando el selector de tema de la cabecera). Exige sesión activa
- * (`useRequiereSesion`) — sin ella, navega a `/login`.
+ * (`useRequiereSesion`) — sin ella, navega a `/login`, pero el contenido se
+ * pinta siempre de inmediato (no depende de ningún fetch): ver `HomePage`
+ * para el razonamiento completo.
  */
 const StyleGuidePage = () => {
-  const { verificando } = useRequiereSesion();
-
-  if (verificando) {
-    return (
-      <DefaultLayout title="Sistema de diseño">
-        <Alert tipo="info">Comprobando sesión…</Alert>
-      </DefaultLayout>
-    );
-  }
+  useRequiereSesion();
 
   return (
     <DefaultLayout title="Sistema de diseño">
