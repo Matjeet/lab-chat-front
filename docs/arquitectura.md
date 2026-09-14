@@ -85,6 +85,7 @@ chat-frontend/
 ├── public/                    # Estáticos servidos tal cual (URL "/archivo.ext")
 │   └── chat-logo.webp         # Logo de marca, usado por Header
 ├── app/                       # App Router (solo enrutado)
+│   ├── favicon.ico            # Archivo especial de convención: Next.js lo detecta solo
 │   ├── layout.jsx             # html/body + tokens + global.css + tema inicial
 │   ├── page.jsx               # "/"         -> <LoginPage/> (arranque de la app)
 │   ├── registro/page.jsx      # "/registro" -> <RegistroPage/>

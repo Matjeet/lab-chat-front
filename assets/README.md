@@ -11,6 +11,7 @@ regenerar ese resultado, no algo que la app importe en tiempo de build.
 | `404-claro.svg` | `src/components/atoms/Ilustracion404` | Inlineado tal cual como variante `claro`. |
 | `404-oscuro.svg` | `src/components/atoms/Ilustracion404` | Inlineado tal cual como variante `oscuro`. |
 | `chat-logo.webp` | `public/chat-logo.webp` (vía `Header`) | Fuente sin recortar (2000×2000, el dibujo ocupa ~39% del lienzo) — ver más abajo. |
+| `Adobe-Express-file.ico` | `app/favicon.ico` | Copiado tal cual — mismo logo, ya recortado a 256×256. No necesita procesado. |
 
 ## Si hay que editar la ilustración 404
 
@@ -53,3 +54,11 @@ require('sharp')('assets/chat-logo.webp')
 
 El `extend` deja un margen pequeño y uniforme (20px) en los cuatro lados tras
 el recorte, para que el logo no quede pegado al borde de su caja en `Header`.
+
+## Si hay que cambiar el favicon
+
+`app/favicon.ico` es un archivo especial de convención del App Router: Next.js
+lo detecta solo por su nombre y ruta, y genera el `<link rel="icon">` él
+mismo — no hace falta tocar `app/layout.jsx` ni `public/`. Para cambiarlo,
+reemplaza `assets/Adobe-Express-file.ico` (la fuente) y copia el resultado a
+`app/favicon.ico`.
