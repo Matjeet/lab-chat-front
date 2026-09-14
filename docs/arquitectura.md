@@ -219,14 +219,15 @@ Cada componente vive en su propia carpeta con estos archivos:
   `/home`. Sin `onIniciarSesion`, `LoginForm` se limita a avisar que falta
   conectar el backend — así sigue sirviendo como pantalla standalone en los
   tests que no la conectan.
-- **`LoginPage` también comprueba, antes de pintar nada, si ya hay sesión**
-  (`useRedirigirSiHaySesion`, `src/hooks/`) — si la hay, navega a `/home` con
+- **`LoginPage` y `RegistroPage` también comprueban, antes de pintar nada, si
+  ya hay sesión** (`useRedirigirSiHaySesion`, `src/hooks/`) — si la hay, no
+  tiene sentido pedir credenciales o crear otra cuenta: navegan a `/home` con
   `router.replace` en vez de mostrar el formulario. Mientras se resuelve esa
   comprobación (siempre asíncrona) se ve `CargandoSesion` — la misma
-  plantilla, con el mismo aspecto exacto, que usa `HomePage` en su propia
-  comprobación (`useRequiereSesion`). Al ser idéntica en ambas, si termina
-  navegando de una a otra no se percibe ningún parpadeo: lo que hay en
-  pantalla no cambia en la transición, solo la ruta por debajo.
+  plantilla, con el mismo aspecto exacto, que usan `HomePage`/`StyleGuidePage`
+  en su propia comprobación (`useRequiereSesion`). Al ser idéntica en las
+  cuatro, si termina navegando de una a otra no se percibe ningún parpadeo:
+  lo que hay en pantalla no cambia en la transición, solo la ruta por debajo.
 - **Toda ruta que no sea `/`, `/login` o `/registro` exige sesión** —hoy
   `/home` y `/estilos`— vía el hook `useRequiereSesion` (`src/hooks/`, mismo
   mecanismo que `LoginPage` pero en sentido contrario). Es una guardia de

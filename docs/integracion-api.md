@@ -38,13 +38,13 @@ Cómo consume este frontend los microservicios backend. Contrato completo:
 | `src/api/registro.js` | `registrarUsuario(datos)` → `POST /api/v1/registro`. Es lo único que llama `RegistroForm`. |
 | `src/utils/validacionRegistro.js` | Validación de cliente + `requisitos{Username,Password}` (estado en vivo de cada requisito). |
 | `src/components/organisms/RegistroForm/` | Estado del formulario + reparto de errores. |
-| `src/components/pages/RegistroPage/` | Alterna formulario ↔ confirmación. |
+| `src/components/pages/RegistroPage/` | Alterna formulario ↔ confirmación. También navega a `/home` si ya hay sesión, antes de mostrar el formulario (mismo criterio que `LoginPage`). |
 | `src/utils/validacionLogin.js` | Validación de cliente del login: email válido, contraseña no vacía. Sin política de fortaleza — no aplica a una cuenta ya existente. |
 | `src/firebase/config.js` | Inicializa el SDK de cliente de Firebase (variables `NEXT_PUBLIC_FIREBASE_*`). |
 | `src/firebase/auth.js` | `iniciarSesion({email, password})` + `observarSesion(callback)` → Firebase Authentication (Email/Password). |
 | `src/hooks/useRequiereSesion.js` | Hook para pantallas que exigen sesión: `{ verificando }`, navega a `/login` si no hay usuario. |
 | `src/hooks/useRedirigirSiHaySesion.js` | Hook inverso, para pantallas públicas: `{ comprobando }`, navega a `/home` si SÍ hay usuario. |
-| `src/components/templates/CargandoSesion/` | Plantilla compartida (`LoginPage`, `HomePage`, `StyleGuidePage`) mientras se resuelve cualquiera de los dos hooks — mismo aspecto en las tres, a propósito (ver más abajo). |
+| `src/components/templates/CargandoSesion/` | Plantilla compartida (`LoginPage`, `RegistroPage`, `HomePage`, `StyleGuidePage`) mientras se resuelve cualquiera de los dos hooks — mismo aspecto en las cuatro, a propósito (ver más abajo). |
 | `src/components/organisms/LoginForm/` | Formulario de login: valida, llama a `onIniciarSesion` y muestra el aviso según `error.kind` si falla. |
 | `src/components/pages/LoginPage/` | Monta `LoginForm`, le pasa `onIniciarSesion` (llama a `iniciarSesion` y navega a `/home` si sale bien) + enlace a `/registro`. También navega a `/home` si ya hay sesión, antes de mostrar el formulario. |
 | `src/components/pages/HomePage/` | Destino tras un login correcto. Exige sesión (`useRequiereSesion`). Placeholder: solo confirma la sesión, sin contenido real todavía. |
@@ -108,9 +108,16 @@ solo la confirmación visual de que el login funcionó.
 ## Rutas que exigen sesión
 
 `/` y `/login` (la misma `LoginPage`) y `/registro` son las únicas rutas
-públicas. Cualquier otra —hoy `/home` y `/estilos`— exige una sesión de
-Firebase activa: usa el hook `useRequiereSesion` (`src/hooks/`), que envuelve
-`observarSesion` en sentido contrario a como lo usa `LoginPage`:
+públicas — no exigen sesión para verse. Cualquier otra —hoy `/home` y
+`/estilos`— exige una sesión de Firebase activa: usa el hook
+`useRequiereSesion` (`src/hooks/`), que envuelve `observarSesion` en sentido
+contrario a como lo usan `LoginPage`/`RegistroPage`:
+
+Ojo, "pública" no significa "sin ningún chequeo de sesión": tanto `LoginPage`
+como `RegistroPage` comprueban si YA hay sesión y, si la hay, navegan a
+`/home` en vez de mostrarse — no tiene sentido pedir credenciales o crear
+otra cuenta si ya se está dentro. Es el criterio inverso al de abajo, con
+`useRedirigirSiHaySesion` en vez de `useRequiereSesion`.
 
 ```jsx
 const { verificando } = useRequiereSesion(); // navega a /login si no hay sesión
@@ -126,14 +133,16 @@ redirigir en vez de mostrar el mismo aviso que usa `LoginPage`).
 
 ### Por qué la redirección `/` ↔ `/home` no se percibe como un parpadeo
 
-`LoginPage` (con `useRedirigirSiHaySesion`) y `HomePage`/`StyleGuidePage`
-(con `useRequiereSesion`) resuelven casos opuestos, pero mientras están
-comprobando muestran **la misma plantilla**: `CargandoSesion`
+`LoginPage`/`RegistroPage` (con `useRedirigirSiHaySesion`) y
+`HomePage`/`StyleGuidePage` (con `useRequiereSesion`) resuelven casos
+opuestos, pero mientras están comprobando muestran **la misma plantilla**:
+`CargandoSesion`
 (`src/components/templates/`) — `DefaultLayout title="Chat" centered` +
 `Alert tipo="info">Comprobando sesión…`, sin `tarjeta` ni fondo animado, en
-las tres. Es a propósito: cuando alguien con sesión activa entra a `/`, lo
-que ve es `CargandoSesion` → `router.replace('/home')` → `CargandoSesion`
-(de `HomePage`, mientras confirma lo mismo) → el contenido real. Como el
+las cuatro. Es a propósito: cuando alguien con sesión activa entra a `/` (o
+a `/registro`), lo que ve es `CargandoSesion` → `router.replace('/home')` →
+`CargandoSesion` (de `HomePage`, mientras confirma lo mismo) → el contenido
+real. Como el
 paso intermedio es **pixel a pixel idéntico** a ambos lados de la
 navegación, el cambio de ruta no se nota — lo único que cambia en pantalla
 es, una sola vez, al llegar al destino final. Si `CargandoSesion` cambia
