@@ -98,7 +98,15 @@ describe('LoginPage', () => {
     expect(push).not.toHaveBeenCalled();
   });
 
-  it('con una sesión de Firebase ya activa, navega a /home en vez de mostrar el formulario', async () => {
+  it('muestra el formulario de inmediato aunque la comprobación de sesión no haya resuelto', () => {
+    observarSesion.mockImplementation(() => jest.fn()); // nunca llama al callback
+    render(<LoginPage />);
+
+    expect(screen.getByLabelText('Correo electrónico')).toBeInTheDocument();
+    expect(screen.getByLabelText('Contraseña')).toBeInTheDocument();
+  });
+
+  it('con una sesión de Firebase ya activa, navega a /home en segundo plano', async () => {
     observarSesion.mockImplementation((callback) => {
       callback({ uid: 'abc123', email: 'mateo@example.com' });
       return jest.fn();
@@ -107,18 +115,9 @@ describe('LoginPage', () => {
     render(<LoginPage />);
 
     await waitFor(() => expect(replace).toHaveBeenCalledWith('/home'));
-    expect(screen.queryByLabelText('Correo electrónico')).not.toBeInTheDocument();
     // router.replace, no push: no debe quedar en el historial una pantalla
     // de login que nunca llegó a usarse.
     expect(push).not.toHaveBeenCalled();
-  });
-
-  it('mientras comprueba la sesión, no muestra el formulario', () => {
-    observarSesion.mockImplementation(() => jest.fn()); // nunca llama al callback
-    render(<LoginPage />);
-
-    expect(screen.queryByLabelText('Correo electrónico')).not.toBeInTheDocument();
-    expect(screen.getByText('Comprobando sesión…')).toBeInTheDocument();
   });
 
   it('cancela la suscripción a observarSesion al desmontarse', () => {
