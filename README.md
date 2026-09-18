@@ -55,8 +55,7 @@ app/                          # App Router: solo enrutado
 ├── page.jsx                  # "/"         -> <LoginPage/> (arranque de la app)
 ├── login/page.jsx            # "/login"    -> <LoginPage/> (misma pantalla que "/")
 ├── registro/page.jsx         # "/registro" -> <RegistroPage/>
-├── home/page.jsx              # "/home"     -> <HomePage/> (destino tras login, exige sesión)
-├── chat/page.jsx               # "/chat"     -> <ChatPage/> (conversación 1 a 1, exige sesión)
+├── home/page.jsx              # "/home"     -> <HomePage/> (destino tras login: el chat 1 a 1, exige sesión)
 ├── estilos/page.jsx          # "/estilos"  -> guía viva del sistema de diseño (exige sesión)
 └── not-found.jsx             # 404 -> <NotFoundPage/> (se exporta como out/404.html)
 src/
@@ -81,7 +80,7 @@ src/
     ├── molecules/   FormField, ThemeToggle, RequisitosCampo, CampoMensaje
     ├── organisms/   Header, RegistroForm, LoginForm, Conversacion
     ├── templates/   DefaultLayout
-    └── pages/       LoginPage, RegistroPage, HomePage, ChatPage, StyleGuidePage, NotFoundPage
+    └── pages/       LoginPage, RegistroPage, HomePage, StyleGuidePage, NotFoundPage
 ```
 
 `app/` solo conecta URLs con componentes. Toda la UI y su lógica viven en
@@ -118,11 +117,12 @@ configurar `NEXT_PUBLIC_API_BASE_URL`.
 La ruta `/login` sí habla con **Firebase Authentication** directamente (SDK
 de cliente, `src/firebase/auth.js`) — no hay endpoint de login en
 chat-registro. `/`, `/login` y `/registro` redirigen a `/home` si ya hay
-sesión; cualquier otra ruta (`/home`, `/chat`, `/estilos`) exige sesión y
-redirige a `/login` si no la hay.
+sesión; cualquier otra ruta (`/home`, `/estilos`) exige sesión y redirige a
+`/login` si no la hay.
 
-La ruta `/chat` consume **chat-conversacion**: WebSocket en tiempo real +
-REST para el historial. Detalle en
+**`/home` es el chat en sí** — el destino tras iniciar sesión — conectado de
+verdad a **chat-conversacion**: WebSocket en tiempo real + REST para el
+historial. Detalle en
 [`docs/integracion-conversacion.md`](./docs/integracion-conversacion.md),
 incluida la identidad temporal (username pedido a mano — chat-registro
 todavía no expone cómo resolverlo desde la sesión de Firebase).

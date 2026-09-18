@@ -68,7 +68,7 @@ describe('RegistroPage', () => {
       'href',
       '/',
     );
-    // Para que ChatPage no tenga que volver a pedir el username (ver
+    // Para que HomePage no tenga que volver a pedir el username (ver
     // src/utils/miUsuario.js).
     expect(localStorage.getItem('chat:miUsuario')).toBe('mateo29');
   });

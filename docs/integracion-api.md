@@ -46,7 +46,7 @@ Cómo consume este frontend los microservicios backend. Contrato completo:
 | `src/hooks/useRedirigirSiHaySesion.js` | Hook inverso, para pantallas públicas: `{ comprobando }`, navega a `/home` si SÍ hay usuario. |
 | `src/components/organisms/LoginForm/` | Formulario de login: valida, llama a `onIniciarSesion` y muestra el aviso según `error.kind` si falla. |
 | `src/components/pages/LoginPage/` | Monta `LoginForm`, le pasa `onIniciarSesion` (llama a `iniciarSesion` y navega a `/home` si sale bien) + enlace a `/registro`. También navega a `/home` si ya hay sesión, antes de mostrar el formulario. |
-| `src/components/pages/HomePage/` | Destino tras un login correcto. Exige sesión (`useRequiereSesion`). Placeholder: solo confirma la sesión, sin contenido real todavía. |
+| `src/components/pages/HomePage/` | En `/home`, destino tras un login correcto — el chat 1 a 1 en sí (ver [`integracion-conversacion.md`](./integracion-conversacion.md)). Exige sesión (`useRequiereSesion`). |
 | `src/components/pages/StyleGuidePage/` | Guía de estilo. Exige sesión (`useRequiereSesion`) — no es pública. |
 
 ## Quién habla con Firebase
@@ -148,13 +148,24 @@ contenido nunca es sensible (ver el aviso de seguridad justo abajo).
 export estático (`output: 'export'`) no tiene servidor: `out/home.html` es un
 archivo público como cualquier otro, descargable sin pasar por React ni por
 `useRequiereSesion` — el guard solo actúa una vez que el JS carga en el
-navegador. Hoy no importa (`HomePage` no tiene datos reales todavía), pero
-en cuanto una pantalla protegida muestre algo sensible, ese dato **no puede
-depender de que el cliente decida ocultarlo** — tiene que venir de una
-llamada a un backend que exija sus propias credenciales (el `idToken`, un
-header, lo que decida el contrato). `useRequiereSesion` evita que alguien sin
-sesión *use* la pantalla; no reemplaza la autorización del lado del
-servidor para los datos que esa pantalla vaya a pedir.
+navegador. `useRequiereSesion` evita que alguien sin sesión *use* la
+pantalla; no reemplaza la autorización del lado del servidor para los datos
+que esa pantalla vaya a pedir — esos datos **no pueden depender de que el
+cliente decida ocultarlos**, tienen que venir de una llamada a un backend
+que exija sus propias credenciales (el `idToken`, un header, lo que decida
+el contrato).
+
+Esto ya dejó de ser hipotético: `HomePage` ahora es el chat (ver
+[`integracion-conversacion.md`](./integracion-conversacion.md)) y sí muestra
+datos reales — mensajes de `chat-conversacion`. Ese servicio **todavía no
+tiene autenticación propia** (su contrato lo avisa explícitamente): cualquiera
+que sepa la URL puede pedir el historial de cualquier par de usuarios o
+conectarse al WebSocket con cualquier `{usuario}`, sin pasar por Firebase ni
+por nada de este frontend. `useRequiereSesion` en `HomePage` solo impide
+llegar a la pantalla sin sesión de *este* frontend — no protege los mensajes
+en sí, que siguen expuestos a quien hable directo con `chat-conversacion`.
+Sigue siendo, a propósito, una demo de la conexión — no algo listo para datos
+reales hasta que `chat-conversacion` resuelva su propia autenticación.
 
 ## Patrón: resultado tipado
 

@@ -90,8 +90,7 @@ chat-frontend/
 │   ├── page.jsx               # "/"         -> <LoginPage/> (arranque de la app)
 │   ├── registro/page.jsx      # "/registro" -> <RegistroPage/>
 │   ├── login/page.jsx         # "/login"    -> <LoginPage/> (misma pantalla que "/")
-│   ├── home/page.jsx          # "/home"     -> <HomePage/> (destino tras login correcto)
-│   ├── chat/page.jsx          # "/chat"     -> <ChatPage/> (conversación 1 a 1)
+│   ├── home/page.jsx          # "/home"     -> <HomePage/> (destino tras login: el chat 1 a 1)
 │   ├── estilos/page.jsx       # "/estilos"  -> <StyleGuidePage/> (guía viva)
 │   └── not-found.jsx          # 404 (ruta inexistente o notFound()) -> <NotFoundPage/>
 ├── src/
@@ -123,8 +122,7 @@ chat-frontend/
 │       ├── molecules/         FormField · ThemeToggle · RequisitosCampo · CampoMensaje
 │       ├── organisms/         Header · RegistroForm · LoginForm · Conversacion
 │       ├── templates/         DefaultLayout
-│       └── pages/             LoginPage · RegistroPage · HomePage · ChatPage · StyleGuidePage ·
-│                               NotFoundPage
+│       └── pages/             LoginPage · RegistroPage · HomePage · StyleGuidePage · NotFoundPage
 │           └── Button/
 │               ├── Button.jsx
 │               ├── Button.module.css
@@ -243,15 +241,16 @@ Cada componente vive en su propia carpeta con estos archivos:
   no tienen sesión todavía). Ver
   [`integracion-api.md`](./integracion-api.md#por-qué-no-se-retrasa-la-carga-con-un-estado-comprobando-sesión).
 - **Toda ruta que no sea `/`, `/login` o `/registro` exige sesión** —hoy
-  `/home`, `/chat` y `/estilos`— vía el hook `useRequiereSesion` (`src/hooks/`,
-  mismo mecanismo que `LoginPage` pero en sentido contrario). Es una guardia
+  `/home` y `/estilos`— vía el hook `useRequiereSesion` (`src/hooks/`, mismo
+  mecanismo que `LoginPage` pero en sentido contrario). Es una guardia
   de **UX en el cliente**, no un límite de seguridad: en export estático el
   HTML de esas rutas es un archivo público igual que cualquier otro, el
   guard solo actúa cuando el JS ya cargó en el navegador. El día que una
   pantalla protegida muestre datos reales, esos datos deben venir de una
   llamada a un backend que los autorice él mismo — ver
   [`integracion-api.md`](./integracion-api.md#rutas-que-exigen-sesión).
-- **`/chat` conecta con `chat-conversacion`** (WebSocket en tiempo real +
-  REST para el historial) — detalle completo en
+- **`/home` (`HomePage`) es el chat en sí**, conectado de verdad a
+  `chat-conversacion` (WebSocket en tiempo real + REST para el historial) —
+  detalle completo en
   [`integracion-conversacion.md`](./integracion-conversacion.md).
 - Detalle en [`integracion-api.md`](./integracion-api.md).

@@ -1,6 +1,6 @@
 /**
  * Recuerda, solo en este navegador, el username de chat-registro de quien
- * usa la app — para la pantalla de chat (`ChatPage`), que todavía no tiene
+ * usa la app — para la pantalla de chat (`HomePage`), que todavía no tiene
  * ninguna forma de resolverlo a partir de la sesión de Firebase (no hay
  * endpoint en chat-registro para eso; ver `docs/integracion-conversacion.md`).
  * Tolerante a fallos (modo incógnito, almacenamiento deshabilitado...).

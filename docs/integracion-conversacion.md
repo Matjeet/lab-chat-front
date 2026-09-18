@@ -26,7 +26,7 @@ variables **distintas** — ver su contrato §1); ambas traen por defecto
 | `src/components/atoms/BurbujaMensaje/` | Una burbuja de mensaje (propio/ajeno). |
 | `src/components/molecules/CampoMensaje/` | Campo de texto + botón de envío. |
 | `src/components/organisms/Conversacion/` | Lista de mensajes (auto-scroll) + `CampoMensaje`. |
-| `src/components/pages/ChatPage/` | Formulario de identidad (una vez) → `Conversacion` conectada de verdad. Exige sesión (`useRequiereSesion`, igual que `HomePage`). |
+| `src/components/pages/HomePage/` | En `/home`, el destino tras iniciar sesión. Formulario de identidad (una vez) → `Conversacion` conectada de verdad. Exige sesión (`useRequiereSesion`). |
 
 ## Identidad: por qué hay que escribir "tu usuario" a mano
 
@@ -38,7 +38,7 @@ endpoint para resolverlo** a partir del `uid`/email de la sesión (su único
 endpoint es `POST /api/v1/registro`, ver
 `chat-registro/docs/contratos-api.md`).
 
-Mientras eso no exista, `ChatPage` lo pide una vez con un formulario simple
+Mientras eso no exista, `HomePage` lo pide una vez con un formulario simple
 y lo recuerda en `localStorage` (`src/utils/miUsuario.js`) — `RegistroPage`
 también lo guarda solo, si te registraste en este navegador
 (`guardarMiUsuario(datos.username)` tras un alta correcta). Con quién
@@ -84,7 +84,7 @@ descartaría en silencio.
 ## Verificado en caliente
 
 Con `chat-conversacion` corriendo en local (`./gradlew bootRun`, MongoDB en
-`localhost:27017`) y `chat-frontend` en `npm run dev`: login → `/chat` →
+`localhost:27017`) y `chat-frontend` en `npm run dev`: login → `/home` →
 identidad → historial cargado (`200` con CORS) → "Conectado" → mensaje
 escrito en la UI, recibido de vuelta por el socket con `id`/`enviadoEn`
 reales, persistido (sigue ahí tras recargar la página).

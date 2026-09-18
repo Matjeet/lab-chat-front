@@ -30,7 +30,7 @@ import styles from './RegistroPage.module.css';
  * Mientras no hay alta muestra el formulario; al completarse, la confirmación
  * con los datos que devuelve el servidor (nunca la contraseña) — y de paso
  * recuerda el `username` en este navegador (`guardarMiUsuario`) para que
- * `ChatPage` no tenga que volver a pedirlo (todavía no hay forma de
+ * `HomePage` no tenga que volver a pedirlo (todavía no hay forma de
  * resolverlo a partir de la sesión de Firebase, ver
  * `docs/integracion-conversacion.md`).
  */

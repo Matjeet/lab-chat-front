@@ -1,6 +1,13 @@
-.mensaje {
-  text-align: center;
-  font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text);
+.identidad {
+  display: flex;
+  flex-direction: column;
+  max-width: var(--layout-form-width);
+  gap: var(--space-4);
+  margin: 0 auto;
+}
+
+.vista {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
 }
