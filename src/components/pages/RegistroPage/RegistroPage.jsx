@@ -7,6 +7,7 @@ import DefaultLayout from '../../templates/DefaultLayout';
 import RegistroForm from '../../organisms/RegistroForm';
 import Alert from '../../atoms/Alert';
 import useRedirigirSiHaySesion from '../../../hooks/useRedirigirSiHaySesion';
+import { guardarMiUsuario } from '../../../utils/miUsuario';
 import styles from './RegistroPage.module.css';
 
 /**
@@ -27,11 +28,20 @@ import styles from './RegistroPage.module.css';
  * su sesión a mano.
  *
  * Mientras no hay alta muestra el formulario; al completarse, la confirmación
- * con los datos que devuelve el servidor (nunca la contraseña).
+ * con los datos que devuelve el servidor (nunca la contraseña) — y de paso
+ * recuerda el `username` en este navegador (`guardarMiUsuario`) para que
+ * `ChatPage` no tenga que volver a pedirlo (todavía no hay forma de
+ * resolverlo a partir de la sesión de Firebase, ver
+ * `docs/integracion-conversacion.md`).
  */
 const RegistroPage = () => {
   const [usuario, setUsuario] = useState(null);
   useRedirigirSiHaySesion();
+
+  const alCompletarRegistro = (datos) => {
+    guardarMiUsuario(datos.username);
+    setUsuario(datos);
+  };
 
   return (
     <DefaultLayout title="Crear cuenta" centered tarjeta>
@@ -63,7 +73,7 @@ const RegistroPage = () => {
           <p className={styles.intro}>
             Crea tu cuenta para empezar a usar Chat.
           </p>
-          <RegistroForm onRegistroCompleto={setUsuario} />
+          <RegistroForm onRegistroCompleto={alCompletarRegistro} />
         </>
       )}
     </DefaultLayout>

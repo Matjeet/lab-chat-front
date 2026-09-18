@@ -91,6 +91,7 @@ chat-frontend/
 │   ├── registro/page.jsx      # "/registro" -> <RegistroPage/>
 │   ├── login/page.jsx         # "/login"    -> <LoginPage/> (misma pantalla que "/")
 │   ├── home/page.jsx          # "/home"     -> <HomePage/> (destino tras login correcto)
+│   ├── chat/page.jsx          # "/chat"     -> <ChatPage/> (conversación 1 a 1)
 │   ├── estilos/page.jsx       # "/estilos"  -> <StyleGuidePage/> (guía viva)
 │   └── not-found.jsx          # 404 (ruta inexistente o notFound()) -> <NotFoundPage/>
 ├── src/
@@ -101,22 +102,29 @@ chat-frontend/
 │   ├── firebase/               # SDK de cliente de Firebase (solo login, ver integracion-api.md)
 │   │   ├── config.js           # Inicializa la app (variables NEXT_PUBLIC_FIREBASE_*)
 │   │   └── auth.js             # iniciarSesion(...) + observarSesion(cb) -> resultado tipado
+│   ├── conversacion/            # Acceso a chat-conversacion (ver integracion-conversacion.md)
+│   │   ├── config.js            # CONVERSACION_BASE_URL + urlSocketConversacion(usuario)
+│   │   └── historial.js         # GET /api/v1/conversaciones/{a}/{b} -> resultado tipado
 │   ├── hooks/                   # Hooks compartidos (no encajan en Atomic Design)
 │   │   ├── useRequiereSesion.js # {verificando}; navega a /login si no hay sesión
-│   │   └── useRedirigirSiHaySesion.js # {comprobando}; navega a /home si SÍ hay sesión
+│   │   ├── useRedirigirSiHaySesion.js # {comprobando}; navega a /home si SÍ hay sesión
+│   │   └── useConversacion.js   # historial + WebSocket de una conversación 1 a 1
 │   ├── utils/                  # Helpers puros (sin React)
 │   │   ├── validacionRegistro.js
-│   │   └── validacionLogin.js
+│   │   ├── validacionLogin.js
+│   │   ├── validacionConversacion.js
+│   │   └── miUsuario.js         # localStorage: recuerda el username (ver integracion-conversacion.md)
 │   ├── styles/
 │   │   ├── tokens.css         # Tokens de diseño (ver sistema-de-diseno.md)
 │   │   └── global.css         # Reset y estilos base
 │   └── components/
 │       ├── atoms/             Button · Input · Alert · Ilustracion404 · PatronBurbujas ·
-│       │                      TextoAleatorio
-│       ├── molecules/         FormField · ThemeToggle · RequisitosCampo
-│       ├── organisms/         Header · RegistroForm · LoginForm
+│       │                      TextoAleatorio · BurbujaMensaje
+│       ├── molecules/         FormField · ThemeToggle · RequisitosCampo · CampoMensaje
+│       ├── organisms/         Header · RegistroForm · LoginForm · Conversacion
 │       ├── templates/         DefaultLayout
-│       └── pages/             LoginPage · RegistroPage · HomePage · StyleGuidePage · NotFoundPage
+│       └── pages/             LoginPage · RegistroPage · HomePage · ChatPage · StyleGuidePage ·
+│                               NotFoundPage
 │           └── Button/
 │               ├── Button.jsx
 │               ├── Button.module.css
@@ -235,12 +243,15 @@ Cada componente vive en su propia carpeta con estos archivos:
   no tienen sesión todavía). Ver
   [`integracion-api.md`](./integracion-api.md#por-qué-no-se-retrasa-la-carga-con-un-estado-comprobando-sesión).
 - **Toda ruta que no sea `/`, `/login` o `/registro` exige sesión** —hoy
-  `/home` y `/estilos`— vía el hook `useRequiereSesion` (`src/hooks/`, mismo
-  mecanismo que `LoginPage` pero en sentido contrario). Es una guardia de
-  **UX en el cliente**, no un límite de seguridad: en export estático el
+  `/home`, `/chat` y `/estilos`— vía el hook `useRequiereSesion` (`src/hooks/`,
+  mismo mecanismo que `LoginPage` pero en sentido contrario). Es una guardia
+  de **UX en el cliente**, no un límite de seguridad: en export estático el
   HTML de esas rutas es un archivo público igual que cualquier otro, el
   guard solo actúa cuando el JS ya cargó en el navegador. El día que una
   pantalla protegida muestre datos reales, esos datos deben venir de una
   llamada a un backend que los autorice él mismo — ver
   [`integracion-api.md`](./integracion-api.md#rutas-que-exigen-sesión).
+- **`/chat` conecta con `chat-conversacion`** (WebSocket en tiempo real +
+  REST para el historial) — detalle completo en
+  [`integracion-conversacion.md`](./integracion-conversacion.md).
 - Detalle en [`integracion-api.md`](./integracion-api.md).

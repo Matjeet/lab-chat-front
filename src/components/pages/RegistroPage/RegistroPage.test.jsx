@@ -29,6 +29,7 @@ beforeEach(() => {
 
 afterEach(() => {
   jest.clearAllMocks();
+  localStorage.clear();
 });
 
 describe('RegistroPage', () => {
@@ -67,6 +68,9 @@ describe('RegistroPage', () => {
       'href',
       '/',
     );
+    // Para que ChatPage no tenga que volver a pedir el username (ver
+    // src/utils/miUsuario.js).
+    expect(localStorage.getItem('chat:miUsuario')).toBe('mateo29');
   });
 
   it('muestra el formulario de inmediato aunque la comprobación de sesión no haya resuelto', () => {
