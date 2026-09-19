@@ -80,15 +80,16 @@ const Section = ({ title, children }) => (
  * pinta siempre de inmediato (no depende de ningún fetch): ver `HomePage`
  * para el razonamiento completo.
  *
- * Pasa `SelectorInterlocutor` como `headerActions`, igual que `HomePage`:
- * toda pantalla que exige sesión lo muestra en la cabecera, aunque esta en
- * particular no consuma el interlocutor elegido (ver `InterlocutorContext`).
+ * Pasa `SelectorInterlocutor` como `headerCentro`, igual que `HomePage`:
+ * toda pantalla que exige sesión lo muestra centrado en la cabecera, aunque
+ * esta en particular no consuma el interlocutor elegido (ver
+ * `InterlocutorContext`).
  */
 const StyleGuidePage = () => {
   useRequiereSesion();
 
   return (
-    <DefaultLayout title="Sistema de diseño" headerActions={<SelectorInterlocutor />}>
+    <DefaultLayout title="Sistema de diseño" headerCentro={<SelectorInterlocutor />}>
       <p className={styles.intro}>
         Fuente de verdad: <code>src/styles/tokens.css</code>. Cambia el tema desde
         la cabecera para revisar el modo oscuro.

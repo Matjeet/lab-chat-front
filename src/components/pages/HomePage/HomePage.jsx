@@ -111,7 +111,7 @@ const HomePage = () => {
     Boolean(conLimpio) && conLimpio.toLowerCase() === yo.toLowerCase();
 
   return (
-    <DefaultLayout title="Chat" headerActions={<SelectorInterlocutor />}>
+    <DefaultLayout title="Chat" headerCentro={<SelectorInterlocutor />}>
       {!yo && (
         <form className={styles.identidad} onSubmit={alConfirmarYo} noValidate>
           <Alert tipo="info">
