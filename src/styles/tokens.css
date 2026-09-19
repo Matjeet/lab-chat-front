@@ -80,6 +80,7 @@
   /* --- Layout ---------------------------------------------------- */
   --layout-max-width: 640px;
   --layout-form-width: 420px;
+  --layout-inline-field-width: 10rem;
 
   /* --- COLOR · tema claro (por defecto) --------------------------- */
   --color-bg: #f5f6f8;

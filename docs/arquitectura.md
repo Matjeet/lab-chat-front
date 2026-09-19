@@ -101,9 +101,11 @@ chat-frontend/
 │   ├── firebase/               # SDK de cliente de Firebase (solo login, ver integracion-api.md)
 │   │   ├── config.js           # Inicializa la app (variables NEXT_PUBLIC_FIREBASE_*)
 │   │   └── auth.js             # iniciarSesion(...) + observarSesion(cb) -> resultado tipado
-│   ├── conversacion/            # Acceso a chat-conversacion (ver integracion-conversacion.md)
-│   │   ├── config.js            # CONVERSACION_BASE_URL + urlSocketConversacion(usuario)
+│   ├── conversacion/            # Acceso al chat en tiempo real, vía chat-gateway (ver integracion-conversacion.md)
+│   │   ├── config.js            # urlSocketConversacion(usuario), sobre API_BASE_URL
 │   │   └── historial.js         # GET /api/v1/conversaciones/{a}/{b} -> resultado tipado
+│   ├── context/                 # Contextos de React (estado compartido entre páginas)
+│   │   └── InterlocutorContext.jsx # {con, establecerCon}; lo escribe SelectorInterlocutor, lo lee HomePage
 │   ├── hooks/                   # Hooks compartidos (no encajan en Atomic Design)
 │   │   ├── useRequiereSesion.js # {verificando}; navega a /login si no hay sesión
 │   │   ├── useRedirigirSiHaySesion.js # {comprobando}; navega a /home si SÍ hay sesión
@@ -119,7 +121,8 @@ chat-frontend/
 │   └── components/
 │       ├── atoms/             Button · Input · Alert · Ilustracion404 · PatronBurbujas ·
 │       │                      TextoAleatorio · BurbujaMensaje
-│       ├── molecules/         FormField · ThemeToggle · RequisitosCampo · CampoMensaje
+│       ├── molecules/         FormField · ThemeToggle · RequisitosCampo · CampoMensaje ·
+│       │                      SelectorInterlocutor
 │       ├── organisms/         Header · RegistroForm · LoginForm · Conversacion
 │       ├── templates/         DefaultLayout
 │       └── pages/             LoginPage · RegistroPage · HomePage · StyleGuidePage · NotFoundPage

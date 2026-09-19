@@ -38,19 +38,3 @@ export const validarContenido = (valor = '') => {
   if (limpio.length > CONTENIDO_MAX) return REGLAS_CONVERSACION.contenido;
   return null;
 };
-
-/**
- * @param {{yo: string, con: string}} valores
- * @returns {Record<string, string>} errores por campo; objeto vacío si todo es válido.
- */
-export const validarIdentidad = (valores) => {
-  const errores = {};
-  const yo = validarUsername(valores.yo);
-  const con = validarUsername(valores.con);
-  if (yo) errores.yo = yo;
-  if (con) errores.con = con;
-  if (!yo && !con && valores.yo.trim().toLowerCase() === valores.con.trim().toLowerCase()) {
-    errores.con = 'No puedes chatear contigo mismo.';
-  }
-  return errores;
-};

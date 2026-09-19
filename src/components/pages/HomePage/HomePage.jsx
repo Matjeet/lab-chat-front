@@ -7,9 +7,11 @@ import Conversacion from '../../organisms/Conversacion';
 import Button from '../../atoms/Button';
 import Alert from '../../atoms/Alert';
 import FormField from '../../molecules/FormField';
+import SelectorInterlocutor from '../../molecules/SelectorInterlocutor';
 import useRequiereSesion from '../../../hooks/useRequiereSesion';
 import useConversacion from '../../../hooks/useConversacion';
-import { validarIdentidad } from '../../../utils/validacionConversacion';
+import { useInterlocutor } from '../../../context/InterlocutorContext';
+import { validarUsername } from '../../../utils/validacionConversacion';
 import { guardarMiUsuario, leerMiUsuario } from '../../../utils/miUsuario';
 import styles from './HomePage.module.css';
 
@@ -20,16 +22,12 @@ import styles from './HomePage.module.css';
  * `HomePage` no podría llamarlo condicionalmente sin romper las reglas de
  * hooks.
  */
-const VistaConversacion = ({ yo, con, onCambiarInterlocutor }) => {
+const VistaConversacion = ({ yo, con }) => {
   const { mensajes, cargandoHistorial, errorHistorial, conectado, enviarMensaje } =
     useConversacion({ yo, con });
 
   return (
     <div className={styles.vista}>
-      <Button variant="ghost" onClick={onCambiarInterlocutor}>
-        ← Cambiar interlocutor
-      </Button>
-
       {cargandoHistorial && <Alert tipo="info">Cargando conversación…</Alert>}
 
       {!cargandoHistorial && errorHistorial && (
@@ -65,78 +63,86 @@ const VistaConversacion = ({ yo, con, onCambiarInterlocutor }) => {
  * lado de la conversación por `username` de chat-registro (contrato §2.1),
  * pero el login de este frontend es con Firebase y no expone ese username
  * en ningún sitio — chat-registro no tiene un endpoint para resolverlo a
- * partir del `uid`/email de la sesión. Mientras eso no exista, se pide una
- * vez con un formulario simple y se recuerda en este navegador
- * (`src/utils/miUsuario.js`; `RegistroPage` ya lo guarda solo si te
- * registraste aquí). Con quién chatear (`con`) no se recuerda — no hay
- * lista de contactos todavía, es solo esta vista de una conversación.
+ * partir del `uid`/email de la sesión.
+ *
+ * - **Tu usuario (`yo`)**: se pide una vez, aquí en la página, y se recuerda
+ *   en este navegador (`src/utils/miUsuario.js`; `RegistroPage` ya lo guarda
+ *   solo si te registraste aquí).
+ * - **Con quién chatear (`con`)**: se elige con `SelectorInterlocutor`, en la
+ *   cabecera (`InterlocutorContext`) — visible en toda pantalla que exija
+ *   sesión, no solo aquí. No se recuerda entre recargas: no hay lista de
+ *   contactos todavía, es solo la conversación activa de esta sesión de
+ *   navegación.
  */
 const HomePage = () => {
   useRequiereSesion();
+  const { con } = useInterlocutor();
 
-  const [identidad, setIdentidad] = useState(null);
-  const [valores, setValores] = useState({ yo: '', con: '' });
-  const [errores, setErrores] = useState({});
+  const [yo, setYo] = useState('');
+  const [valorYo, setValorYo] = useState('');
+  const [errorYo, setErrorYo] = useState(null);
 
   useEffect(() => {
-    setValores((prev) => ({ ...prev, yo: leerMiUsuario() }));
+    const guardado = leerMiUsuario();
+    setYo(guardado);
+    setValorYo(guardado);
   }, []);
 
-  const alCambiar = (campo) => (evento) => {
-    const { value } = evento.target;
-    setValores((prev) => ({ ...prev, [campo]: value }));
-    setErrores((prev) => (prev[campo] ? { ...prev, [campo]: undefined } : prev));
+  const alCambiarYo = (evento) => {
+    setValorYo(evento.target.value);
+    if (errorYo) setErrorYo(null);
   };
 
-  const alEnviarIdentidad = (evento) => {
+  const alConfirmarYo = (evento) => {
     evento.preventDefault();
-    const datos = { yo: valores.yo.trim(), con: valores.con.trim() };
-    const erroresValidacion = validarIdentidad(datos);
-    if (Object.keys(erroresValidacion).length > 0) {
-      setErrores(erroresValidacion);
+    const mensaje = validarUsername(valorYo);
+    if (mensaje) {
+      setErrorYo(mensaje);
       return;
     }
-    setErrores({});
-    guardarMiUsuario(datos.yo);
-    setIdentidad(datos);
+    const limpio = valorYo.trim();
+    setErrorYo(null);
+    guardarMiUsuario(limpio);
+    setYo(limpio);
   };
 
-  if (identidad) {
-    return (
-      <DefaultLayout title="Chat">
-        <VistaConversacion
-          yo={identidad.yo}
-          con={identidad.con}
-          onCambiarInterlocutor={() => setIdentidad(null)}
-        />
-      </DefaultLayout>
-    );
-  }
+  const conLimpio = con.trim();
+  const chateandoContigoMismo =
+    Boolean(conLimpio) && conLimpio.toLowerCase() === yo.toLowerCase();
 
   return (
-    <DefaultLayout title="Chat">
-      <form className={styles.identidad} onSubmit={alEnviarIdentidad} noValidate>
-        <Alert tipo="info">
-          Todavía no hay forma de saber tu usuario de chat-registro a partir de tu sesión —
-          indícalo aquí una vez; se recuerda en este navegador para la próxima.
+    <DefaultLayout title="Chat" headerActions={<SelectorInterlocutor />}>
+      {!yo && (
+        <form className={styles.identidad} onSubmit={alConfirmarYo} noValidate>
+          <Alert tipo="info">
+            Todavía no hay forma de saber tu usuario de chat-registro a partir de tu sesión —
+            indícalo aquí una vez; se recuerda en este navegador para la próxima.
+          </Alert>
+          <FormField
+            id="yo"
+            label="Tu usuario"
+            autoComplete="username"
+            value={valorYo}
+            error={errorYo}
+            onChange={alCambiarYo}
+          />
+          <Button type="submit">Guardar</Button>
+        </form>
+      )}
+
+      {yo && !conLimpio && (
+        <Alert tipo="info">Elige con quién chatear arriba, en la cabecera, para empezar.</Alert>
+      )}
+
+      {yo && conLimpio && chateandoContigoMismo && (
+        <Alert tipo="error">
+          No puedes chatear contigo mismo. Elige otro usuario en la cabecera.
         </Alert>
-        <FormField
-          id="yo"
-          label="Tu usuario"
-          autoComplete="username"
-          value={valores.yo}
-          error={errores.yo}
-          onChange={alCambiar('yo')}
-        />
-        <FormField
-          id="con"
-          label="Chatear con"
-          value={valores.con}
-          error={errores.con}
-          onChange={alCambiar('con')}
-        />
-        <Button type="submit">Entrar al chat</Button>
-      </form>
+      )}
+
+      {yo && conLimpio && !chateandoContigoMismo && (
+        <VistaConversacion yo={yo} con={conLimpio} />
+      )}
     </DefaultLayout>
   );
 };

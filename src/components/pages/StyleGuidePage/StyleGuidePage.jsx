@@ -7,6 +7,7 @@ import Alert from '../../atoms/Alert';
 import PatronBurbujas from '../../atoms/PatronBurbujas';
 import FormField from '../../molecules/FormField';
 import RequisitosCampo from '../../molecules/RequisitosCampo';
+import SelectorInterlocutor from '../../molecules/SelectorInterlocutor';
 import useRequiereSesion from '../../../hooks/useRequiereSesion';
 import styles from './StyleGuidePage.module.css';
 
@@ -78,12 +79,16 @@ const Section = ({ title, children }) => (
  * (`useRequiereSesion`) — sin ella, navega a `/login`, pero el contenido se
  * pinta siempre de inmediato (no depende de ningún fetch): ver `HomePage`
  * para el razonamiento completo.
+ *
+ * Pasa `SelectorInterlocutor` como `headerActions`, igual que `HomePage`:
+ * toda pantalla que exige sesión lo muestra en la cabecera, aunque esta en
+ * particular no consuma el interlocutor elegido (ver `InterlocutorContext`).
  */
 const StyleGuidePage = () => {
   useRequiereSesion();
 
   return (
-    <DefaultLayout title="Sistema de diseño">
+    <DefaultLayout title="Sistema de diseño" headerActions={<SelectorInterlocutor />}>
       <p className={styles.intro}>
         Fuente de verdad: <code>src/styles/tokens.css</code>. Cambia el tema desde
         la cabecera para revisar el modo oscuro.

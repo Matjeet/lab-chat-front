@@ -66,9 +66,10 @@ src/
 ├── firebase/                  # SDK de cliente de Firebase Authentication (solo login)
 │   ├── config.js
 │   └── auth.js                #   iniciarSesion(...) + observarSesion(cb)
-├── conversacion/               # Llamadas a chat-conversacion (WebSocket + historial REST)
+├── conversacion/               # Llamadas al chat (WebSocket + historial REST), vía chat-gateway
 │   ├── config.js
 │   └── historial.js
+├── context/                    # InterlocutorContext: con quién se está chateando ahora
 ├── hooks/                      # useRequiereSesion, useRedirigirSiHaySesion, useConversacion
 ├── utils/                     # Helpers puros (validación de formularios, miUsuario...)
 ├── styles/
@@ -77,7 +78,7 @@ src/
 └── components/               # Atomic Design
     ├── atoms/       Button, Input, Alert, Ilustracion404, PatronBurbujas, TextoAleatorio,
     │                BurbujaMensaje
-    ├── molecules/   FormField, ThemeToggle, RequisitosCampo, CampoMensaje
+    ├── molecules/   FormField, ThemeToggle, RequisitosCampo, CampoMensaje, SelectorInterlocutor
     ├── organisms/   Header, RegistroForm, LoginForm, Conversacion
     ├── templates/   DefaultLayout
     └── pages/       LoginPage, RegistroPage, HomePage, StyleGuidePage, NotFoundPage

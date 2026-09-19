@@ -2,6 +2,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import HomePage from './HomePage';
+import { InterlocutorProvider } from '../../../context/InterlocutorContext';
 import { observarSesion } from '../../../firebase/auth';
 import useConversacion from '../../../hooks/useConversacion';
 
@@ -40,64 +41,107 @@ afterEach(() => {
   localStorage.clear();
 });
 
-const identificarse = async (user, { yo = 'mateo', con = 'ana' } = {}) => {
+// InterlocutorContext real (no mockeado): el selector vive en la cabecera y
+// HomePage lo lee, así que interactuar con él tal como lo haría quien usa la
+// app es más fiel que mockear el hook.
+const montar = () =>
+  render(
+    <InterlocutorProvider>
+      <HomePage />
+    </InterlocutorProvider>,
+  );
+
+const confirmarMiUsuario = async (user, yo = 'mateo') => {
   await user.type(screen.getByLabelText('Tu usuario'), yo);
+  await user.click(screen.getByRole('button', { name: 'Guardar' }));
+};
+
+const elegirInterlocutor = async (user, con = 'ana') => {
   await user.type(screen.getByLabelText('Chatear con'), con);
-  await user.click(screen.getByRole('button', { name: 'Entrar al chat' }));
+  await user.click(screen.getByRole('button', { name: 'Ir' }));
 };
 
 describe('HomePage', () => {
-  it('pide primero la identidad (tu usuario / con quién chatear)', () => {
-    render(<HomePage />);
-    expect(screen.getByLabelText('Tu usuario')).toBeInTheDocument();
+  it('el selector de interlocutor está en la cabecera desde el principio', () => {
+    montar();
     expect(screen.getByLabelText('Chatear con')).toBeInTheDocument();
+  });
+
+  it('pide primero "Tu usuario"', () => {
+    montar();
+    expect(screen.getByLabelText('Tu usuario')).toBeInTheDocument();
     expect(useConversacion).not.toHaveBeenCalled();
   });
 
-  it('precarga "Tu usuario" si ya se guardó antes (p. ej. al registrarse)', () => {
+  it('si "Tu usuario" ya se guardó antes (p. ej. al registrarse), no lo vuelve a pedir', () => {
     localStorage.setItem('chat:miUsuario', 'mateo29');
-    render(<HomePage />);
-    expect(screen.getByLabelText('Tu usuario')).toHaveValue('mateo29');
+    montar();
+
+    expect(screen.queryByLabelText('Tu usuario')).not.toBeInTheDocument();
+    expect(
+      screen.getByText(/elige con quién chatear arriba, en la cabecera/i),
+    ).toBeInTheDocument();
   });
 
-  it('valida antes de entrar: campos vacíos no avanzan a la conversación', async () => {
+  it('valida "Tu usuario": un campo vacío no avanza', async () => {
     const user = userEvent.setup();
-    render(<HomePage />);
+    montar();
 
-    await user.click(screen.getByRole('button', { name: 'Entrar al chat' }));
+    await user.click(screen.getByRole('button', { name: 'Guardar' }));
 
-    expect(await screen.findAllByText(/obligatorio/i)).toHaveLength(2);
+    expect(await screen.findByText(/obligatorio/i)).toBeInTheDocument();
+    expect(useConversacion).not.toHaveBeenCalled();
+  });
+
+  it('con "Tu usuario" guardado pero sin interlocutor, invita a elegirlo en la cabecera', async () => {
+    const user = userEvent.setup();
+    montar();
+
+    await confirmarMiUsuario(user);
+
+    expect(
+      screen.getByText(/elige con quién chatear arriba, en la cabecera/i),
+    ).toBeInTheDocument();
     expect(useConversacion).not.toHaveBeenCalled();
   });
 
   it('no deja chatear contigo mismo', async () => {
     const user = userEvent.setup();
-    render(<HomePage />);
+    montar();
 
-    await identificarse(user, { yo: 'mateo', con: 'mateo' });
+    await confirmarMiUsuario(user, 'mateo');
+    await elegirInterlocutor(user, 'mateo');
 
-    expect(await screen.findByText('No puedes chatear contigo mismo.')).toBeInTheDocument();
+    expect(
+      await screen.findByText('No puedes chatear contigo mismo. Elige otro usuario en la cabecera.'),
+    ).toBeInTheDocument();
+    expect(useConversacion).not.toHaveBeenCalled();
   });
 
-  it('con identidad válida, conecta la conversación y recuerda "yo"', async () => {
+  it('con "yo" confirmado y un interlocutor válido elegido en la cabecera, conecta la conversación', async () => {
     const user = userEvent.setup();
-    render(<HomePage />);
+    montar();
 
-    await identificarse(user, { yo: 'mateo', con: 'ana' });
+    await confirmarMiUsuario(user, 'mateo');
+    await elegirInterlocutor(user, 'ana');
 
     expect(useConversacion).toHaveBeenCalledWith({ yo: 'mateo', con: 'ana' });
     expect(screen.getByText('ana')).toBeInTheDocument();
     expect(localStorage.getItem('chat:miUsuario')).toBe('mateo');
   });
 
-  it('"Cambiar interlocutor" vuelve al formulario de identidad', async () => {
+  it('cambiar el interlocutor desde la cabecera cambia la conversación abierta', async () => {
     const user = userEvent.setup();
-    render(<HomePage />);
-    await identificarse(user);
+    montar();
 
-    await user.click(screen.getByRole('button', { name: /cambiar interlocutor/i }));
+    await confirmarMiUsuario(user, 'mateo');
+    await elegirInterlocutor(user, 'ana');
+    expect(useConversacion).toHaveBeenCalledWith({ yo: 'mateo', con: 'ana' });
 
-    expect(screen.getByLabelText('Chatear con')).toBeInTheDocument();
+    await user.clear(screen.getByLabelText('Chatear con'));
+    await elegirInterlocutor(user, 'luis');
+
+    expect(useConversacion).toHaveBeenCalledWith({ yo: 'mateo', con: 'luis' });
   });
 
   it('mientras carga el historial, avisa en vez de mostrar la conversación vacía', async () => {
@@ -109,9 +153,10 @@ describe('HomePage', () => {
       enviarMensaje: jest.fn(),
     });
     const user = userEvent.setup();
-    render(<HomePage />);
+    montar();
 
-    await identificarse(user);
+    await confirmarMiUsuario(user);
+    await elegirInterlocutor(user);
 
     expect(screen.getByText(/cargando conversación/i)).toBeInTheDocument();
   });
@@ -125,9 +170,10 @@ describe('HomePage', () => {
       enviarMensaje: jest.fn(),
     });
     const user = userEvent.setup();
-    render(<HomePage />);
+    montar();
 
-    await identificarse(user);
+    await confirmarMiUsuario(user);
+    await elegirInterlocutor(user);
 
     expect(screen.getByText(/no se pudo cargar el historial/i)).toBeInTheDocument();
   });
@@ -138,7 +184,7 @@ describe('HomePage', () => {
       return jest.fn();
     });
 
-    render(<HomePage />);
+    montar();
 
     expect(screen.getByLabelText('Tu usuario')).toBeInTheDocument();
     await waitFor(() => expect(replace).toHaveBeenCalledWith('/login'));

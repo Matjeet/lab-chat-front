@@ -30,13 +30,15 @@ coincide con `npm run dev`.
 | `src/conversacion/historial.js` | `obtenerHistorial(usuarioA, usuarioB, opciones)` → `GET /api/v1/conversaciones/{a}/{b}` (contra chat-gateway), resultado tipado igual que `src/api/registro.js`. |
 | `src/utils/validacionConversacion.js` | Formato de username (espejo del de chat-registro) y de `contenido` (no vacío, ≤ 2000) — espejo del contrato, la autoritativa sigue siendo el servidor. |
 | `src/hooks/useConversacion.js` | El hook central: carga el historial, abre el WebSocket de `{yo}`, filtra los mensajes de esta conversación, expone `enviarMensaje`. |
-| `src/utils/miUsuario.js` | Recuerda el `username` en `localStorage` — ver "Identidad" más abajo. |
+| `src/utils/miUsuario.js` | Recuerda el `username` (`yo`) en `localStorage` — ver "Identidad" más abajo. |
+| `src/context/InterlocutorContext.jsx` | `{con, establecerCon}` — con quién se está chateando ahora. Lo escribe `SelectorInterlocutor`, lo lee `HomePage`. No persiste (ver "Identidad"). |
+| `src/components/molecules/SelectorInterlocutor/` | Elige `con` desde la cabecera (`headerActions` de `DefaultLayout`) — valida el formato antes de confirmar. |
 | `src/components/atoms/BurbujaMensaje/` | Una burbuja de mensaje (propio/ajeno). |
 | `src/components/molecules/CampoMensaje/` | Campo de texto + botón de envío. |
 | `src/components/organisms/Conversacion/` | Lista de mensajes (auto-scroll) + `CampoMensaje`. |
-| `src/components/pages/HomePage/` | En `/home`, el destino tras iniciar sesión. Formulario de identidad (una vez) → `Conversacion` conectada de verdad. Exige sesión (`useRequiereSesion`). |
+| `src/components/pages/HomePage/` | En `/home`, el destino tras iniciar sesión. Pide `yo` una vez en la propia página; `con` llega de `InterlocutorContext`. Con ambos, `Conversacion` conectada de verdad. Exige sesión (`useRequiereSesion`). |
 
-## Identidad: por qué hay que escribir "tu usuario" a mano
+## Identidad: por qué hay que escribir el usuario a mano
 
 El chat identifica cada lado de la conversación por el **`username` de
 chat-registro** (chat-gateway valida su formato en el propio *handshake* del
@@ -47,17 +49,32 @@ endpoint para resolverlo** a partir del `uid`/email de la sesión (su único
 endpoint es `POST /api/v1/registro`, ver
 `chat-registro/docs/contratos-api.md`).
 
-Mientras eso no exista, `HomePage` lo pide una vez con un formulario simple
-y lo recuerda en `localStorage` (`src/utils/miUsuario.js`) — `RegistroPage`
-también lo guarda solo, si te registraste en este navegador
-(`guardarMiUsuario(datos.username)` tras un alta correcta). Con quién
-chatear (`con`) **no** se recuerda — no hay lista de contactos todavía, es
-solo esta vista de una conversación.
+Mientras eso no exista, hay dos campos separados, con dos ciclos de vida
+distintos:
+
+- **Tu usuario (`yo`)**: `HomePage` lo pide una vez, en la propia página, y
+  lo recuerda en `localStorage` (`src/utils/miUsuario.js`) — `RegistroPage`
+  también lo guarda solo, si te registraste en este navegador
+  (`guardarMiUsuario(datos.username)` tras un alta correcta). Una vez
+  conocido, no se vuelve a pedir.
+- **Con quién chatear (`con`)**: se elige con `SelectorInterlocutor`, **en la
+  cabecera** — visible en toda pantalla que exige sesión (`HomePage`,
+  `StyleGuidePage`), nunca en `/login` ni `/registro`. Vive en
+  `InterlocutorContext` y **no persiste** (ni `localStorage` ni entre
+  recargas): no hay lista de contactos todavía, es solo la conversación
+  activa de esta sesión de navegación. Cambiarlo desde la cabecera, estando
+  ya en `/home`, cambia la conversación abierta al instante.
+
+`HomePage` decide qué mostrar según ambos: sin `yo`, pide el formulario; con
+`yo` pero sin `con`, invita a elegir interlocutor en la cabecera; si
+`yo === con` (comparación insensible a mayúsculas), avisa que no puedes
+chatear contigo mismo; con los dos válidos y distintos, monta la
+conversación.
 
 Cuando chat-registro exponga una forma de resolver el username desde la
-sesión (o `chat-gateway` lo orqueste), este formulario deja de hacer falta
-para "tu usuario" — el de "con quién chatear" seguirá siendo necesario hasta
-que exista una lista de contactos/conversaciones.
+sesión (o `chat-gateway` lo orqueste), el formulario de "tu usuario" deja de
+hacer falta — el selector de "con quién chatear" seguirá siendo necesario
+hasta que exista una lista de contactos/conversaciones.
 
 ## Cómo funciona `useConversacion`
 

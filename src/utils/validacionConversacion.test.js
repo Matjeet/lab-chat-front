@@ -1,8 +1,4 @@
-import {
-  validarContenido,
-  validarIdentidad,
-  validarUsername,
-} from './validacionConversacion';
+import { validarContenido, validarUsername } from './validacionConversacion';
 
 describe('validarUsername', () => {
   it('acepta un username válido', () => {
@@ -42,29 +38,5 @@ describe('validarContenido', () => {
 
   it('acepta exactamente 2000 caracteres', () => {
     expect(validarContenido('a'.repeat(2000))).toBeNull();
-  });
-});
-
-describe('validarIdentidad', () => {
-  it('sin errores cuando ambos usuarios son válidos y distintos', () => {
-    expect(validarIdentidad({ yo: 'mateo', con: 'ana' })).toEqual({});
-  });
-
-  it('marca ambos campos si son inválidos', () => {
-    const errores = validarIdentidad({ yo: '', con: 'x' });
-    expect(errores.yo).toBeTruthy();
-    expect(errores.con).toBeTruthy();
-  });
-
-  it('rechaza chatear contigo mismo', () => {
-    expect(validarIdentidad({ yo: 'mateo', con: 'mateo' })).toEqual({
-      con: 'No puedes chatear contigo mismo.',
-    });
-  });
-
-  it('la comparación de "contigo mismo" ignora mayúsculas y espacios', () => {
-    expect(validarIdentidad({ yo: 'Mateo', con: ' mateo ' })).toEqual({
-      con: 'No puedes chatear contigo mismo.',
-    });
   });
 });
