@@ -1,24 +1,32 @@
 # Integración con la API
 
-Cómo consume este frontend los microservicios backend. Contrato completo:
-[`../../chat-registro/docs/contratos-api.md`](../../chat-registro/docs/contratos-api.md).
+Cómo consume este frontend el backend. El cliente habla siempre con
+**chat-gateway** — único punto de entrada REST y WebSocket del sistema —
+nunca directo con `chat-registro` ni con `chat-conversacion`; el gateway
+reenvía cada petición por gRPC al microservicio correspondiente. Contratos
+completos:
+[`../../chat-gateway/docs/contratos-api.md`](../../chat-gateway/docs/contratos-api.md)
+(registro) y
+[`../../chat-gateway/docs/contratos-api-conversacion.md`](../../chat-gateway/docs/contratos-api-conversacion.md)
+(chat en tiempo real, ver [`integracion-conversacion.md`](./integracion-conversacion.md)).
 
 ## Configuración
 
 | Variable | Por defecto | Notas |
 |----------|-------------|-------|
-| `NEXT_PUBLIC_API_BASE_URL` | `http://localhost:8080` | Base URL de `chat-registro`. Se **inyecta en tiempo de build** (export estático). Define en `.env.local` para desarrollo. |
+| `NEXT_PUBLIC_API_BASE_URL` | `http://localhost:8080` | Base URL de `chat-gateway`. Un solo origen para registro, historial de conversaciones y el WebSocket del chat. Se **inyecta en tiempo de build** (export estático). Define en `.env.local` para desarrollo. |
 
 `src/api/config.js` la lee y le quita la barra final.
 
 ### CORS
 
-`chat-registro` habilita CORS él mismo para `/api/**` (`CorsConfig` +
-`CORS_ALLOWED_ORIGINS`, ver contrato §1) — ya no lo resuelve un gateway.
+`chat-gateway` habilita CORS él mismo para `/api/**` (`CorsConfig` +
+`CORS_ALLOWED_ORIGINS`, ver su contrato §1) — ningún microservicio de detrás
+lo configura por su cuenta para lo que expone el gateway.
 
 - **Desarrollo**: el valor por defecto del backend es `http://localhost:3000`,
   que coincide con `npm run dev`. No hace falta tocar nada.
-- **Producción**: quien despliegue `chat-registro` debe incluir el origen real
+- **Producción**: quien despliegue `chat-gateway` debe incluir el origen real
   donde se sirve `out/` (el dominio, con esquema y puerto, sin barra final) en
   `CORS_ALLOWED_ORIGINS`. Sin eso, toda petición del frontend falla.
 - **Un origen no permitido responde `403` sin cabeceras `Access-Control-*`**:

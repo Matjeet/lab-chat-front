@@ -98,7 +98,7 @@ describe('useConversacion', () => {
     await montar();
 
     expect(WebSocketFalso.instancias).toHaveLength(1);
-    expect(WebSocketFalso.instancias[0].url).toBe('ws://localhost:8082/ws/chat/mateo');
+    expect(WebSocketFalso.instancias[0].url).toBe('ws://localhost:8080/ws/chat/mateo');
   });
 
   it('"conectado" pasa a true cuando el socket abre, y a false al cerrarse', async () => {

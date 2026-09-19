@@ -1,4 +1,4 @@
-import { CONVERSACION_BASE_URL } from './config';
+import { API_BASE_URL } from '../api/config';
 
 /**
  * @typedef {Object} Mensaje
@@ -30,9 +30,10 @@ import { CONVERSACION_BASE_URL } from './config';
 
 /**
  * Llama a `GET /api/v1/conversaciones/{usuarioA}/{usuarioB}` de
- * chat-conversacion — el orden de los usuarios en la URL no importa (busca
- * mensajes en ambos sentidos). Nunca lanza: devuelve un resultado tipado,
- * igual que `src/api/registro.js`.
+ * **chat-gateway** (que reenvía por gRPC a chat-conversacion, ver
+ * `chat-gateway/docs/contratos-api-conversacion.md` §3) — el orden de los
+ * usuarios en la URL no importa (busca mensajes en ambos sentidos). Nunca
+ * lanza: devuelve un resultado tipado, igual que `src/api/registro.js`.
  *
  * Sin `page`/`size`/`sort`, el servidor usa sus valores por defecto (página
  * 0, tamaño 20, `enviadoEn` ascendente — el más antiguo primero). El
@@ -54,7 +55,7 @@ export const obtenerHistorial = async (usuarioA, usuarioB, opciones = {}) => {
   let respuesta;
   try {
     respuesta = await fetch(
-      `${CONVERSACION_BASE_URL}/api/v1/conversaciones/${encodeURIComponent(usuarioA)}/${encodeURIComponent(usuarioB)}${query ? `?${query}` : ''}`,
+      `${API_BASE_URL}/api/v1/conversaciones/${encodeURIComponent(usuarioA)}/${encodeURIComponent(usuarioB)}${query ? `?${query}` : ''}`,
     );
   } catch {
     // Sin red, DNS, CORS, servicio caído...

@@ -7,7 +7,7 @@
 | [arquitectura.md](./arquitectura.md) | Atomic Design, estructura de carpetas y reglas de dependencia. |
 | [sistema-de-diseno.md](./sistema-de-diseno.md) | Tokens de diseño, temas claro/oscuro, accesibilidad y guía viva. |
 | [integracion-api.md](./integracion-api.md) | Cómo se consumen los microservicios backend (config, errores, patrón). |
-| [integracion-conversacion.md](./integracion-conversacion.md) | Chat 1 a 1: WebSocket + historial REST de chat-conversacion, identidad temporal. |
+| [integracion-conversacion.md](./integracion-conversacion.md) | Chat 1 a 1: WebSocket + historial REST vía chat-gateway, identidad temporal. |
 | [testing.md](./testing.md) | Estrategia de tests unitarios con Jest y Testing Library. |
 | [convenciones.md](./convenciones.md) | Convenciones de código, nombres y estructura de componentes. |
 

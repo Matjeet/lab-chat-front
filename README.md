@@ -108,11 +108,11 @@ en [`docs/sistema-de-diseno.md`](./docs/sistema-de-diseno.md).
 
 ## Backend
 
-La ruta `/registro` consume `POST /api/v1/registro` de **chat-registro** con
-`{ username, email, password }`. Es el backend quien crea la cuenta en
-Firebase Auth antes de guardar el perfil — este frontend no habla con
-Firebase directamente para el alta. Copia `.env.example` a `.env.local` para
-configurar `NEXT_PUBLIC_API_BASE_URL`.
+La ruta `/registro` consume `POST /api/v1/registro` de **chat-gateway** (que
+reenvía por gRPC a `chat-registro`) con `{ username, email, password }`. Es
+el backend quien crea la cuenta en Firebase Auth antes de guardar el perfil
+— este frontend no habla con Firebase directamente para el alta. Copia
+`.env.example` a `.env.local` para configurar `NEXT_PUBLIC_API_BASE_URL`.
 
 La ruta `/login` sí habla con **Firebase Authentication** directamente (SDK
 de cliente, `src/firebase/auth.js`) — no hay endpoint de login en
@@ -121,8 +121,9 @@ sesión; cualquier otra ruta (`/home`, `/estilos`) exige sesión y redirige a
 `/login` si no la hay.
 
 **`/home` es el chat en sí** — el destino tras iniciar sesión — conectado de
-verdad a **chat-conversacion**: WebSocket en tiempo real + REST para el
-historial. Detalle en
+verdad a **chat-conversacion vía chat-gateway**: WebSocket en tiempo real +
+REST para el historial, ambos contra el gateway (mismo origen que
+`NEXT_PUBLIC_API_BASE_URL`). Detalle en
 [`docs/integracion-conversacion.md`](./docs/integracion-conversacion.md),
 incluida la identidad temporal (username pedido a mano — chat-registro
 todavía no expone cómo resolverlo desde la sesión de Firebase).

@@ -37,7 +37,7 @@ describe('obtenerHistorial', () => {
 
     expect(resultado).toEqual({ ok: true, data: paginaFake });
     expect(global.fetch).toHaveBeenCalledWith(
-      'http://localhost:8082/api/v1/conversaciones/mateo/ana',
+      'http://localhost:8080/api/v1/conversaciones/mateo/ana',
     );
   });
 
@@ -47,7 +47,7 @@ describe('obtenerHistorial', () => {
     await obtenerHistorial('mateo', 'ana', { page: 1, size: 50, sort: 'enviadoEn,desc' });
 
     expect(global.fetch).toHaveBeenCalledWith(
-      'http://localhost:8082/api/v1/conversaciones/mateo/ana?page=1&size=50&sort=enviadoEn%2Cdesc',
+      'http://localhost:8080/api/v1/conversaciones/mateo/ana?page=1&size=50&sort=enviadoEn%2Cdesc',
     );
   });
 

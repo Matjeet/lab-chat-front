@@ -1,25 +1,33 @@
-# Integración con chat-conversacion
+# Integración con el chat en tiempo real (vía chat-gateway)
 
-Cómo consume este frontend el microservicio de chat en tiempo real. Contrato completo:
-[`../../chat-conversacion/docs/contratos-api.md`](../../chat-conversacion/docs/contratos-api.md).
+Cómo consume este frontend el chat 1 a 1. El cliente habla siempre con
+**chat-gateway** — nunca directo con `chat-conversacion` — que por debajo
+abre un stream gRPC hacia ese servicio y traduce cada frame. Contrato
+completo:
+[`../../chat-gateway/docs/contratos-api-conversacion.md`](../../chat-gateway/docs/contratos-api-conversacion.md)
+(y, para el detalle de lo que hay detrás del gateway,
+[`../../chat-conversacion/docs/contratos-api.md`](../../chat-conversacion/docs/contratos-api.md)).
 
 ## Configuración
 
-| Variable | Por defecto | Notas |
-|----------|-------------|-------|
-| `NEXT_PUBLIC_CONVERSACION_BASE_URL` | `http://localhost:8082` | Base URL de `chat-conversacion`. WebSocket y REST comparten host/puerto (contrato §1); el esquema `ws`/`wss` se deriva del de esta variable, no hay una segunda. Se **inyecta en tiempo de build** (export estático). Define en `.env.local` para desarrollo. |
+No hay una variable propia: WebSocket y REST del chat comparten el mismo
+origen que el resto de la API, `NEXT_PUBLIC_API_BASE_URL` (`src/api/config.js`,
+ver [`integracion-api.md`](./integracion-api.md)) — chat-gateway es el único
+punto de entrada del sistema, así que un solo origen basta para registro,
+historial y WebSocket.
 
 CORS (REST) y orígenes permitidos (WebSocket) son configuración del propio
-`chat-conversacion` (`CORS_ALLOWED_ORIGINS` / `WEBSOCKET_ALLOWED_ORIGINS`, dos
-variables **distintas** — ver su contrato §1); ambas traen por defecto
-`http://localhost:3000`, que ya coincide con `npm run dev`.
+`chat-gateway` (`CORS_ALLOWED_ORIGINS` / `WEBSOCKET_ALLOWED_ORIGINS`, dos
+variables **distintas** — el handshake de WebSocket no pasa por CORS, ver
+contrato §1); ambas traen por defecto `http://localhost:3000`, que ya
+coincide con `npm run dev`.
 
 ## Dónde vive el código
 
 | Archivo | Responsabilidad |
 |---------|-----------------|
-| `src/conversacion/config.js` | `CONVERSACION_BASE_URL` + `urlSocketConversacion(usuario)`. |
-| `src/conversacion/historial.js` | `obtenerHistorial(usuarioA, usuarioB, opciones)` → `GET /api/v1/conversaciones/{a}/{b}`, resultado tipado igual que `src/api/registro.js`. |
+| `src/conversacion/config.js` | `urlSocketConversacion(usuario)`, sobre `API_BASE_URL` (`src/api/config.js`). |
+| `src/conversacion/historial.js` | `obtenerHistorial(usuarioA, usuarioB, opciones)` → `GET /api/v1/conversaciones/{a}/{b}` (contra chat-gateway), resultado tipado igual que `src/api/registro.js`. |
 | `src/utils/validacionConversacion.js` | Formato de username (espejo del de chat-registro) y de `contenido` (no vacío, ≤ 2000) — espejo del contrato, la autoritativa sigue siendo el servidor. |
 | `src/hooks/useConversacion.js` | El hook central: carga el historial, abre el WebSocket de `{yo}`, filtra los mensajes de esta conversación, expone `enviarMensaje`. |
 | `src/utils/miUsuario.js` | Recuerda el `username` en `localStorage` — ver "Identidad" más abajo. |
@@ -30,9 +38,10 @@ variables **distintas** — ver su contrato §1); ambas traen por defecto
 
 ## Identidad: por qué hay que escribir "tu usuario" a mano
 
-`chat-conversacion` identifica cada lado de la conversación por el
-**`username` de chat-registro** (contrato §2.1) — no por `uid` ni `email` de
-Firebase. El login de este frontend es con Firebase (`src/firebase/auth.js`)
+El chat identifica cada lado de la conversación por el **`username` de
+chat-registro** (chat-gateway valida su formato en el propio *handshake* del
+WebSocket, contrato §2.1) — no por `uid` ni `email` de Firebase. El login de
+este frontend es con Firebase (`src/firebase/auth.js`)
 y no expone ese username en ningún sitio: **chat-registro no tiene un
 endpoint para resolverlo** a partir del `uid`/email de la sesión (su único
 endpoint es `POST /api/v1/registro`, ver
@@ -57,23 +66,27 @@ const { mensajes, cargandoHistorial, errorHistorial, conectado, enviarMensaje } 
   useConversacion({ yo, con });
 ```
 
-1. **Historial** (`GET /api/v1/conversaciones/{yo}/{con}`, contrato §3): se
-   pide con `sort=enviadoEn,desc` (lo más reciente primero, como recomienda
-   el contrato §5.7) y se invierte en el cliente para pintar en orden
-   cronológico.
-2. **WebSocket** (`/ws/chat/{yo}`, contrato §2.1): se abre una sola vez por
-   `yo` — cambiar de `con` (interlocutor) **no** reabre la conexión, solo
-   cambia a qué mensajes hace caso (vía un `ref`, no en las dependencias del
-   efecto, para no perder mensajes que lleguen justo al cambiar).
+1. **Historial** (`GET /api/v1/conversaciones/{yo}/{con}` contra chat-gateway,
+   contrato §3): se pide con `sort=enviadoEn,desc` (lo más reciente primero,
+   como recomienda el contrato de chat-conversacion §5.7) y se invierte en el
+   cliente para pintar en orden cronológico.
+2. **WebSocket** (`/ws/chat/{yo}` contra chat-gateway, contrato §2.1): se abre
+   una sola vez por `yo` — cambiar de `con` (interlocutor) **no** reabre la
+   conexión, solo cambia a qué mensajes hace caso (vía un `ref`, no en las
+   dependencias del efecto, para no perder mensajes que lleguen justo al
+   cambiar).
 3. **Filtro de terceros**: el socket de `{yo}` recibe *todo* lo dirigido a
-   `{yo}` (contrato §2.1), no solo lo de esta conversación — un mensaje que
-   no sea entre `yo` y `con` se descarta antes de añadirse a `mensajes`.
+   `{yo}` (contrato §2.3) — incluida la entrega que llegue por un cliente
+   conectado directo a chat-conversacion en vez de por el gateway, ver §2.3 —,
+   no solo lo de esta conversación: un mensaje que no sea entre `yo` y `con`
+   se descarta antes de añadirse a `mensajes`.
 4. **`enviarMensaje(contenido)`** valida `contenido` en cliente (contrato
-   §5.2: el WebSocket **descarta en silencio** un mensaje inválido, sin
-   frame de rechazo — validar antes de mandar no es opcional) y manda el
-   frame; nunca lo añade a `mensajes` de forma optimista — el mensaje que
-   vuelve por el socket (contrato §5.3) es la única confirmación, tanto para
-   quien lo manda como para quien lo recibe.
+   §5.2: ni el gateway ni chat-conversacion devuelven un *frame* de rechazo
+   por un mensaje inválido, lo descartan en silencio — validar antes de
+   mandar no es opcional) y manda el frame; nunca lo añade a `mensajes` de
+   forma optimista — el mensaje que vuelve por el socket (contrato §5.3) es
+   la única confirmación, tanto para quien lo manda como para quien lo
+   recibe.
 5. **Deduplicación por `id`**: por si el mismo mensaje llegara dos veces
    (reconexión del socket, etc.).
 
@@ -83,8 +96,10 @@ descartaría en silencio.
 
 ## Verificado en caliente
 
-Con `chat-conversacion` corriendo en local (`./gradlew bootRun`, MongoDB en
-`localhost:27017`) y `chat-frontend` en `npm run dev`: login → `/home` →
+Con `chat-conversacion` y `chat-gateway` corriendo en local (`./gradlew
+bootRun` en ambos, MongoDB en `localhost:27017`) y `chat-frontend` en `npm run
+dev`, apuntando al gateway (`http://localhost:8080`): login → `/home` →
 identidad → historial cargado (`200` con CORS) → "Conectado" → mensaje
 escrito en la UI, recibido de vuelta por el socket con `id`/`enviadoEn`
-reales, persistido (sigue ahí tras recargar la página).
+reales, persistido (sigue ahí tras recargar la página) — todo pasando por
+`chat-gateway`, nunca directo contra el `8082` de `chat-conversacion`.
