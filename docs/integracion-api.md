@@ -3,12 +3,11 @@
 Cómo consume este frontend el backend. El cliente habla siempre con
 **chat-gateway** — único punto de entrada REST y WebSocket del sistema —
 nunca directo con `chat-registro` ni con `chat-conversacion`; el gateway
-reenvía cada petición por gRPC al microservicio correspondiente. Contratos
-completos:
+reenvía cada petición por gRPC al microservicio correspondiente. Contrato
+completo (registro, datos de usuario, chat en tiempo real e historial, los
+cuatro en un solo documento):
 [`../../chat-gateway/docs/contratos-api.md`](../../chat-gateway/docs/contratos-api.md)
-(registro) y
-[`../../chat-gateway/docs/contratos-api-conversacion.md`](../../chat-gateway/docs/contratos-api-conversacion.md)
-(chat en tiempo real, ver [`integracion-conversacion.md`](./integracion-conversacion.md)).
+(para el chat en concreto, ver también [`integracion-conversacion.md`](./integracion-conversacion.md)).
 
 ## Configuración
 
@@ -54,6 +53,8 @@ lo configura por su cuenta para lo que expone el gateway.
 | `src/hooks/useRedirigirSiHaySesion.js` | Hook inverso, para pantallas públicas: `{ comprobando }`, navega a `/home` si SÍ hay usuario. |
 | `src/components/organisms/LoginForm/` | Formulario de login: valida, llama a `onIniciarSesion` y muestra el aviso según `error.kind` si falla. |
 | `src/components/pages/LoginPage/` | Monta `LoginForm`, le pasa `onIniciarSesion` (llama a `iniciarSesion` y navega a `/home` si sale bien) + enlace a `/registro`. También navega a `/home` si ya hay sesión, antes de mostrar el formulario. |
+| `src/api/usuario.js` | `obtenerUsuario(uid, idToken)` → `GET /api/v1/usuarios/{uid}` (contrato §4.2) — el único endpoint autenticado del sistema. |
+| `src/hooks/useMiUsuario.js` | `{yo, establecerYo}` — sincroniza "tu usuario" con `obtenerUsuario` en cuanto hay sesión (ver [`integracion-conversacion.md`](./integracion-conversacion.md#identidad)); `localStorage` como respaldo/caché. |
 | `src/components/pages/HomePage/` | En `/home`, destino tras un login correcto — el chat 1 a 1 en sí (ver [`integracion-conversacion.md`](./integracion-conversacion.md)). Exige sesión (`useRequiereSesion`). |
 | `src/components/pages/StyleGuidePage/` | Guía de estilo. Exige sesión (`useRequiereSesion`) — no es pública. |
 
@@ -110,10 +111,38 @@ asíncrona, pero como la mayoría de las veces quien entra a `/` no tiene
 sesión todavía, demorar la carga de toda la pantalla para cubrir el caso
 contrario no compensa — ver más abajo "Por qué no se retrasa la carga".
 
-**Pendiente, a propósito:** qué hacer con el `idToken` frente a
-`chat-registro` (¿lo valida un endpoint nuevo? ¿el backend confía en Firebase
-y solo le importa el `uid`?) — `HomePage` hoy no recibe ni usa ese token, es
-solo la confirmación visual de que el login funcionó.
+El `idToken` de esta sesión ya tiene un uso real: `useMiUsuario`
+(`src/hooks/useMiUsuario.js`) lo manda a `GET /api/v1/usuarios/{uid}` —
+ver "Datos de usuario" más abajo.
+
+## Datos de usuario — el único endpoint autenticado
+
+`GET /api/v1/usuarios/{uid}` (contrato §4.2) es, de todo el sistema, el único
+endpoint que exige autenticación: cabecera `Authorization: Bearer <idToken>`,
+y chat-gateway comprueba él mismo (con su propia integración con Firebase
+Admin SDK) que el `uid` que decodifica ese token coincide con el `{uid}` de
+la URL — nadie puede leer el `username`/`email` de una cuenta ajena solo por
+conocer su `uid`.
+
+`src/api/usuario.js#obtenerUsuario(uid, idToken)` lo llama con el mismo
+patrón de resultado tipado que el resto de `src/api/`, mapeando el `type`
+del *Problem Detail* a un `kind`:
+
+```js
+{ ok: true,  data: { username, email } }        // 200
+{ ok: false, error: { kind: 'no-autenticado' } } // 401 unauthorized
+{ ok: false, error: { kind: 'prohibido' } }      // 403 forbidden (token de otro uid)
+{ ok: false, error: { kind: 'no-encontrado' } }  // 404 resource-not-found
+{ ok: false, error: { kind: 'servidor' } }       // 503/500 u otros
+{ ok: false, error: { kind: 'red' } }             // fetch falló
+```
+
+`src/hooks/useMiUsuario.js` es quien lo consume, no un organismo: en cuanto
+`observarSesion` entrega una sesión, pide `usuario.getIdToken()` y llama a
+`obtenerUsuario(usuario.uid, idToken)` — nunca con `uid`/token de otra
+cuenta, porque siempre son los de la sesión activa. Ver
+[`integracion-conversacion.md`](./integracion-conversacion.md#identidad)
+para cómo `HomePage` usa el resultado.
 
 ## Rutas que exigen sesión
 
@@ -171,7 +200,9 @@ que sepa la URL puede pedir el historial de cualquier par de usuarios o
 conectarse al WebSocket con cualquier `{usuario}`, sin pasar por Firebase ni
 por nada de este frontend. `useRequiereSesion` en `HomePage` solo impide
 llegar a la pantalla sin sesión de *este* frontend — no protege los mensajes
-en sí, que siguen expuestos a quien hable directo con `chat-conversacion`.
+en sí, que siguen expuestos a quien hable directo con `chat-conversacion`
+(la única excepción de todo el sistema es `GET /api/v1/usuarios/{uid}`, que
+sí exige y verifica el `idToken` — ver "Datos de usuario" más arriba).
 Sigue siendo, a propósito, una demo de la conexión — no algo listo para datos
 reales hasta que `chat-conversacion` resuelva su propia autenticación.
 

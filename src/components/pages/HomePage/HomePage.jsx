@@ -10,9 +10,9 @@ import FormField from '../../molecules/FormField';
 import SelectorInterlocutor from '../../molecules/SelectorInterlocutor';
 import useRequiereSesion from '../../../hooks/useRequiereSesion';
 import useConversacion from '../../../hooks/useConversacion';
+import useMiUsuario from '../../../hooks/useMiUsuario';
 import { useInterlocutor } from '../../../context/InterlocutorContext';
 import { validarUsername } from '../../../utils/validacionConversacion';
-import { guardarMiUsuario, leerMiUsuario } from '../../../utils/miUsuario';
 import styles from './HomePage.module.css';
 
 /**
@@ -60,14 +60,16 @@ const VistaConversacion = ({ yo, con }) => {
  * Exige sesión activa (`useRequiereSesion`).
  *
  * **Identidad, a propósito temporal:** `chat-conversacion` identifica cada
- * lado de la conversación por `username` de chat-registro (contrato §2.1),
- * pero el login de este frontend es con Firebase y no expone ese username
- * en ningún sitio — chat-registro no tiene un endpoint para resolverlo a
- * partir del `uid`/email de la sesión.
+ * lado de la conversación por `username` de chat-registro (contrato §2.1).
  *
- * - **Tu usuario (`yo`)**: se pide una vez, aquí en la página, y se recuerda
- *   en este navegador (`src/utils/miUsuario.js`; `RegistroPage` ya lo guarda
- *   solo si te registraste aquí).
+ * - **Tu usuario (`yo`)**: lo resuelve `useMiUsuario` — `GET
+ *   /api/v1/usuarios/{uid}` de chat-gateway (contrato §4.2), con el `idToken`
+ *   de la sesión activa, en cuanto hay sesión (justo tras iniciarla, o al
+ *   abrir la pantalla ya autenticado en otra pestaña/navegador). Si ese
+ *   backend no resuelve (caído, cuenta sin perfil de chat-registro
+ *   todavía...), cae a un formulario manual, aquí en la página, como
+ *   respaldo — se recuerda en `localStorage` (`src/utils/miUsuario.js`;
+ *   `RegistroPage` ya lo guarda solo si te registraste aquí).
  * - **Con quién chatear (`con`)**: se elige con `SelectorInterlocutor`, en la
  *   cabecera (`InterlocutorContext`) — visible en toda pantalla que exija
  *   sesión, no solo aquí. No se recuerda entre recargas: no hay lista de
@@ -77,16 +79,14 @@ const VistaConversacion = ({ yo, con }) => {
 const HomePage = () => {
   useRequiereSesion();
   const { con } = useInterlocutor();
+  const { yo, establecerYo } = useMiUsuario();
 
-  const [yo, setYo] = useState('');
   const [valorYo, setValorYo] = useState('');
   const [errorYo, setErrorYo] = useState(null);
 
   useEffect(() => {
-    const guardado = leerMiUsuario();
-    setYo(guardado);
-    setValorYo(guardado);
-  }, []);
+    setValorYo(yo);
+  }, [yo]);
 
   const alCambiarYo = (evento) => {
     setValorYo(evento.target.value);
@@ -100,10 +100,8 @@ const HomePage = () => {
       setErrorYo(mensaje);
       return;
     }
-    const limpio = valorYo.trim();
     setErrorYo(null);
-    guardarMiUsuario(limpio);
-    setYo(limpio);
+    establecerYo(valorYo.trim());
   };
 
   const conLimpio = con.trim();
@@ -115,8 +113,8 @@ const HomePage = () => {
       {!yo && (
         <form className={styles.identidad} onSubmit={alConfirmarYo} noValidate>
           <Alert tipo="info">
-            Todavía no hay forma de saber tu usuario de chat-registro a partir de tu sesión —
-            indícalo aquí una vez; se recuerda en este navegador para la próxima.
+            No pudimos obtener tu usuario automáticamente — indícalo aquí una vez; se recuerda
+            en este navegador para la próxima.
           </Alert>
           <FormField
             id="yo"

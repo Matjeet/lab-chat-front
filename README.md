@@ -60,9 +60,10 @@ app/                          # App Router: solo enrutado
 └── not-found.jsx             # 404 -> <NotFoundPage/> (se exporta como out/404.html)
 src/
 ├── setupTests.js             # Setup de Jest
-├── api/                      # Llamadas a chat-registro
+├── api/                      # Llamadas a chat-gateway
 │   ├── config.js             #   base URL (NEXT_PUBLIC_API_BASE_URL)
-│   └── registro.js           #   POST /api/v1/registro
+│   ├── registro.js           #   POST /api/v1/registro
+│   └── usuario.js            #   GET /api/v1/usuarios/{uid} (autenticado)
 ├── firebase/                  # SDK de cliente de Firebase Authentication (solo login)
 │   ├── config.js
 │   └── auth.js                #   iniciarSesion(...) + observarSesion(cb)
@@ -70,7 +71,7 @@ src/
 │   ├── config.js
 │   └── historial.js
 ├── context/                    # InterlocutorContext: con quién se está chateando ahora
-├── hooks/                      # useRequiereSesion, useRedirigirSiHaySesion, useConversacion
+├── hooks/                      # useRequiereSesion, useRedirigirSiHaySesion, useMiUsuario, useConversacion
 ├── utils/                     # Helpers puros (validación de formularios, miUsuario...)
 ├── styles/
 │   ├── tokens.css            # Tokens de diseño (color, tipografía, espaciado...)
@@ -124,10 +125,11 @@ sesión; cualquier otra ruta (`/home`, `/estilos`) exige sesión y redirige a
 **`/home` es el chat en sí** — el destino tras iniciar sesión — conectado de
 verdad a **chat-conversacion vía chat-gateway**: WebSocket en tiempo real +
 REST para el historial, ambos contra el gateway (mismo origen que
-`NEXT_PUBLIC_API_BASE_URL`). Detalle en
-[`docs/integracion-conversacion.md`](./docs/integracion-conversacion.md),
-incluida la identidad temporal (username pedido a mano — chat-registro
-todavía no expone cómo resolverlo desde la sesión de Firebase).
+`NEXT_PUBLIC_API_BASE_URL`). "Tu usuario" se resuelve solo con `GET
+/api/v1/usuarios/{uid}` (el único endpoint autenticado del sistema,
+`idToken` de la sesión activa) en cuanto hay sesión; si ese backend no
+resuelve, cae a un formulario manual como respaldo. Detalle en
+[`docs/integracion-conversacion.md`](./docs/integracion-conversacion.md).
 
 Detalle del patrón de llamadas y manejo de errores en
 [`docs/integracion-api.md`](./docs/integracion-api.md).

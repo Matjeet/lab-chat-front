@@ -31,7 +31,7 @@ import { API_BASE_URL } from '../api/config';
 /**
  * Llama a `GET /api/v1/conversaciones/{usuarioA}/{usuarioB}` de
  * **chat-gateway** (que reenvía por gRPC a chat-conversacion, ver
- * `chat-gateway/docs/contratos-api-conversacion.md` §3) — el orden de los
+ * `chat-gateway/docs/contratos-api.md` §4.4) — el orden de los
  * usuarios en la URL no importa (busca mensajes en ambos sentidos). Nunca
  * lanza: devuelve un resultado tipado, igual que `src/api/registro.js`.
  *

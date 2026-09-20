@@ -5,6 +5,7 @@ import HomePage from './HomePage';
 import { InterlocutorProvider } from '../../../context/InterlocutorContext';
 import { observarSesion } from '../../../firebase/auth';
 import useConversacion from '../../../hooks/useConversacion';
+import useMiUsuario from '../../../hooks/useMiUsuario';
 
 // Factory explícita: un automock sin factory cargaría el Firebase real (sin
 // las variables de entorno que solo existen en build/dev).
@@ -21,6 +22,12 @@ jest.mock('next/navigation', () => ({
 // no necesitan saber cómo se conecta, solo qué hace con lo que el hook expone
 // (ver src/hooks/useConversacion.test.js para el hook en sí).
 jest.mock('../../../hooks/useConversacion');
+// Mismo criterio: HomePage no necesita saber cómo se resuelve "tu usuario"
+// (localStorage, el backend...), solo qué hace con {yo, establecerYo} — ver
+// src/hooks/useMiUsuario.test.js para el hook en sí.
+jest.mock('../../../hooks/useMiUsuario');
+
+const establecerYo = jest.fn();
 
 beforeEach(() => {
   observarSesion.mockImplementation((callback) => {
@@ -34,6 +41,7 @@ beforeEach(() => {
     conectado: true,
     enviarMensaje: jest.fn(),
   });
+  useMiUsuario.mockReturnValue({ yo: '', establecerYo });
 });
 
 afterEach(() => {
@@ -67,14 +75,14 @@ describe('HomePage', () => {
     expect(screen.getByLabelText('Chatear con')).toBeInTheDocument();
   });
 
-  it('pide primero "Tu usuario"', () => {
+  it('sin "yo" resuelto, pide "Tu usuario" como respaldo', () => {
     montar();
     expect(screen.getByLabelText('Tu usuario')).toBeInTheDocument();
     expect(useConversacion).not.toHaveBeenCalled();
   });
 
-  it('si "Tu usuario" ya se guardó antes (p. ej. al registrarse), no lo vuelve a pedir', () => {
-    localStorage.setItem('chat:miUsuario', 'mateo29');
+  it('si "yo" ya se resolvió (localStorage o el backend), no pide el formulario', () => {
+    useMiUsuario.mockReturnValue({ yo: 'mateo29', establecerYo });
     montar();
 
     expect(screen.queryByLabelText('Tu usuario')).not.toBeInTheDocument();
@@ -90,14 +98,21 @@ describe('HomePage', () => {
     await user.click(screen.getByRole('button', { name: 'Guardar' }));
 
     expect(await screen.findByText(/obligatorio/i)).toBeInTheDocument();
-    expect(useConversacion).not.toHaveBeenCalled();
+    expect(establecerYo).not.toHaveBeenCalled();
   });
 
-  it('con "Tu usuario" guardado pero sin interlocutor, invita a elegirlo en la cabecera', async () => {
+  it('confirmar "Tu usuario" llama a establecerYo con el valor recortado', async () => {
     const user = userEvent.setup();
     montar();
 
-    await confirmarMiUsuario(user);
+    await confirmarMiUsuario(user, 'mateo');
+
+    expect(establecerYo).toHaveBeenCalledWith('mateo');
+  });
+
+  it('con "yo" resuelto pero sin interlocutor, invita a elegirlo en la cabecera', () => {
+    useMiUsuario.mockReturnValue({ yo: 'mateo', establecerYo });
+    montar();
 
     expect(
       screen.getByText(/elige con quién chatear arriba, en la cabecera/i),
@@ -106,10 +121,10 @@ describe('HomePage', () => {
   });
 
   it('no deja chatear contigo mismo', async () => {
+    useMiUsuario.mockReturnValue({ yo: 'mateo', establecerYo });
     const user = userEvent.setup();
     montar();
 
-    await confirmarMiUsuario(user, 'mateo');
     await elegirInterlocutor(user, 'mateo');
 
     expect(
@@ -118,23 +133,22 @@ describe('HomePage', () => {
     expect(useConversacion).not.toHaveBeenCalled();
   });
 
-  it('con "yo" confirmado y un interlocutor válido elegido en la cabecera, conecta la conversación', async () => {
+  it('con "yo" resuelto y un interlocutor válido elegido en la cabecera, conecta la conversación', async () => {
+    useMiUsuario.mockReturnValue({ yo: 'mateo', establecerYo });
     const user = userEvent.setup();
     montar();
 
-    await confirmarMiUsuario(user, 'mateo');
     await elegirInterlocutor(user, 'ana');
 
     expect(useConversacion).toHaveBeenCalledWith({ yo: 'mateo', con: 'ana' });
     expect(screen.getByText('ana')).toBeInTheDocument();
-    expect(localStorage.getItem('chat:miUsuario')).toBe('mateo');
   });
 
   it('cambiar el interlocutor desde la cabecera cambia la conversación abierta', async () => {
+    useMiUsuario.mockReturnValue({ yo: 'mateo', establecerYo });
     const user = userEvent.setup();
     montar();
 
-    await confirmarMiUsuario(user, 'mateo');
     await elegirInterlocutor(user, 'ana');
     expect(useConversacion).toHaveBeenCalledWith({ yo: 'mateo', con: 'ana' });
 
@@ -145,6 +159,7 @@ describe('HomePage', () => {
   });
 
   it('mientras carga el historial, avisa en vez de mostrar la conversación vacía', async () => {
+    useMiUsuario.mockReturnValue({ yo: 'mateo', establecerYo });
     useConversacion.mockReturnValue({
       mensajes: [],
       cargandoHistorial: true,
@@ -155,13 +170,13 @@ describe('HomePage', () => {
     const user = userEvent.setup();
     montar();
 
-    await confirmarMiUsuario(user);
     await elegirInterlocutor(user);
 
     expect(screen.getByText(/cargando conversación/i)).toBeInTheDocument();
   });
 
   it('si falla el historial, avisa del error', async () => {
+    useMiUsuario.mockReturnValue({ yo: 'mateo', establecerYo });
     useConversacion.mockReturnValue({
       mensajes: [],
       cargandoHistorial: false,
@@ -172,7 +187,6 @@ describe('HomePage', () => {
     const user = userEvent.setup();
     montar();
 
-    await confirmarMiUsuario(user);
     await elegirInterlocutor(user);
 
     expect(screen.getByText(/no se pudo cargar el historial/i)).toBeInTheDocument();

@@ -97,7 +97,8 @@ chat-frontend/
 │   ├── setupTests.js          # Setup global de Jest (matchers de jest-dom)
 │   ├── api/                   # Acceso a los servicios backend
 │   │   ├── config.js          # API_BASE_URL (NEXT_PUBLIC_API_BASE_URL)
-│   │   └── registro.js        # POST /api/v1/registro -> resultado tipado
+│   │   ├── registro.js        # POST /api/v1/registro -> resultado tipado
+│   │   └── usuario.js         # GET /api/v1/usuarios/{uid} (autenticado) -> resultado tipado
 │   ├── firebase/               # SDK de cliente de Firebase (solo login, ver integracion-api.md)
 │   │   ├── config.js           # Inicializa la app (variables NEXT_PUBLIC_FIREBASE_*)
 │   │   └── auth.js             # iniciarSesion(...) + observarSesion(cb) -> resultado tipado
@@ -109,6 +110,7 @@ chat-frontend/
 │   ├── hooks/                   # Hooks compartidos (no encajan en Atomic Design)
 │   │   ├── useRequiereSesion.js # {verificando}; navega a /login si no hay sesión
 │   │   ├── useRedirigirSiHaySesion.js # {comprobando}; navega a /home si SÍ hay sesión
+│   │   ├── useMiUsuario.js      # {yo, establecerYo}; localStorage + GET /api/v1/usuarios/{uid}
 │   │   └── useConversacion.js   # historial + WebSocket de una conversación 1 a 1
 │   ├── utils/                  # Helpers puros (sin React)
 │   │   ├── validacionRegistro.js

@@ -4,7 +4,7 @@ Cómo consume este frontend el chat 1 a 1. El cliente habla siempre con
 **chat-gateway** — nunca directo con `chat-conversacion` — que por debajo
 abre un stream gRPC hacia ese servicio y traduce cada frame. Contrato
 completo:
-[`../../chat-gateway/docs/contratos-api-conversacion.md`](../../chat-gateway/docs/contratos-api-conversacion.md)
+[`../../chat-gateway/docs/contratos-api.md`](../../chat-gateway/docs/contratos-api.md) §4.3 y §4.4
 (y, para el detalle de lo que hay detrás del gateway,
 [`../../chat-conversacion/docs/contratos-api.md`](../../chat-conversacion/docs/contratos-api.md)).
 
@@ -30,33 +30,41 @@ coincide con `npm run dev`.
 | `src/conversacion/historial.js` | `obtenerHistorial(usuarioA, usuarioB, opciones)` → `GET /api/v1/conversaciones/{a}/{b}` (contra chat-gateway), resultado tipado igual que `src/api/registro.js`. |
 | `src/utils/validacionConversacion.js` | Formato de username (espejo del de chat-registro) y de `contenido` (no vacío, ≤ 2000) — espejo del contrato, la autoritativa sigue siendo el servidor. |
 | `src/hooks/useConversacion.js` | El hook central: carga el historial, abre el WebSocket de `{yo}`, filtra los mensajes de esta conversación, expone `enviarMensaje`. |
-| `src/utils/miUsuario.js` | Recuerda el `username` (`yo`) en `localStorage` — ver "Identidad" más abajo. |
+| `src/api/usuario.js` | `obtenerUsuario(uid, idToken)` → `GET /api/v1/usuarios/{uid}` (contrato §4.2, autenticado) — resultado tipado. |
+| `src/hooks/useMiUsuario.js` | `{yo, establecerYo}` — resuelve "tu usuario": `localStorage` de inmediato, y lo sincroniza con `obtenerUsuario` en cuanto hay sesión. Ver "Identidad" más abajo. |
+| `src/utils/miUsuario.js` | `localStorage` puro (leer/guardar `yo`) que usa `useMiUsuario` por debajo, y que `RegistroPage` sigue usando directamente tras un alta. |
 | `src/context/InterlocutorContext.jsx` | `{con, establecerCon}` — con quién se está chateando ahora. Lo escribe `SelectorInterlocutor`, lo lee `HomePage`. No persiste (ver "Identidad"). |
-| `src/components/molecules/SelectorInterlocutor/` | Elige `con` desde la cabecera (`headerActions` de `DefaultLayout`) — valida el formato antes de confirmar. |
+| `src/components/molecules/SelectorInterlocutor/` | Elige `con` desde la cabecera (`headerCentro` de `DefaultLayout`) — valida el formato antes de confirmar. |
 | `src/components/atoms/BurbujaMensaje/` | Una burbuja de mensaje (propio/ajeno). |
 | `src/components/molecules/CampoMensaje/` | Campo de texto + botón de envío. |
 | `src/components/organisms/Conversacion/` | Lista de mensajes (auto-scroll) + `CampoMensaje`. |
-| `src/components/pages/HomePage/` | En `/home`, el destino tras iniciar sesión. Pide `yo` una vez en la propia página; `con` llega de `InterlocutorContext`. Con ambos, `Conversacion` conectada de verdad. Exige sesión (`useRequiereSesion`). |
+| `src/components/pages/HomePage/` | En `/home`, el destino tras iniciar sesión. `yo` sale de `useMiUsuario`; `con` llega de `InterlocutorContext`. Con ambos, `Conversacion` conectada de verdad. Exige sesión (`useRequiereSesion`). |
 
-## Identidad: por qué hay que escribir el usuario a mano
+## Identidad
 
 El chat identifica cada lado de la conversación por el **`username` de
 chat-registro** (chat-gateway valida su formato en el propio *handshake* del
-WebSocket, contrato §2.1) — no por `uid` ni `email` de Firebase. El login de
-este frontend es con Firebase (`src/firebase/auth.js`)
-y no expone ese username en ningún sitio: **chat-registro no tiene un
-endpoint para resolverlo** a partir del `uid`/email de la sesión (su único
-endpoint es `POST /api/v1/registro`, ver
-`chat-registro/docs/contratos-api.md`).
+WebSocket, contrato §2.1) — no por `uid` ni `email` de Firebase. Dos campos
+separados, con dos ciclos de vida distintos:
 
-Mientras eso no exista, hay dos campos separados, con dos ciclos de vida
-distintos:
+- **Tu usuario (`yo`)**: lo resuelve `useMiUsuario`
+  (`src/hooks/useMiUsuario.js`), en dos pasos:
+  1. Al montarse, lee lo que ya hubiera en `localStorage`
+     (`src/utils/miUsuario.js`) — un alta anterior en este navegador
+     (`RegistroPage` ya lo guarda solo,
+     `guardarMiUsuario(datos.username)`), o una sincronización previa.
+  2. En cuanto `observarSesion` entrega una sesión de Firebase — justo tras
+     iniciarla, o al abrir la pantalla ya autenticado en otra
+     pestaña/navegador —, llama a `GET /api/v1/usuarios/{uid}`
+     (`src/api/usuario.js`, chat-gateway, contrato §4.2) con el `idToken` de
+     esa sesión y, si resuelve, sustituye lo que hubiera y lo guarda en
+     `localStorage`. **Nunca se llama sin sesión** — es el único endpoint
+     autenticado del sistema.
 
-- **Tu usuario (`yo`)**: `HomePage` lo pide una vez, en la propia página, y
-  lo recuerda en `localStorage` (`src/utils/miUsuario.js`) — `RegistroPage`
-  también lo guarda solo, si te registraste en este navegador
-  (`guardarMiUsuario(datos.username)` tras un alta correcta). Una vez
-  conocido, no se vuelve a pedir.
+     Si el backend no resuelve (servicio caído, o una cuenta de Firebase sin
+     perfil de chat-registro todavía), `HomePage` cae a un formulario manual
+     como respaldo — `establecerYo` guarda esa confirmación igual que la
+     sincronización automática.
 - **Con quién chatear (`con`)**: se elige con `SelectorInterlocutor`, **en la
   cabecera** — visible en toda pantalla que exige sesión (`HomePage`,
   `StyleGuidePage`), nunca en `/login` ni `/registro`. Vive en
@@ -65,16 +73,15 @@ distintos:
   activa de esta sesión de navegación. Cambiarlo desde la cabecera, estando
   ya en `/home`, cambia la conversación abierta al instante.
 
-`HomePage` decide qué mostrar según ambos: sin `yo`, pide el formulario; con
-`yo` pero sin `con`, invita a elegir interlocutor en la cabecera; si
-`yo === con` (comparación insensible a mayúsculas), avisa que no puedes
-chatear contigo mismo; con los dos válidos y distintos, monta la
-conversación.
+`HomePage` decide qué mostrar según ambos: sin `yo` resuelto (ni por
+`localStorage` ni por el backend), pide el formulario manual; con `yo` pero
+sin `con`, invita a elegir interlocutor en la cabecera; si `yo === con`
+(comparación insensible a mayúsculas), avisa que no puedes chatear contigo
+mismo; con los dos válidos y distintos, monta la conversación.
 
-Cuando chat-registro exponga una forma de resolver el username desde la
-sesión (o `chat-gateway` lo orqueste), el formulario de "tu usuario" deja de
-hacer falta — el selector de "con quién chatear" seguirá siendo necesario
-hasta que exista una lista de contactos/conversaciones.
+El selector de "con quién chatear" seguirá siendo manual hasta que exista
+una lista de contactos/conversaciones — no hay (ni tiene sentido que haya)
+un endpoint que la adivine.
 
 ## Cómo funciona `useConversacion`
 
