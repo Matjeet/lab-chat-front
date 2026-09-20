@@ -15,6 +15,10 @@ import styles from './Conversacion.module.css';
  * dejar que se mande algo que el servidor descartaría en silencio (contrato
  * chat-conversacion §2.2 — no hay frame de rechazo que avise de eso).
  *
+ * Ocupa todo el alto disponible (`flex: 1`, pensado para usarse dentro de
+ * `DefaultLayout altoCompleto`): solo `.mensajes` hace scroll, `CampoMensaje`
+ * queda fijo justo encima del pie de la página, siempre visible.
+ *
  * @param {object} props
  * @param {string} props.yo    Username del usuario actual (para distinguir mensajes propios).
  * @param {string} props.con   Username de la otra persona (para el encabezado).

@@ -24,6 +24,22 @@
   padding: var(--space-6) var(--space-5);
 }
 
+/* Variante `altoCompleto`: el layout queda fijo al alto de pantalla y el
+ * scroll (si hace falta) ocurre dentro de `.content`, no en toda la página —
+ * `min-height: 0` es necesario para que un hijo flex (p. ej. `.vista` de
+ * HomePage) pueda encogerse por debajo de su alto de contenido en vez de
+ * forzar a `.content` a crecer. */
+.layoutAltoCompleto {
+  height: 100dvh;
+}
+
+.contentAltoCompleto {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow-y: auto;
+}
+
 /* Variante para pantallas de un solo formulario: centra en ambos ejes. */
 .centered {
   display: flex;
