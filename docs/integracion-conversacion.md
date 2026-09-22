@@ -122,32 +122,51 @@ const { chats, cargando, cargandoMas, error, hasMore, cargarMas, registrarMensaj
 ## Cómo funciona `useConversacion`
 
 ```jsx
-const { mensajes, cargandoHistorial, errorHistorial, conectado, enviarMensaje } =
-  useConversacion({ yo, con });
+const {
+  mensajes,
+  cargandoHistorial,
+  errorHistorial,
+  reintentarHistorial,
+  conectado,
+  enviarMensaje,
+} = useConversacion({ yo, con });
 ```
 
 1. **Historial** (`GET /api/v1/conversaciones/{yo}/{con}` contra chat-gateway,
    contrato §3): se pide con `sort=enviadoEn,desc` (lo más reciente primero,
    como recomienda el contrato de chat-conversacion §5.7) y se invierte en el
-   cliente para pintar en orden cronológico.
+   cliente para pintar en orden cronológico. Si falla, `reintentarHistorial()`
+   lo vuelve a pedir con el mismo `yo`/`con` (un contador interno,
+   `intentoHistorial`, entra en las dependencias del efecto solo para poder
+   repetirlo a voluntad) — `VistaConversacion` (`HomePage`) lo cuelga de un
+   botón "Reintentar" en el aviso de error.
 2. **WebSocket** (`/ws/chat/{yo}` contra chat-gateway, contrato §2.1): se abre
    una sola vez por `yo` — cambiar de `con` (interlocutor) **no** reabre la
    conexión, solo cambia a qué mensajes hace caso (vía un `ref`, no en las
    dependencias del efecto, para no perder mensajes que lleguen justo al
    cambiar).
-3. **Filtro de terceros**: el socket de `{yo}` recibe *todo* lo dirigido a
+3. **Reconexión automática**: si el socket se cierra —cayó, chat-gateway
+   reinició, o ni siquiera llegó a abrirse porque el backend estaba caído en
+   ese momento—, se reintenta solo pasados 3 segundos (`RETRASO_REINTENTO_SOCKET_MS`),
+   sin límite de intentos y sin acción del usuario — el contrato lo pide
+   explícitamente (`chat-gateway/docs/contratos-api.md` §4.3: "el cliente
+   debe tratar eso como una desconexión y reintentar"). Antes de esto,
+   `conectado` se quedaba en `false` para siempre tras un solo fallo —
+   incluso si el backend volvía, no había forma de recuperar la conversación
+   sin recargar la página entera.
+4. **Filtro de terceros**: el socket de `{yo}` recibe *todo* lo dirigido a
    `{yo}` (contrato §2.3) — incluida la entrega que llegue por un cliente
    conectado directo a chat-conversacion en vez de por el gateway, ver §2.3 —,
    no solo lo de esta conversación: un mensaje que no sea entre `yo` y `con`
    se descarta antes de añadirse a `mensajes`.
-4. **`enviarMensaje(contenido)`** valida `contenido` en cliente (contrato
+5. **`enviarMensaje(contenido)`** valida `contenido` en cliente (contrato
    §5.2: ni el gateway ni chat-conversacion devuelven un *frame* de rechazo
    por un mensaje inválido, lo descartan en silencio — validar antes de
    mandar no es opcional) y manda el frame; nunca lo añade a `mensajes` de
    forma optimista — el mensaje que vuelve por el socket (contrato §5.3) es
    la única confirmación, tanto para quien lo manda como para quien lo
    recibe.
-5. **Deduplicación por `id`**: por si el mismo mensaje llegara dos veces
+6. **Deduplicación por `id`**: por si el mismo mensaje llegara dos veces
    (reconexión del socket, etc.).
 
 `Conversacion` (el organismo) deshabilita `CampoMensaje` mientras

@@ -47,6 +47,7 @@ beforeEach(() => {
     errorHistorial: null,
     conectado: true,
     enviarMensaje: jest.fn(),
+    reintentarHistorial: jest.fn(),
   });
   useMiUsuario.mockReturnValue({ yo: '', establecerYo });
   useListaChats.mockReturnValue({
@@ -182,6 +183,7 @@ describe('HomePage', () => {
       errorHistorial: null,
       conectado: false,
       enviarMensaje: jest.fn(),
+      reintentarHistorial: jest.fn(),
     });
     const user = userEvent.setup();
     montar();
@@ -191,14 +193,16 @@ describe('HomePage', () => {
     expect(screen.getByText(/cargando conversación/i)).toBeInTheDocument();
   });
 
-  it('si falla el historial, avisa del error', async () => {
+  it('si falla el historial, avisa del error y ofrece un botón para reintentar', async () => {
     useMiUsuario.mockReturnValue({ yo: 'mateo', establecerYo });
+    const reintentarHistorial = jest.fn();
     useConversacion.mockReturnValue({
       mensajes: [],
       cargandoHistorial: false,
       errorHistorial: { kind: 'red' },
       conectado: false,
       enviarMensaje: jest.fn(),
+      reintentarHistorial,
     });
     const user = userEvent.setup();
     montar();
@@ -206,6 +210,10 @@ describe('HomePage', () => {
     await elegirInterlocutor(user);
 
     expect(screen.getByText(/no se pudo cargar el historial/i)).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Reintentar' }));
+
+    expect(reintentarHistorial).toHaveBeenCalledTimes(1);
   });
 
   it('con "yo" resuelto, muestra la lista de chats a la izquierda', () => {
@@ -267,6 +275,7 @@ describe('HomePage', () => {
       errorHistorial: null,
       conectado: true,
       enviarMensaje: jest.fn(),
+      reintentarHistorial: jest.fn(),
     });
     const user = userEvent.setup();
     montar();
@@ -295,6 +304,7 @@ describe('HomePage', () => {
       errorHistorial: null,
       conectado: true,
       enviarMensaje: jest.fn(),
+      reintentarHistorial: jest.fn(),
     });
     const user = userEvent.setup();
     montar();

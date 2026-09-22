@@ -35,8 +35,14 @@ import styles from './HomePage.module.css';
  *   entonces ese chat no existe para la lista).
  */
 const VistaConversacion = ({ yo, con, onMensajeEnviado }) => {
-  const { mensajes, cargandoHistorial, errorHistorial, conectado, enviarMensaje } =
-    useConversacion({ yo, con });
+  const {
+    mensajes,
+    cargandoHistorial,
+    errorHistorial,
+    reintentarHistorial,
+    conectado,
+    enviarMensaje,
+  } = useConversacion({ yo, con });
   const ultimoIdRegistradoRef = useRef(null);
 
   useEffect(() => {
@@ -53,8 +59,15 @@ const VistaConversacion = ({ yo, con, onMensajeEnviado }) => {
 
       {!cargandoHistorial && errorHistorial && (
         <Alert tipo="error">
-          No se pudo cargar el historial de la conversación. Revisa tu conexión e inténtalo
-          de nuevo.
+          <div className={styles.errorConReintento}>
+            <p>
+              No se pudo cargar el historial de la conversación. Revisa tu conexión e
+              inténtalo de nuevo.
+            </p>
+            <Button variant="secondary" onClick={reintentarHistorial}>
+              Reintentar
+            </Button>
+          </div>
         </Alert>
       )}
 

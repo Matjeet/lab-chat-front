@@ -61,6 +61,7 @@ beforeEach(() => {
 
 afterEach(() => {
   jest.clearAllMocks();
+  jest.useRealTimers();
 });
 
 describe('useConversacion', () => {
@@ -175,6 +176,84 @@ describe('useConversacion', () => {
     unmount();
 
     expect(cerrarSpy).toHaveBeenCalled();
+  });
+
+  it('si el socket se cierra (caída, o nunca llegó a abrir), reintenta pasado un tiempo', async () => {
+    await montar();
+    jest.useFakeTimers();
+
+    act(() => {
+      WebSocketFalso.instancias[0].onclose();
+    });
+    expect(WebSocketFalso.instancias).toHaveLength(1); // no reintenta al instante
+
+    act(() => {
+      jest.advanceTimersByTime(3000);
+    });
+    expect(WebSocketFalso.instancias).toHaveLength(2); // reconectó solo
+
+    act(() => {
+      WebSocketFalso.instancias[1].onopen();
+    });
+  });
+
+  it('sigue reintentando mientras el servidor siga caído', async () => {
+    const { result } = await montar();
+    jest.useFakeTimers();
+
+    act(() => {
+      WebSocketFalso.instancias[0].onclose();
+    });
+    act(() => {
+      jest.advanceTimersByTime(3000);
+    });
+    act(() => {
+      WebSocketFalso.instancias[1].onclose();
+    });
+    act(() => {
+      jest.advanceTimersByTime(3000);
+    });
+
+    expect(WebSocketFalso.instancias).toHaveLength(3);
+
+    act(() => {
+      WebSocketFalso.instancias[2].onopen();
+    });
+    expect(result.current.conectado).toBe(true);
+  });
+
+  it('cancela el reintento pendiente al desmontarse (no reconecta después)', async () => {
+    const { unmount } = await montar();
+    jest.useFakeTimers();
+
+    act(() => {
+      WebSocketFalso.instancias[0].onclose();
+    });
+    unmount();
+
+    act(() => {
+      jest.advanceTimersByTime(10000);
+    });
+
+    expect(WebSocketFalso.instancias).toHaveLength(1);
+  });
+
+  it('reintentarHistorial vuelve a pedir el historial (mismo yo/con)', async () => {
+    obtenerHistorial.mockResolvedValueOnce({ ok: false, error: { kind: 'red' } });
+    const { result } = await montar();
+    expect(result.current.errorHistorial).toEqual({ kind: 'red' });
+
+    obtenerHistorial.mockResolvedValueOnce({ ok: true, data: PAGINA_VACIA });
+    act(() => {
+      result.current.reintentarHistorial();
+    });
+    await waitFor(() => expect(result.current.errorHistorial).toBeNull());
+
+    expect(obtenerHistorial).toHaveBeenCalledTimes(2);
+    expect(obtenerHistorial).toHaveBeenLastCalledWith('mateo', 'ana', {
+      size: 50,
+      sort: 'enviadoEn,desc',
+    });
   });
 
   it('cambiar de interlocutor sin cambiar "yo" no reabre el socket, pero sí cambia el filtro', async () => {

@@ -6,6 +6,14 @@ import { urlSocketConversacion } from '../conversacion/config';
 import { obtenerHistorial } from '../conversacion/historial';
 import { validarContenido } from '../utils/validacionConversacion';
 
+// Si la conexión se cae (o nunca llega a abrirse porque chat-gateway estaba
+// caído), reintentar automáticamente en vez de dejar `conectado` en `false`
+// para siempre — el contrato lo pide explícitamente: "el cliente debe tratar
+// eso como una desconexión y reintentar" (chat-gateway/docs/contratos-api.md
+// §4.3). Un retraso fijo es intencional aquí (nada de backoff exponencial):
+// es una app de una sola conversación a la vez, no hace falta esa complejidad.
+const RETRASO_REINTENTO_SOCKET_MS = 3000;
+
 /**
  * Conecta una conversación 1 a 1 con chat-conversacion: carga el historial
  * por REST y abre el WebSocket de `{yo}` para mensajes nuevos — dos canales
@@ -21,6 +29,7 @@ import { validarContenido } from '../utils/validacionConversacion';
  *   mensajes: import('../conversacion/historial').Mensaje[],
  *   cargandoHistorial: boolean,
  *   errorHistorial: {kind: 'servidor'|'red'}|null,
+ *   reintentarHistorial: () => void,
  *   conectado: boolean,
  *   enviarMensaje: (contenido: string) => {ok: true} | {ok: false, error: {kind: 'validacion', mensaje: string}}
  * }}
@@ -29,6 +38,7 @@ const useConversacion = ({ yo, con }) => {
   const [mensajes, setMensajes] = useState([]);
   const [cargandoHistorial, setCargandoHistorial] = useState(true);
   const [errorHistorial, setErrorHistorial] = useState(null);
+  const [intentoHistorial, setIntentoHistorial] = useState(0);
   const [conectado, setConectado] = useState(false);
   const socketRef = useRef(null);
   // El efecto que abre el socket depende solo de `yo` (ver más abajo); este
@@ -60,39 +70,65 @@ const useConversacion = ({ yo, con }) => {
     return () => {
       activo = false;
     };
-  }, [yo, con]);
+    // `intentoHistorial` no se lee dentro del efecto — solo está en las
+    // dependencias para poder repetirlo a voluntad (ver `reintentarHistorial`),
+    // igual que cambiar `yo`/`con` ya lo repite.
+  }, [yo, con, intentoHistorial]);
+
+  const reintentarHistorial = useCallback(() => setIntentoHistorial((n) => n + 1), []);
 
   useEffect(() => {
-    const socket = new WebSocket(urlSocketConversacion(yo));
-    socketRef.current = socket;
+    let activo = true;
+    let socket;
+    let temporizadorReintento;
 
-    socket.onopen = () => setConectado(true);
-    socket.onclose = () => setConectado(false);
-    socket.onerror = () => setConectado(false);
-    socket.onmessage = (evento) => {
-      let mensaje;
-      try {
-        mensaje = JSON.parse(evento.data);
-      } catch {
-        return; // frame que no es JSON: se ignora, no debería pasar según el contrato
-      }
+    const conectar = () => {
+      socket = new WebSocket(urlSocketConversacion(yo));
+      socketRef.current = socket;
 
-      // El socket de {yo} recibe TODO lo dirigido a {yo} (contrato §2.1),
-      // no solo lo de esta conversación — filtrar por `con` (vía ref, ver
-      // arriba) antes de añadirlo, o un mensaje de un tercero aparecería
-      // aquí mezclado.
-      const interlocutor = conRef.current;
-      const esDeEstaConversacion =
-        (mensaje.remitente === interlocutor && mensaje.destinatario === yo) ||
-        (mensaje.remitente === yo && mensaje.destinatario === interlocutor);
-      if (!esDeEstaConversacion) return;
+      socket.onopen = () => setConectado(true);
+      socket.onclose = () => {
+        setConectado(false);
+        // Un cierre por servidor caído (o que nunca llegó a abrir) no debe
+        // dejar la conversación muerta hasta recargar la página — reintentar
+        // sigue siendo lo correcto tanto si chat-gateway está reiniciando
+        // como si acaba de volver. `onerror` siempre dispara `onclose`
+        // después (así lo define WebSocket), así que basta con programar el
+        // reintento aquí.
+        if (activo) {
+          temporizadorReintento = setTimeout(conectar, RETRASO_REINTENTO_SOCKET_MS);
+        }
+      };
+      socket.onerror = () => setConectado(false);
+      socket.onmessage = (evento) => {
+        let mensaje;
+        try {
+          mensaje = JSON.parse(evento.data);
+        } catch {
+          return; // frame que no es JSON: se ignora, no debería pasar según el contrato
+        }
 
-      setMensajes((prev) =>
-        prev.some((existente) => existente.id === mensaje.id) ? prev : [...prev, mensaje],
-      );
+        // El socket de {yo} recibe TODO lo dirigido a {yo} (contrato §2.1),
+        // no solo lo de esta conversación — filtrar por `con` (vía ref, ver
+        // arriba) antes de añadirlo, o un mensaje de un tercero aparecería
+        // aquí mezclado.
+        const interlocutor = conRef.current;
+        const esDeEstaConversacion =
+          (mensaje.remitente === interlocutor && mensaje.destinatario === yo) ||
+          (mensaje.remitente === yo && mensaje.destinatario === interlocutor);
+        if (!esDeEstaConversacion) return;
+
+        setMensajes((prev) =>
+          prev.some((existente) => existente.id === mensaje.id) ? prev : [...prev, mensaje],
+        );
+      };
     };
 
+    conectar();
+
     return () => {
+      activo = false;
+      clearTimeout(temporizadorReintento);
       socket.close();
       socketRef.current = null;
     };
@@ -113,7 +149,14 @@ const useConversacion = ({ yo, con }) => {
     [con],
   );
 
-  return { mensajes, cargandoHistorial, errorHistorial, conectado, enviarMensaje };
+  return {
+    mensajes,
+    cargandoHistorial,
+    errorHistorial,
+    reintentarHistorial,
+    conectado,
+    enviarMensaje,
+  };
 };
 
 export default useConversacion;
