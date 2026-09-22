@@ -33,9 +33,14 @@
   height: 100dvh;
 }
 
+/* Sin límite de ancho: a diferencia del resto de pantallas (una sola columna
+ * de lectura, `--layout-max-width`), las pantallas `altoCompleto` son de
+ * tipo aplicación (p. ej. HomePage con su barra lateral de chats) y
+ * aprovechan todo el ancho disponible. */
 .contentAltoCompleto {
   display: flex;
   flex-direction: column;
+  max-width: none;
   min-height: 0;
   overflow-y: auto;
 }

@@ -28,7 +28,10 @@ coincide con `npm run dev`.
 |---------|-----------------|
 | `src/conversacion/config.js` | `urlSocketConversacion(usuario)`, sobre `API_BASE_URL` (`src/api/config.js`). |
 | `src/conversacion/historial.js` | `obtenerHistorial(usuarioA, usuarioB, opciones)` → `GET /api/v1/conversaciones/{a}/{b}` (contra chat-gateway), resultado tipado igual que `src/api/registro.js`. |
-| `src/conversacion/listaChats.js` | `obtenerListaChats(usuario, idToken, opciones)` → `GET /api/v1/conversaciones/{usuario}/chats` (contrato §4.5, autenticado, paginado por cursor) — resumen de cada chat con el último mensaje. Todavía sin UI propia (pantalla de "conversaciones" pendiente). |
+| `src/conversacion/listaChats.js` | `obtenerListaChats(usuario, idToken, opciones)` → `GET /api/v1/conversaciones/{usuario}/chats` (contrato §4.5, autenticado, paginado por cursor) — resumen de cada chat con el último mensaje. |
+| `src/hooks/useListaChats.js` | `{chats, cargando, cargandoMas, error, hasMore, cargarMas, registrarMensajeEnviado}` — pide la lista en cuanto hay `yo` y sesión, pagina por cursor (scroll infinito) y permite actualizarla al vuelo sin refrescar. Ver "La lista de chats" más abajo. |
+| `src/components/atoms/ItemChat/` | Un elemento de la lista: el otro usuario (fuente grande) + su último mensaje (fuente pequeña, color apagado, recortado con `…`). |
+| `src/components/organisms/ListaChats/` | La lista completa, a la izquierda de `/home` — estados de carga/error/vacío + el scroll infinito (`IntersectionObserver` sobre un centinela al final). |
 | `src/utils/validacionConversacion.js` | Formato de username (espejo del de chat-registro) y de `contenido` (no vacío, ≤ 2000) — espejo del contrato, la autoritativa sigue siendo el servidor. |
 | `src/hooks/useConversacion.js` | El hook central: carga el historial, abre el WebSocket de `{yo}`, filtra los mensajes de esta conversación, expone `enviarMensaje`. |
 | `src/api/usuario.js` | `obtenerUsuario(uid, idToken)` → `GET /api/v1/usuarios/{uid}` (contrato §4.2, autenticado) — resultado tipado. |
@@ -39,7 +42,7 @@ coincide con `npm run dev`.
 | `src/components/atoms/BurbujaMensaje/` | Una burbuja de mensaje (propio/ajeno). |
 | `src/components/molecules/CampoMensaje/` | Campo de texto + botón de envío. |
 | `src/components/organisms/Conversacion/` | Lista de mensajes (auto-scroll) + `CampoMensaje`. |
-| `src/components/pages/HomePage/` | En `/home`, el destino tras iniciar sesión. `yo` sale de `useMiUsuario`; `con` llega de `InterlocutorContext`. Con ambos, `Conversacion` conectada de verdad. Exige sesión (`useRequiereSesion`). |
+| `src/components/pages/HomePage/` | En `/home`, el destino tras iniciar sesión. `yo` sale de `useMiUsuario`; `con` llega de `InterlocutorContext` (por la cabecera o por `ListaChats`). Dos columnas: `ListaChats` a la izquierda, `Conversacion` (o un aviso) a la derecha. Exige sesión (`useRequiereSesion`). |
 
 ## Identidad
 
@@ -66,23 +69,55 @@ separados, con dos ciclos de vida distintos:
      perfil de chat-registro todavía), `HomePage` cae a un formulario manual
      como respaldo — `establecerYo` guarda esa confirmación igual que la
      sincronización automática.
-- **Con quién chatear (`con`)**: se elige con `SelectorInterlocutor`, **en la
-  cabecera** — visible en toda pantalla que exige sesión (`HomePage`,
-  `StyleGuidePage`), nunca en `/login` ni `/registro`. Vive en
-  `InterlocutorContext` y **no persiste** (ni `localStorage` ni entre
-  recargas): no hay lista de contactos todavía, es solo la conversación
-  activa de esta sesión de navegación. Cambiarlo desde la cabecera, estando
-  ya en `/home`, cambia la conversación abierta al instante.
+- **Con quién chatear (`con`)**: dos formas de elegirlo, mismo destino
+  (`InterlocutorContext#establecerCon`) — `SelectorInterlocutor`, **en la
+  cabecera** (visible en toda pantalla que exige sesión: `HomePage`,
+  `StyleGuidePage`; nunca en `/login` ni `/registro`), para empezar un chat
+  con alguien nuevo; o un click en `ListaChats`, a la izquierda de `/home`,
+  para reabrir uno ya existente. `con` vive en `InterlocutorContext` y **no
+  persiste** (ni `localStorage` ni entre recargas): es solo la conversación
+  activa de esta sesión de navegación — quien quiera la lista de con quién
+  ya se ha hablado tiene `ListaChats`, que sí persiste (la sirve el
+  backend). Cambiarlo, estando ya en `/home`, cambia la conversación abierta
+  al instante.
 
-`HomePage` decide qué mostrar según ambos: sin `yo` resuelto (ni por
+`HomePage` decide qué mostrar según `yo`/`con`: sin `yo` resuelto (ni por
 `localStorage` ni por el backend), pide el formulario manual; con `yo` pero
-sin `con`, invita a elegir interlocutor en la cabecera; si `yo === con`
-(comparación insensible a mayúsculas), avisa que no puedes chatear contigo
-mismo; con los dos válidos y distintos, monta la conversación.
+sin `con`, invita a elegir un chat de la lista o escribir uno nuevo en la
+cabecera; si `yo === con` (comparación insensible a mayúsculas), avisa que
+no puedes chatear contigo mismo; con los dos válidos y distintos, monta la
+conversación.
 
-El selector de "con quién chatear" seguirá siendo manual hasta que exista
-una lista de contactos/conversaciones — no hay (ni tiene sentido que haya)
-un endpoint que la adivine.
+## La lista de chats
+
+```jsx
+const { chats, cargando, cargandoMas, error, hasMore, cargarMas, registrarMensajeEnviado } =
+  useListaChats(yo);
+```
+
+- **Carga inicial**: en cuanto `yo` no está vacío y hay sesión de Firebase
+  activa (mismo criterio que `useMiUsuario`: nunca llama al backend sin
+  ambas cosas), pide la primera página de `GET
+  /api/v1/conversaciones/{yo}/chats` (contrato §4.5).
+- **Scroll infinito**: `ListaChats` observa un centinela al final de la
+  lista con `IntersectionObserver`; al hacerse visible, si `hasMore` es
+  `true`, llama a `cargarMas()`, que pide la siguiente página con el
+  `nextCursor` de la anterior (opaco, se manda tal cual) y la añade al
+  final.
+- **Un chat nuevo no aparece por elegirlo en la cabecera.** Para
+  chat-conversacion, un chat no existe hasta que hay al menos un mensaje
+  real (agrupa por mensajes, no hay una entidad "conversación" aparte) —
+  así que la lista tampoco debe inventárselo antes. `VistaConversacion`
+  (en `HomePage`) vigila los mensajes que expone `useConversacion` y, en
+  cuanto confirma uno **propio** (`remitente === yo` — el eco que vuelve
+  por el socket, único momento en que un envío se da por confirmado, ver
+  más abajo), llama a `onMensajeEnviado(con, mensaje)`, que es
+  `registrarMensajeEnviado`: mueve (o crea) la entrada de `con` a la
+  primera posición de `chats`, con ese mensaje como el último — sin
+  esperar a un refresco completo de la lista. Un mensaje **recibido** (de
+  otro usuario) no reordena la lista todavía — solo se pidió para el envío
+  propio; si hace falta también para el otro sentido, es una extensión
+  aparte.
 
 ## Cómo funciona `useConversacion`
 

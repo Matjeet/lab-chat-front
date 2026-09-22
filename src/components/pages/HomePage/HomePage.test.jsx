@@ -6,6 +6,7 @@ import { InterlocutorProvider } from '../../../context/InterlocutorContext';
 import { observarSesion } from '../../../firebase/auth';
 import useConversacion from '../../../hooks/useConversacion';
 import useMiUsuario from '../../../hooks/useMiUsuario';
+import useListaChats from '../../../hooks/useListaChats';
 
 // Factory explícita: un automock sin factory cargaría el Firebase real (sin
 // las variables de entorno que solo existen en build/dev).
@@ -26,8 +27,14 @@ jest.mock('../../../hooks/useConversacion');
 // (localStorage, el backend...), solo qué hace con {yo, establecerYo} — ver
 // src/hooks/useMiUsuario.test.js para el hook en sí.
 jest.mock('../../../hooks/useMiUsuario');
+// Mismo criterio: HomePage no necesita saber cómo se pide/pagina la lista de
+// chats, solo qué hace con lo que el hook expone — ver
+// src/hooks/useListaChats.test.js para el hook en sí.
+jest.mock('../../../hooks/useListaChats');
 
 const establecerYo = jest.fn();
+const registrarMensajeEnviado = jest.fn();
+const cargarMasChats = jest.fn();
 
 beforeEach(() => {
   observarSesion.mockImplementation((callback) => {
@@ -42,6 +49,15 @@ beforeEach(() => {
     enviarMensaje: jest.fn(),
   });
   useMiUsuario.mockReturnValue({ yo: '', establecerYo });
+  useListaChats.mockReturnValue({
+    chats: [],
+    cargando: false,
+    cargandoMas: false,
+    error: null,
+    hasMore: false,
+    cargarMas: cargarMasChats,
+    registrarMensajeEnviado,
+  });
 });
 
 afterEach(() => {
@@ -87,7 +103,7 @@ describe('HomePage', () => {
 
     expect(screen.queryByLabelText('Tu usuario')).not.toBeInTheDocument();
     expect(
-      screen.getByText(/elige con quién chatear arriba, en la cabecera/i),
+      screen.getByText(/elige un chat de la izquierda, o escribe un usuario arriba/i),
     ).toBeInTheDocument();
   });
 
@@ -115,7 +131,7 @@ describe('HomePage', () => {
     montar();
 
     expect(
-      screen.getByText(/elige con quién chatear arriba, en la cabecera/i),
+      screen.getByText(/elige un chat de la izquierda, o escribe un usuario arriba/i),
     ).toBeInTheDocument();
     expect(useConversacion).not.toHaveBeenCalled();
   });
@@ -190,6 +206,102 @@ describe('HomePage', () => {
     await elegirInterlocutor(user);
 
     expect(screen.getByText(/no se pudo cargar el historial/i)).toBeInTheDocument();
+  });
+
+  it('con "yo" resuelto, muestra la lista de chats a la izquierda', () => {
+    useMiUsuario.mockReturnValue({ yo: 'mateo', establecerYo });
+    useListaChats.mockReturnValue({
+      chats: [{ otroUsuario: 'ana', ultimoMensaje: { contenido: 'Hola!' } }],
+      cargando: false,
+      cargandoMas: false,
+      error: null,
+      hasMore: false,
+      cargarMas: cargarMasChats,
+      registrarMensajeEnviado,
+    });
+
+    montar();
+
+    expect(screen.getByRole('heading', { name: 'Chats' })).toBeInTheDocument();
+    expect(screen.getByText('ana')).toBeInTheDocument();
+    expect(screen.getByText('Hola!')).toBeInTheDocument();
+  });
+
+  it('sin "yo" resuelto todavía, no muestra la lista de chats', () => {
+    montar();
+    expect(screen.queryByRole('heading', { name: 'Chats' })).not.toBeInTheDocument();
+  });
+
+  it('al hacer click en un chat de la lista, abre esa conversación', async () => {
+    useMiUsuario.mockReturnValue({ yo: 'mateo', establecerYo });
+    useListaChats.mockReturnValue({
+      chats: [{ otroUsuario: 'ana', ultimoMensaje: { contenido: 'Hola!' } }],
+      cargando: false,
+      cargandoMas: false,
+      error: null,
+      hasMore: false,
+      cargarMas: cargarMasChats,
+      registrarMensajeEnviado,
+    });
+    const user = userEvent.setup();
+    montar();
+
+    await user.click(screen.getByText('ana'));
+
+    expect(useConversacion).toHaveBeenCalledWith({ yo: 'mateo', con: 'ana' });
+  });
+
+  it('al confirmarse un mensaje propio, registra el chat en la lista', async () => {
+    useMiUsuario.mockReturnValue({ yo: 'mateo', establecerYo });
+    useConversacion.mockReturnValue({
+      mensajes: [
+        {
+          id: '1',
+          remitente: 'mateo',
+          destinatario: 'ana',
+          contenido: 'Hola!',
+          enviadoEn: '2026-01-01T00:00:00Z',
+        },
+      ],
+      cargandoHistorial: false,
+      errorHistorial: null,
+      conectado: true,
+      enviarMensaje: jest.fn(),
+    });
+    const user = userEvent.setup();
+    montar();
+
+    await elegirInterlocutor(user, 'ana');
+
+    expect(registrarMensajeEnviado).toHaveBeenCalledWith(
+      'ana',
+      expect.objectContaining({ id: '1', contenido: 'Hola!' }),
+    );
+  });
+
+  it('no registra en la lista un mensaje recibido (no propio)', async () => {
+    useMiUsuario.mockReturnValue({ yo: 'mateo', establecerYo });
+    useConversacion.mockReturnValue({
+      mensajes: [
+        {
+          id: '1',
+          remitente: 'ana',
+          destinatario: 'mateo',
+          contenido: 'Hola!',
+          enviadoEn: '2026-01-01T00:00:00Z',
+        },
+      ],
+      cargandoHistorial: false,
+      errorHistorial: null,
+      conectado: true,
+      enviarMensaje: jest.fn(),
+    });
+    const user = userEvent.setup();
+    montar();
+
+    await elegirInterlocutor(user, 'ana');
+
+    expect(registrarMensajeEnviado).not.toHaveBeenCalled();
   });
 
   it('sin sesión, navega a /login en segundo plano (sin bloquear el formulario)', async () => {

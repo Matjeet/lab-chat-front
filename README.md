@@ -67,20 +67,21 @@ src/
 ├── firebase/                  # SDK de cliente de Firebase Authentication (solo login)
 │   ├── config.js
 │   └── auth.js                #   iniciarSesion(...) + observarSesion(cb)
-├── conversacion/               # Llamadas al chat (WebSocket + historial REST), vía chat-gateway
+├── conversacion/               # Llamadas al chat (WebSocket + historial REST + lista de chats), vía chat-gateway
 │   ├── config.js
-│   └── historial.js
+│   ├── historial.js
+│   └── listaChats.js
 ├── context/                    # InterlocutorContext: con quién se está chateando ahora
-├── hooks/                      # useRequiereSesion, useRedirigirSiHaySesion, useMiUsuario, useConversacion
+├── hooks/                      # useRequiereSesion, useRedirigirSiHaySesion, useMiUsuario, useListaChats, useConversacion
 ├── utils/                     # Helpers puros (validación de formularios, miUsuario...)
 ├── styles/
 │   ├── tokens.css            # Tokens de diseño (color, tipografía, espaciado...)
 │   └── global.css            # Reset y estilos base
 └── components/               # Atomic Design
     ├── atoms/       Button, Input, Alert, Ilustracion404, PatronBurbujas, TextoAleatorio,
-    │                BurbujaMensaje
+    │                BurbujaMensaje, ItemChat
     ├── molecules/   FormField, ThemeToggle, RequisitosCampo, CampoMensaje, SelectorInterlocutor
-    ├── organisms/   Header, RegistroForm, LoginForm, Conversacion
+    ├── organisms/   Header, RegistroForm, LoginForm, Conversacion, ListaChats
     ├── templates/   DefaultLayout
     └── pages/       LoginPage, RegistroPage, HomePage, StyleGuidePage, NotFoundPage
 ```
@@ -126,9 +127,12 @@ sesión; cualquier otra ruta (`/home`, `/estilos`) exige sesión y redirige a
 verdad a **chat-conversacion vía chat-gateway**: WebSocket en tiempo real +
 REST para el historial, ambos contra el gateway (mismo origen que
 `NEXT_PUBLIC_API_BASE_URL`). "Tu usuario" se resuelve solo con `GET
-/api/v1/usuarios/{uid}` (el único endpoint autenticado del sistema,
-`idToken` de la sesión activa) en cuanto hay sesión; si ese backend no
-resuelve, cae a un formulario manual como respaldo. Detalle en
+/api/v1/usuarios/{uid}` (autenticado, `idToken` de la sesión activa) en
+cuanto hay sesión; si ese backend no resuelve, cae a un formulario manual
+como respaldo. Dos columnas: a la izquierda, `ListaChats` — con quién se ha
+hablado y el último mensaje de cada uno, scroll infinito, `GET
+/api/v1/conversaciones/{usuario}/chats` (el otro endpoint autenticado del
+sistema) —; a la derecha, la conversación elegida. Detalle en
 [`docs/integracion-conversacion.md`](./docs/integracion-conversacion.md).
 
 Detalle del patrón de llamadas y manejo de errores en

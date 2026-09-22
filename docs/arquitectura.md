@@ -104,13 +104,15 @@ chat-frontend/
 │   │   └── auth.js             # iniciarSesion(...) + observarSesion(cb) -> resultado tipado
 │   ├── conversacion/            # Acceso al chat en tiempo real, vía chat-gateway (ver integracion-conversacion.md)
 │   │   ├── config.js            # urlSocketConversacion(usuario), sobre API_BASE_URL
-│   │   └── historial.js         # GET /api/v1/conversaciones/{a}/{b} -> resultado tipado
+│   │   ├── historial.js         # GET /api/v1/conversaciones/{a}/{b} -> resultado tipado
+│   │   └── listaChats.js        # GET /api/v1/conversaciones/{usuario}/chats (autenticado, cursor) -> resultado tipado
 │   ├── context/                 # Contextos de React (estado compartido entre páginas)
 │   │   └── InterlocutorContext.jsx # {con, establecerCon}; lo escribe SelectorInterlocutor, lo lee HomePage
 │   ├── hooks/                   # Hooks compartidos (no encajan en Atomic Design)
 │   │   ├── useRequiereSesion.js # {verificando}; navega a /login si no hay sesión
 │   │   ├── useRedirigirSiHaySesion.js # {comprobando}; navega a /home si SÍ hay sesión
 │   │   ├── useMiUsuario.js      # {yo, establecerYo}; localStorage + GET /api/v1/usuarios/{uid}
+│   │   ├── useListaChats.js     # {chats, cargando, cargandoMas, error, hasMore, cargarMas, registrarMensajeEnviado}
 │   │   └── useConversacion.js   # historial + WebSocket de una conversación 1 a 1
 │   ├── utils/                  # Helpers puros (sin React)
 │   │   ├── validacionRegistro.js
@@ -122,10 +124,10 @@ chat-frontend/
 │   │   └── global.css         # Reset y estilos base
 │   └── components/
 │       ├── atoms/             Button · Input · Alert · Ilustracion404 · PatronBurbujas ·
-│       │                      TextoAleatorio · BurbujaMensaje
+│       │                      TextoAleatorio · BurbujaMensaje · ItemChat
 │       ├── molecules/         FormField · ThemeToggle · RequisitosCampo · CampoMensaje ·
 │       │                      SelectorInterlocutor
-│       ├── organisms/         Header · RegistroForm · LoginForm · Conversacion
+│       ├── organisms/         Header · RegistroForm · LoginForm · Conversacion · ListaChats
 │       ├── templates/         DefaultLayout
 │       └── pages/             LoginPage · RegistroPage · HomePage · StyleGuidePage · NotFoundPage
 │           └── Button/

@@ -6,6 +6,34 @@
   margin: 0 auto;
 }
 
+/* Dos columnas: ListaChats a la izquierda, la conversación (o un aviso) a
+ * la derecha — llena el alto que le da `.content` (`altoCompleto` en
+ * DefaultLayout), cada columna con su propio scroll interno si hace falta. */
+.pantalla {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  gap: var(--space-4);
+}
+
+.barraLateral {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  width: var(--layout-sidebar-width);
+  min-height: 0;
+  padding-right: var(--space-4);
+  border-right: var(--border-width) solid var(--color-border);
+}
+
+.principal {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  gap: var(--space-3);
+}
+
 .vista {
   display: flex;
   flex: 1;

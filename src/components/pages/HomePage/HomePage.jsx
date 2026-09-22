@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import DefaultLayout from '../../templates/DefaultLayout';
 import Conversacion from '../../organisms/Conversacion';
+import ListaChats from '../../organisms/ListaChats';
 import Button from '../../atoms/Button';
 import Alert from '../../atoms/Alert';
 import FormField from '../../molecules/FormField';
@@ -11,6 +12,7 @@ import SelectorInterlocutor from '../../molecules/SelectorInterlocutor';
 import useRequiereSesion from '../../../hooks/useRequiereSesion';
 import useConversacion from '../../../hooks/useConversacion';
 import useMiUsuario from '../../../hooks/useMiUsuario';
+import useListaChats from '../../../hooks/useListaChats';
 import { useInterlocutor } from '../../../context/InterlocutorContext';
 import { validarUsername } from '../../../utils/validacionConversacion';
 import styles from './HomePage.module.css';
@@ -21,10 +23,29 @@ import styles from './HomePage.module.css';
  * llama siempre de forma incondicional dentro de su propio componente —
  * `HomePage` no podría llamarlo condicionalmente sin romper las reglas de
  * hooks.
+ *
+ * @param {object} props
+ * @param {string} props.yo
+ * @param {string} props.con
+ * @param {(otroUsuario: string, mensaje: object) => void} [props.onMensajeEnviado]
+ *   Avisa a `ListaChats` (vía `useListaChats#registrarMensajeEnviado`) en
+ *   cuanto se confirma un mensaje propio — es lo que hace aparecer un chat
+ *   nuevo en la lista la primera vez, justo al mandar su primer mensaje (no
+ *   antes: chat-conversacion agrupa por mensajes reales, así que hasta
+ *   entonces ese chat no existe para la lista).
  */
-const VistaConversacion = ({ yo, con }) => {
+const VistaConversacion = ({ yo, con, onMensajeEnviado }) => {
   const { mensajes, cargandoHistorial, errorHistorial, conectado, enviarMensaje } =
     useConversacion({ yo, con });
+  const ultimoIdRegistradoRef = useRef(null);
+
+  useEffect(() => {
+    const ultimo = mensajes[mensajes.length - 1];
+    if (!ultimo || ultimo.remitente !== yo) return;
+    if (ultimo.id === ultimoIdRegistradoRef.current) return;
+    ultimoIdRegistradoRef.current = ultimo.id;
+    onMensajeEnviado?.(con, ultimo);
+  }, [mensajes, yo, con, onMensajeEnviado]);
 
   return (
     <div className={styles.vista}>
@@ -72,14 +93,30 @@ const VistaConversacion = ({ yo, con }) => {
  *   `RegistroPage` ya lo guarda solo si te registraste aquí).
  * - **Con quién chatear (`con`)**: se elige con `SelectorInterlocutor`, en la
  *   cabecera (`InterlocutorContext`) — visible en toda pantalla que exija
- *   sesión, no solo aquí. No se recuerda entre recargas: no hay lista de
- *   contactos todavía, es solo la conversación activa de esta sesión de
- *   navegación.
+ *   sesión, no solo aquí — o haciendo click en un chat de `ListaChats`, a la
+ *   izquierda. No se recuerda entre recargas: no hay lista de contactos
+ *   propia, es `ListaChats` (`GET /api/v1/conversaciones/{usuario}/chats`,
+ *   `useListaChats`) la que hace ese papel.
+ *
+ * Un chat nuevo (con alguien con quien `yo` no tenía mensajes todavía) no
+ * aparece en `ListaChats` solo por elegirlo en la cabecera — aparece recién
+ * al mandar su primer mensaje (`onMensajeEnviado` en `VistaConversacion`
+ * llama a `registrarMensajeEnviado`), porque para chat-conversacion ese chat
+ * tampoco existe hasta entonces (agrupa por mensajes reales).
  */
 const HomePage = () => {
   useRequiereSesion();
-  const { con } = useInterlocutor();
+  const { con, establecerCon } = useInterlocutor();
   const { yo, establecerYo } = useMiUsuario();
+  const {
+    chats,
+    cargando: cargandoChats,
+    cargandoMas: cargandoMasChats,
+    error: errorChats,
+    hasMore: hasMoreChats,
+    cargarMas: cargarMasChats,
+    registrarMensajeEnviado,
+  } = useListaChats(yo);
 
   const [valorYo, setValorYo] = useState('');
   const [errorYo, setErrorYo] = useState(null);
@@ -128,18 +165,40 @@ const HomePage = () => {
         </form>
       )}
 
-      {yo && !conLimpio && (
-        <Alert tipo="info">Elige con quién chatear arriba, en la cabecera, para empezar.</Alert>
-      )}
+      {yo && (
+        <div className={styles.pantalla}>
+          <aside className={styles.barraLateral}>
+            <ListaChats
+              chats={chats}
+              cargando={cargandoChats}
+              cargandoMas={cargandoMasChats}
+              error={errorChats}
+              hasMore={hasMoreChats}
+              chatActivo={conLimpio}
+              onCargarMas={cargarMasChats}
+              onSeleccionar={establecerCon}
+            />
+          </aside>
 
-      {yo && conLimpio && chateandoContigoMismo && (
-        <Alert tipo="error">
-          No puedes chatear contigo mismo. Elige otro usuario en la cabecera.
-        </Alert>
-      )}
+          <div className={styles.principal}>
+            {!conLimpio && (
+              <Alert tipo="info">
+                Elige un chat de la izquierda, o escribe un usuario arriba, en la cabecera, para
+                empezar uno nuevo.
+              </Alert>
+            )}
 
-      {yo && conLimpio && !chateandoContigoMismo && (
-        <VistaConversacion yo={yo} con={conLimpio} />
+            {conLimpio && chateandoContigoMismo && (
+              <Alert tipo="error">
+                No puedes chatear contigo mismo. Elige otro usuario en la cabecera.
+              </Alert>
+            )}
+
+            {conLimpio && !chateandoContigoMismo && (
+              <VistaConversacion yo={yo} con={conLimpio} onMensajeEnviado={registrarMensajeEnviado} />
+            )}
+          </div>
+        </div>
       )}
     </DefaultLayout>
   );
