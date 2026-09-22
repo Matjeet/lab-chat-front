@@ -211,7 +211,13 @@ describe('HomePage', () => {
 
     expect(screen.getByText(/no se pudo cargar el historial/i)).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: 'Reintentar' }));
+    // Es un botón-icono: el texto "Reintentar" vive en el aria-label, no
+    // visible en pantalla — igual que ThemeToggle con su símbolo de tema.
+    const botonReintentar = screen.getByRole('button', { name: 'Reintentar' });
+    expect(botonReintentar).not.toHaveTextContent('Reintentar');
+    expect(botonReintentar.querySelector('[aria-hidden="true"]')).toBeInTheDocument();
+
+    await user.click(botonReintentar);
 
     expect(reintentarHistorial).toHaveBeenCalledTimes(1);
   });

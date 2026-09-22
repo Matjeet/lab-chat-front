@@ -64,9 +64,13 @@ const VistaConversacion = ({ yo, con, onMensajeEnviado }) => {
               No se pudo cargar el historial de la conversación. Revisa tu conexión e
               inténtalo de nuevo.
             </p>
-            <Button variant="secondary" onClick={reintentarHistorial}>
-              Reintentar
-            </Button>
+            <div className={styles.accionReintentar}>
+              <Button variant="primary" onClick={reintentarHistorial} aria-label="Reintentar">
+                <span className={styles.iconoReintentar} aria-hidden="true">
+                  ↻
+                </span>
+              </Button>
+            </div>
           </div>
         </Alert>
       )}
