@@ -28,6 +28,7 @@ coincide con `npm run dev`.
 |---------|-----------------|
 | `src/conversacion/config.js` | `urlSocketConversacion(usuario)`, sobre `API_BASE_URL` (`src/api/config.js`). |
 | `src/conversacion/historial.js` | `obtenerHistorial(usuarioA, usuarioB, opciones)` → `GET /api/v1/conversaciones/{a}/{b}` (contra chat-gateway), resultado tipado igual que `src/api/registro.js`. |
+| `src/conversacion/listaChats.js` | `obtenerListaChats(usuario, idToken, opciones)` → `GET /api/v1/conversaciones/{usuario}/chats` (contrato §4.5, autenticado, paginado por cursor) — resumen de cada chat con el último mensaje. Todavía sin UI propia (pantalla de "conversaciones" pendiente). |
 | `src/utils/validacionConversacion.js` | Formato de username (espejo del de chat-registro) y de `contenido` (no vacío, ≤ 2000) — espejo del contrato, la autoritativa sigue siendo el servidor. |
 | `src/hooks/useConversacion.js` | El hook central: carga el historial, abre el WebSocket de `{yo}`, filtra los mensajes de esta conversación, expone `enviarMensaje`. |
 | `src/api/usuario.js` | `obtenerUsuario(uid, idToken)` → `GET /api/v1/usuarios/{uid}` (contrato §4.2, autenticado) — resultado tipado. |
