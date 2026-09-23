@@ -52,4 +52,11 @@ describe('CampoMensaje', () => {
     expect(screen.getByLabelText('Mensaje')).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Enviar' })).toBeDisabled();
   });
+
+  it('el botón de enviar es un ícono, no el texto "Enviar" (aria-label lo conserva)', () => {
+    render(<CampoMensaje onEnviar={jest.fn()} />);
+    const boton = screen.getByRole('button', { name: 'Enviar' });
+    expect(boton).not.toHaveTextContent('Enviar');
+    expect(boton.querySelector('[aria-hidden="true"]')).toBeInTheDocument();
+  });
 });

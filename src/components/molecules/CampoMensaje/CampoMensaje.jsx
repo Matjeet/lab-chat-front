@@ -12,6 +12,10 @@ import styles from './CampoMensaje.module.css';
  * incluida) lo decide quien la usa a través de `onEnviar` — ver
  * `useConversacion#enviarMensaje`, cuyo resultado tipado encaja aquí tal cual.
  *
+ * El botón de envío es un ícono (➤), no el texto "Enviar" — mismo patrón que
+ * `ThemeToggle` y el botón "Reintentar" de `HomePage`: el símbolo va con
+ * `aria-hidden`, el nombre accesible real vive en el `aria-label` del botón.
+ *
  * @param {object} props
  * @param {(contenido: string) => {ok: boolean, error?: {mensaje: string}}} props.onEnviar
  * @param {boolean} [props.disabled=false]
@@ -53,8 +57,10 @@ const CampoMensaje = ({ onEnviar, disabled = false }) => {
           onChange={alCambiar}
           aria-label="Mensaje"
         />
-        <Button type="submit" disabled={disabled}>
-          Enviar
+        <Button type="submit" disabled={disabled} aria-label="Enviar">
+          <span className={styles.iconoEnviar} aria-hidden="true">
+            ➤
+          </span>
         </Button>
       </div>
     </form>
