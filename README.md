@@ -63,7 +63,7 @@ src/
 ├── api/                      # Llamadas a chat-gateway
 │   ├── config.js             #   base URL (NEXT_PUBLIC_API_BASE_URL)
 │   ├── registro.js           #   POST /api/v1/registro
-│   └── usuario.js            #   GET /api/v1/usuarios/{uid} (autenticado)
+│   └── usuario.js            #   GET /api/v1/usuarios/{uid} y /existe (autenticados)
 ├── firebase/                  # SDK de cliente de Firebase Authentication (solo login)
 │   ├── config.js
 │   └── auth.js                #   iniciarSesion(...) + observarSesion(cb)
@@ -72,7 +72,7 @@ src/
 │   ├── historial.js
 │   └── listaChats.js
 ├── context/                    # InterlocutorContext: con quién se está chateando ahora
-├── hooks/                      # useRequiereSesion, useRedirigirSiHaySesion, useMiUsuario, useListaChats, useConversacion
+├── hooks/                      # useRequiereSesion, useRedirigirSiHaySesion, useMiUsuario, useListaChats, useExisteUsuario, useConversacion
 ├── utils/                     # Helpers puros (validación de formularios, miUsuario...)
 ├── styles/
 │   ├── tokens.css            # Tokens de diseño (color, tipografía, espaciado...)
@@ -131,8 +131,10 @@ REST para el historial, ambos contra el gateway (mismo origen que
 cuanto hay sesión; si ese backend no resuelve, cae a un formulario manual
 como respaldo. Dos columnas: a la izquierda, `ListaChats` — con quién se ha
 hablado y el último mensaje de cada uno, scroll infinito, `GET
-/api/v1/conversaciones/{usuario}/chats` (el otro endpoint autenticado del
-sistema) —; a la derecha, la conversación elegida. Detalle en
+/api/v1/conversaciones/{usuario}/chats` —; a la derecha, la conversación
+elegida. Para empezar un chat nuevo desde la cabecera, antes se comprueba
+que el username exista de verdad (`GET /api/v1/usuarios/existe`) — si no
+existe, o si la comprobación falla, avisa y no lo abre. Detalle en
 [`docs/integracion-conversacion.md`](./docs/integracion-conversacion.md).
 
 Detalle del patrón de llamadas y manejo de errores en

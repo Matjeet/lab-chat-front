@@ -7,6 +7,7 @@ import { observarSesion } from '../../../firebase/auth';
 import useConversacion from '../../../hooks/useConversacion';
 import useMiUsuario from '../../../hooks/useMiUsuario';
 import useListaChats from '../../../hooks/useListaChats';
+import useExisteUsuario from '../../../hooks/useExisteUsuario';
 
 // Factory explícita: un automock sin factory cargaría el Firebase real (sin
 // las variables de entorno que solo existen en build/dev).
@@ -31,10 +32,18 @@ jest.mock('../../../hooks/useMiUsuario');
 // chats, solo qué hace con lo que el hook expone — ver
 // src/hooks/useListaChats.test.js para el hook en sí.
 jest.mock('../../../hooks/useListaChats');
+// SelectorInterlocutor (montado dentro de HomePage, en la cabecera) usa este
+// hook internamente para comprobar si el usuario existe antes de abrir el
+// chat — se mockea aquí también para no depender de una sesión de Firebase
+// real al enviar el formulario de la cabecera (ver `elegirInterlocutor`).
+// Factory explícita: un automock sin factory cargaría el hook real, que
+// importa firebase/auth.
+jest.mock('../../../hooks/useExisteUsuario', () => jest.fn());
 
 const establecerYo = jest.fn();
 const registrarMensajeEnviado = jest.fn();
 const cargarMasChats = jest.fn();
+const comprobarUsuario = jest.fn().mockResolvedValue({ ok: true, data: { existe: true } });
 
 beforeEach(() => {
   observarSesion.mockImplementation((callback) => {
@@ -59,6 +68,7 @@ beforeEach(() => {
     cargarMas: cargarMasChats,
     registrarMensajeEnviado,
   });
+  useExisteUsuario.mockReturnValue(comprobarUsuario);
 });
 
 afterEach(() => {
@@ -84,6 +94,10 @@ const confirmarMiUsuario = async (user, yo = 'mateo') => {
 const elegirInterlocutor = async (user, con = 'ana') => {
   await user.type(screen.getByLabelText('Chatear con'), con);
   await user.click(screen.getByRole('button', { name: 'Ir' }));
+  // SelectorInterlocutor comprueba primero (async) si el usuario existe —
+  // espera a que ese envío termine (el botón se rehabilita al resolver)
+  // antes de dar por hecho que `con` ya se actualizó en el contexto.
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Ir' })).not.toBeDisabled());
 };
 
 describe('HomePage', () => {

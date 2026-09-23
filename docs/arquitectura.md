@@ -98,7 +98,7 @@ chat-frontend/
 │   ├── api/                   # Acceso a los servicios backend
 │   │   ├── config.js          # API_BASE_URL (NEXT_PUBLIC_API_BASE_URL)
 │   │   ├── registro.js        # POST /api/v1/registro -> resultado tipado
-│   │   └── usuario.js         # GET /api/v1/usuarios/{uid} (autenticado) -> resultado tipado
+│   │   └── usuario.js         # GET /api/v1/usuarios/{uid} y /existe (autenticados) -> resultado tipado
 │   ├── firebase/               # SDK de cliente de Firebase (solo login, ver integracion-api.md)
 │   │   ├── config.js           # Inicializa la app (variables NEXT_PUBLIC_FIREBASE_*)
 │   │   └── auth.js             # iniciarSesion(...) + observarSesion(cb) -> resultado tipado
@@ -113,6 +113,7 @@ chat-frontend/
 │   │   ├── useRedirigirSiHaySesion.js # {comprobando}; navega a /home si SÍ hay sesión
 │   │   ├── useMiUsuario.js      # {yo, establecerYo}; localStorage + GET /api/v1/usuarios/{uid}
 │   │   ├── useListaChats.js     # {chats, cargando, cargandoMas, error, hasMore, cargarMas, registrarMensajeEnviado}
+│   │   ├── useExisteUsuario.js  # (username) => Promise<resultado>; GET /api/v1/usuarios/existe
 │   │   └── useConversacion.js   # historial + WebSocket de una conversación 1 a 1
 │   ├── utils/                  # Helpers puros (sin React)
 │   │   ├── validacionRegistro.js

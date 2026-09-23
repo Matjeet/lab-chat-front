@@ -38,7 +38,8 @@ coincide con `npm run dev`.
 | `src/hooks/useMiUsuario.js` | `{yo, establecerYo}` — resuelve "tu usuario": `localStorage` de inmediato, y lo sincroniza con `obtenerUsuario` en cuanto hay sesión. Ver "Identidad" más abajo. |
 | `src/utils/miUsuario.js` | `localStorage` puro (leer/guardar `yo`) que usa `useMiUsuario` por debajo, y que `RegistroPage` sigue usando directamente tras un alta. |
 | `src/context/InterlocutorContext.jsx` | `{con, establecerCon}` — con quién se está chateando ahora. Lo escribe `SelectorInterlocutor`, lo lee `HomePage`. No persiste (ver "Identidad"). |
-| `src/components/molecules/SelectorInterlocutor/` | Elige `con` desde la cabecera (`headerCentro` de `DefaultLayout`) — valida el formato antes de confirmar. |
+| `src/hooks/useExisteUsuario.js` | Función `(username) => Promise<ResultadoExisteUsuario>` — comprueba si un username existe, con el `idToken` de cualquier sesión activa. Ver "Identidad" más abajo. |
+| `src/components/molecules/SelectorInterlocutor/` | Elige `con` desde la cabecera (`headerCentro` de `DefaultLayout`) — valida el formato y que el usuario exista de verdad antes de confirmar. |
 | `src/components/atoms/BurbujaMensaje/` | Una burbuja de mensaje (propio/ajeno). |
 | `src/components/molecules/CampoMensaje/` | Campo de texto + botón de envío. |
 | `src/components/organisms/Conversacion/` | Lista de mensajes (auto-scroll) + `CampoMensaje`. |
@@ -80,6 +81,22 @@ separados, con dos ciclos de vida distintos:
   ya se ha hablado tiene `ListaChats`, que sí persiste (la sirve el
   backend). Cambiarlo, estando ya en `/home`, cambia la conversación abierta
   al instante.
+
+  Desde `SelectorInterlocutor` (no desde `ListaChats`, que ya muestra
+  usuarios reales), confirmar pasa por dos pasos: primero el formato
+  (`validarUsername`), luego **que el username exista de verdad** —
+  `useExisteUsuario` llama a `GET /api/v1/usuarios/existe`
+  (`src/api/usuario.js#existeUsuario`, chat-gateway contrato §4.6, el
+  tercer endpoint autenticado del sistema) — para no abrir un chat con
+  alguien que no está en la aplicación. Se comprueba al enviar el
+  formulario (al hacer click en "Ir", o al enviarlo con Enter), no
+  mientras se escribe; mientras la respuesta está en vuelo, el campo y el
+  botón se deshabilitan. Tres desenlaces: existe → `establecerCon`; no
+  existe → "Ese usuario no existe."; falla la comprobación (red, backend
+  caído) → aviso genérico, tampoco se confirma — a diferencia de
+  `obtenerUsuario`/`obtenerListaChats`, este endpoint no compara identidad,
+  así que cualquier sesión de Firebase activa sirve para preguntar por
+  *cualquier* username.
 
 `HomePage` decide qué mostrar según `yo`/`con`: sin `yo` resuelto (ni por
 `localStorage` ni por el backend), pide el formulario manual; con `yo` pero

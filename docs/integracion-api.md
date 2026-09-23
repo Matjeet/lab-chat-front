@@ -53,8 +53,9 @@ lo configura por su cuenta para lo que expone el gateway.
 | `src/hooks/useRedirigirSiHaySesion.js` | Hook inverso, para pantallas públicas: `{ comprobando }`, navega a `/home` si SÍ hay usuario. |
 | `src/components/organisms/LoginForm/` | Formulario de login: valida, llama a `onIniciarSesion` y muestra el aviso según `error.kind` si falla. |
 | `src/components/pages/LoginPage/` | Monta `LoginForm`, le pasa `onIniciarSesion` (llama a `iniciarSesion` y navega a `/home` si sale bien) + enlace a `/registro`. También navega a `/home` si ya hay sesión, antes de mostrar el formulario. |
-| `src/api/usuario.js` | `obtenerUsuario(uid, idToken)` → `GET /api/v1/usuarios/{uid}` (contrato §4.2) — el único endpoint autenticado del sistema. |
+| `src/api/usuario.js` | `obtenerUsuario(uid, idToken)` → `GET /api/v1/usuarios/{uid}` (contrato §4.2) y `existeUsuario(username, idToken)` → `GET /api/v1/usuarios/existe` (contrato §4.6) — dos de los tres endpoints autenticados del sistema. |
 | `src/hooks/useMiUsuario.js` | `{yo, establecerYo}` — sincroniza "tu usuario" con `obtenerUsuario` en cuanto hay sesión (ver [`integracion-conversacion.md`](./integracion-conversacion.md#identidad)); `localStorage` como respaldo/caché. |
+| `src/hooks/useExisteUsuario.js` | Función `(username) => Promise<ResultadoExisteUsuario>` — comprueba si un username existe, con el `idToken` de cualquier sesión activa. La usa `SelectorInterlocutor` antes de abrir un chat nuevo. |
 | `src/components/pages/HomePage/` | En `/home`, destino tras un login correcto — el chat 1 a 1 en sí (ver [`integracion-conversacion.md`](./integracion-conversacion.md)). Exige sesión (`useRequiereSesion`). |
 | `src/components/pages/StyleGuidePage/` | Guía de estilo. Exige sesión (`useRequiereSesion`) — no es pública. |
 
@@ -115,14 +116,24 @@ El `idToken` de esta sesión ya tiene un uso real: `useMiUsuario`
 (`src/hooks/useMiUsuario.js`) lo manda a `GET /api/v1/usuarios/{uid}` —
 ver "Datos de usuario" más abajo.
 
-## Datos de usuario — el único endpoint autenticado
+## Datos de usuario — endpoints autenticados
 
-`GET /api/v1/usuarios/{uid}` (contrato §4.2) es, de todo el sistema, el único
-endpoint que exige autenticación: cabecera `Authorization: Bearer <idToken>`,
-y chat-gateway comprueba él mismo (con su propia integración con Firebase
-Admin SDK) que el `uid` que decodifica ese token coincide con el `{uid}` de
-la URL — nadie puede leer el `username`/`email` de una cuenta ajena solo por
-conocer su `uid`.
+Todo el sistema tiene solo tres endpoints que exigen autenticación
+(`Authorization: Bearer <idToken>`, verificado por el propio chat-gateway
+con su integración con Firebase Admin SDK — nunca reenvía el token a
+ningún microservicio): `GET /api/v1/usuarios/{uid}` (§4.2), `GET
+/api/v1/conversaciones/{usuario}/chats` (§4.5, ver
+[`integracion-conversacion.md`](./integracion-conversacion.md#la-lista-de-chats))
+y `GET /api/v1/usuarios/existe` (§4.6, ver más abajo). Los dos primeros
+**comparan identidad** (el `uid`/`username` del token tiene que coincidir
+con el recurso pedido); el tercero, no — cualquier sesión válida puede
+preguntar por la disponibilidad de cualquier `username`.
+
+### `GET /api/v1/usuarios/{uid}` — tus propios datos
+
+Chat-gateway comprueba que el `uid` que decodifica el token coincide con el
+`{uid}` de la URL — nadie puede leer el `username`/`email` de una cuenta
+ajena solo por conocer su `uid`.
 
 `src/api/usuario.js#obtenerUsuario(uid, idToken)` lo llama con el mismo
 patrón de resultado tipado que el resto de `src/api/`, mapeando el `type`
@@ -143,6 +154,33 @@ del *Problem Detail* a un `kind`:
 cuenta, porque siempre son los de la sesión activa. Ver
 [`integracion-conversacion.md`](./integracion-conversacion.md#identidad)
 para cómo `HomePage` usa el resultado.
+
+### `GET /api/v1/usuarios/existe` — ¿existe este username?
+
+A diferencia del anterior, **no compara identidad**: sirve cualquier
+`idToken` válido, sin importar de quién sea — pensado para preguntar por
+*otro* usuario antes de iniciar un chat con él, no para resolver los datos
+de la sesión actual.
+
+`src/api/usuario.js#existeUsuario(username, idToken)`:
+
+```js
+{ ok: true,  data: { existe: boolean } }                    // 200 — existe: false NO es un error
+{ ok: false, error: { kind: 'validacion', mensaje } }        // 400 validation-error (username ausente/vacío)
+{ ok: false, error: { kind: 'no-autenticado' } }              // 401 unauthorized
+{ ok: false, error: { kind: 'servidor' } }                    // 503/500 u otros
+{ ok: false, error: { kind: 'red' } }                          // fetch falló
+```
+
+Sin `kind: 'prohibido'` ni `kind: 'no-encontrado'`: este endpoint no tiene
+ningún `403` posible (no compara identidad) y un username libre es
+`existe: false`, una respuesta válida, nunca un `404`.
+
+`src/hooks/useExisteUsuario.js` es quien lo consume (mismo patrón que
+`useMiUsuario`: `observarSesion` → `idToken` → llama a la función de
+`src/api/`), y `SelectorInterlocutor` es quien lo usa para no dejar
+empezar un chat con un username que no existe — ver
+[`integracion-conversacion.md`](./integracion-conversacion.md#identidad).
 
 ## Rutas que exigen sesión
 
@@ -201,10 +239,10 @@ conectarse al WebSocket con cualquier `{usuario}`, sin pasar por Firebase ni
 por nada de este frontend. `useRequiereSesion` en `HomePage` solo impide
 llegar a la pantalla sin sesión de *este* frontend — no protege los mensajes
 en sí, que siguen expuestos a quien hable directo con `chat-conversacion`
-(la única excepción de todo el sistema es `GET /api/v1/usuarios/{uid}`, que
-sí exige y verifica el `idToken` — ver "Datos de usuario" más arriba).
-Sigue siendo, a propósito, una demo de la conexión — no algo listo para datos
-reales hasta que `chat-conversacion` resuelva su propia autenticación.
+(las únicas excepciones de todo el sistema son los tres endpoints
+autenticados — ver "Datos de usuario" más arriba). Sigue siendo, a
+propósito, una demo de la conexión — no algo listo para datos reales hasta
+que `chat-conversacion` resuelva su propia autenticación.
 
 ## Patrón: resultado tipado
 

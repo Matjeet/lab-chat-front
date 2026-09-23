@@ -17,8 +17,11 @@ jest.mock('next/navigation', () => ({
 beforeEach(() => {
   // Como si hubiera sesión activa: estos tests ejercitan el contenido de la
   // guía, no la comprobación de sesión en sí (ver useRequiereSesion.test.js).
+  // getIdToken: SelectorInterlocutor (en la cabecera) usa useExisteUsuario
+  // por debajo, que lo pide al montarse — sin él, ese hook revienta aquí
+  // aunque ningún test de esta página llegue a enviar el formulario.
   observarSesion.mockImplementation((callback) => {
-    callback({ uid: 'abc123' });
+    callback({ uid: 'abc123', getIdToken: jest.fn().mockResolvedValue('token-fake') });
     return jest.fn();
   });
 });
