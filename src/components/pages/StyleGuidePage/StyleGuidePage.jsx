@@ -11,6 +11,7 @@ import FormField from '../../molecules/FormField';
 import RequisitosCampo from '../../molecules/RequisitosCampo';
 import SelectorInterlocutor from '../../molecules/SelectorInterlocutor';
 import ModalError from '../../molecules/ModalError';
+import Notificaciones from '../../molecules/Notificaciones';
 import useRequiereSesion from '../../../hooks/useRequiereSesion';
 import styles from './StyleGuidePage.module.css';
 
@@ -93,7 +94,11 @@ const StyleGuidePage = () => {
   const [mostrarModalError, setMostrarModalError] = useState(false);
 
   return (
-    <DefaultLayout title="Sistema de diseño" headerCentro={<SelectorInterlocutor />}>
+    <DefaultLayout
+      title="Sistema de diseño"
+      headerCentro={<SelectorInterlocutor />}
+      headerActions={<Notificaciones />}
+    >
       <p className={styles.intro}>
         Fuente de verdad: <code>src/styles/tokens.css</code>. Cambia el tema desde
         la cabecera para revisar el modo oscuro.

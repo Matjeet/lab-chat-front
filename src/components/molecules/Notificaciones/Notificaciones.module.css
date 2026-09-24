@@ -1,0 +1,44 @@
+.contenedor {
+  position: relative;
+}
+
+.icono {
+  width: var(--space-5);
+  height: var(--space-5);
+}
+
+.panel {
+  position: absolute;
+  top: calc(100% + var(--space-2));
+  right: 0;
+  z-index: var(--z-overlay);
+  width: 320px;
+  max-width: calc(100vw - var(--space-5) * 2);
+  overflow: hidden;
+  background-color: var(--color-surface);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+}
+
+.panelCabecera {
+  padding: var(--space-3) var(--space-4);
+  border-bottom: var(--border-width) solid var(--color-border);
+}
+
+.panelTitulo {
+  margin: 0;
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+}
+
+.panelCuerpo {
+  padding: var(--space-5) var(--space-4);
+}
+
+.vacio {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  text-align: center;
+}
