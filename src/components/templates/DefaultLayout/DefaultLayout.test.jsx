@@ -63,6 +63,15 @@ describe('DefaultLayout', () => {
     expect(container.querySelector('svg[aria-hidden="true"]')).toBeInTheDocument();
   });
 
+  it('muestra el pie de página', () => {
+    render(
+      <DefaultLayout title="Chat">
+        <p>Contenido</p>
+      </DefaultLayout>,
+    );
+    expect(screen.getByRole('contentinfo')).toHaveTextContent('Proyecto Chat');
+  });
+
   it('pasa `headerCentro` al centro de la cabecera', () => {
     render(
       <DefaultLayout title="Chat" headerCentro={<input aria-label="Chatear con" />}>

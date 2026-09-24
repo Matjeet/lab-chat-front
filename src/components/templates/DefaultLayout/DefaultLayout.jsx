@@ -1,4 +1,5 @@
 import Header from '../../organisms/Header';
+import Footer from '../../organisms/Footer';
 import ThemeToggle from '../../molecules/ThemeToggle';
 import PatronBurbujas from '../../atoms/PatronBurbujas';
 import styles from './DefaultLayout.module.css';
@@ -66,9 +67,7 @@ const DefaultLayout = ({
         children
       )}
     </main>
-    <footer className={styles.footer}>
-      <small>Proyecto Chat · Atomic Design</small>
-    </footer>
+    <Footer />
   </div>
 );
 
