@@ -39,6 +39,7 @@ Los tokens de color son **roles**, no nombres de color (`--color-primary`, no
 | `--color-success-soft` / `--color-danger-soft` | Fondo de avisos (`Alert` de éxito / error). |
 | `--color-on-danger` | Texto sobre `--color-danger`. |
 | `--color-focus-ring` | Color del anillo de foco. |
+| `--color-overlay` | Fondo semitransparente tras un modal (`ModalError`). Mismo valor en los dos temas a propósito. |
 
 Contraste objetivo: **AA** (≥ 4.5:1 texto normal, ≥ 3:1 texto grande y bordes de
 componentes) en ambos temas. Al añadir o cambiar un color, verificarlo.
@@ -151,6 +152,49 @@ de burbujas de chat en movimiento:
 - **No** se usa en `NotFoundPage`: su ilustración ya está pensada para
   fundirse con el fondo de la página (ver más abajo), y superponerle esta
   tarjeta rompería ese efecto.
+
+## Modal de error
+
+Estándar único para cualquier error **bloqueante** — uno que interrumpe la
+acción que el usuario acaba de intentar y necesita su confirmación explícita
+antes de seguir. Componente: `src/components/molecules/ModalError`. Antes de
+esto, cada sitio inventaba su propia forma (p. ej. un `<p>` en rojo sin fondo
+ni estructura); ahora todos comparten el mismo componente y la misma forma.
+
+**Cuándo usarlo, y cuándo no** — tres niveles de error, tres componentes
+distintos, sin solaparse:
+
+| Error | Componente | Ejemplo |
+|-------|-----------|---------|
+| De campo (formato inválido mientras se rellena un formulario) | `FormField` (prop `error`) o un `<p role="alert">` junto al campo | Username con formato inválido en `SelectorInterlocutor` |
+| De pantalla (convive con el resto del contenido, no bloquea nada) | `Alert` | "No se pudo cargar la lista de chats" en `ListaChats` |
+| **Bloqueante** (corta el flujo, exige reconocimiento) | **`ModalError`** | "Ese usuario no existe" al elegir con quién chatear |
+
+Regla práctica: si el usuario puede seguir viendo e interactuando con el
+resto de la pantalla mientras decide qué hacer con el error, no es
+`ModalError` — es `Alert` o un error de campo. `ModalError` es para cuando no
+tiene sentido dejar que continúe sin que primero reconozca el error.
+
+**Forma fija** (no se improvisa una nueva cada vez):
+- Fondo semitransparente que cubre toda la pantalla (`--color-overlay`,
+  `--z-overlay`), tarjeta centrada (`--color-surface`, `--radius-lg`,
+  `--shadow-md`, borde `--color-danger`).
+- Título (`titulo`, opcional — por defecto "Ha ocurrido un error") + mensaje
+  (`mensaje`) + un único botón de confirmación (`textoBoton`, por defecto
+  "Entendido").
+- Se cierra de tres formas equivalentes, todas llaman a la misma prop
+  `onCerrar`: el botón, la tecla Escape, o un clic en el fondo.
+- `role="alertdialog"` + `aria-modal="true"` + `aria-labelledby`/
+  `aria-describedby` apuntando al título y al mensaje; el foco se mueve al
+  diálogo al abrirse, queda atrapado dentro (Tab/Shift+Tab no se escapan a la
+  página de detrás) y vuelve al elemento que lo tenía antes al cerrarse.
+- El padre controla el montaje, igual que `Alert` — no hay prop `abierto`:
+  `{error && <ModalError mensaje={...} onCerrar={() => setError(null)} />}`.
+
+Ver la sección "Modal de error" en `/estilos` para probarlo en caliente, y
+`SelectorInterlocutor` para un uso real (distingue error de campo, con
+`FormField`/`<p role="alert">`, de error bloqueante, con `ModalError`, según
+el `kind` que devuelve la API).
 
 ## Reglas por nivel de Atomic Design
 

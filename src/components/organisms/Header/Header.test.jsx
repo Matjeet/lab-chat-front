@@ -20,6 +20,11 @@ describe('Header', () => {
     expect(screen.queryByRole('navigation')).not.toBeInTheDocument();
   });
 
+  it('renderiza el contenido centrado cuando se pasa', () => {
+    render(<Header title="Chat" centro={<input aria-label="Chatear con" />} />);
+    expect(screen.getByLabelText('Chatear con')).toBeInTheDocument();
+  });
+
   it('muestra el logo y el nombre de la app, enlazando a /', () => {
     render(<Header title="Iniciar sesión" />);
     const enlace = screen.getByRole('link', { name: 'Chat' });

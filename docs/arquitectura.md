@@ -90,31 +90,45 @@ chat-frontend/
 │   ├── page.jsx               # "/"         -> <LoginPage/> (arranque de la app)
 │   ├── registro/page.jsx      # "/registro" -> <RegistroPage/>
 │   ├── login/page.jsx         # "/login"    -> <LoginPage/> (misma pantalla que "/")
-│   ├── home/page.jsx          # "/home"     -> <HomePage/> (destino tras login correcto)
+│   ├── home/page.jsx          # "/home"     -> <HomePage/> (destino tras login: el chat 1 a 1)
 │   ├── estilos/page.jsx       # "/estilos"  -> <StyleGuidePage/> (guía viva)
 │   └── not-found.jsx          # 404 (ruta inexistente o notFound()) -> <NotFoundPage/>
 ├── src/
 │   ├── setupTests.js          # Setup global de Jest (matchers de jest-dom)
 │   ├── api/                   # Acceso a los servicios backend
 │   │   ├── config.js          # API_BASE_URL (NEXT_PUBLIC_API_BASE_URL)
-│   │   └── registro.js        # POST /api/v1/registro -> resultado tipado
+│   │   ├── registro.js        # POST /api/v1/registro -> resultado tipado
+│   │   └── usuario.js         # GET /api/v1/usuarios/{uid} y /existe (autenticados) -> resultado tipado
 │   ├── firebase/               # SDK de cliente de Firebase (solo login, ver integracion-api.md)
 │   │   ├── config.js           # Inicializa la app (variables NEXT_PUBLIC_FIREBASE_*)
 │   │   └── auth.js             # iniciarSesion(...) + observarSesion(cb) -> resultado tipado
+│   ├── conversacion/            # Acceso al chat en tiempo real, vía chat-gateway (ver integracion-conversacion.md)
+│   │   ├── config.js            # urlSocketConversacion(usuario), sobre API_BASE_URL
+│   │   ├── historial.js         # GET /api/v1/conversaciones/{a}/{b} -> resultado tipado
+│   │   └── listaChats.js        # GET /api/v1/conversaciones/{usuario}/chats (autenticado, cursor) -> resultado tipado
+│   ├── context/                 # Contextos de React (estado compartido entre páginas)
+│   │   └── InterlocutorContext.jsx # {con, establecerCon}; lo escribe SelectorInterlocutor, lo lee HomePage
 │   ├── hooks/                   # Hooks compartidos (no encajan en Atomic Design)
 │   │   ├── useRequiereSesion.js # {verificando}; navega a /login si no hay sesión
-│   │   └── useRedirigirSiHaySesion.js # {comprobando}; navega a /home si SÍ hay sesión
+│   │   ├── useRedirigirSiHaySesion.js # {comprobando}; navega a /home si SÍ hay sesión
+│   │   ├── useMiUsuario.js      # {yo, establecerYo}; localStorage + GET /api/v1/usuarios/{uid}
+│   │   ├── useListaChats.js     # {chats, cargando, cargandoMas, error, hasMore, cargarMas, registrarMensajeEnviado}
+│   │   ├── useExisteUsuario.js  # (username) => Promise<resultado>; GET /api/v1/usuarios/existe
+│   │   └── useConversacion.js   # historial + WebSocket de una conversación 1 a 1
 │   ├── utils/                  # Helpers puros (sin React)
 │   │   ├── validacionRegistro.js
-│   │   └── validacionLogin.js
+│   │   ├── validacionLogin.js
+│   │   ├── validacionConversacion.js
+│   │   └── miUsuario.js         # localStorage: recuerda el username (ver integracion-conversacion.md)
 │   ├── styles/
 │   │   ├── tokens.css         # Tokens de diseño (ver sistema-de-diseno.md)
 │   │   └── global.css         # Reset y estilos base
 │   └── components/
 │       ├── atoms/             Button · Input · Alert · Ilustracion404 · PatronBurbujas ·
-│       │                      TextoAleatorio
-│       ├── molecules/         FormField · ThemeToggle · RequisitosCampo
-│       ├── organisms/         Header · RegistroForm · LoginForm
+│       │                      TextoAleatorio · BurbujaMensaje · ItemChat
+│       ├── molecules/         FormField · ThemeToggle · RequisitosCampo · CampoMensaje ·
+│       │                      SelectorInterlocutor
+│       ├── organisms/         Header · RegistroForm · LoginForm · Conversacion · ListaChats
 │       ├── templates/         DefaultLayout
 │       └── pages/             LoginPage · RegistroPage · HomePage · StyleGuidePage · NotFoundPage
 │           └── Button/
@@ -236,11 +250,15 @@ Cada componente vive en su propia carpeta con estos archivos:
   [`integracion-api.md`](./integracion-api.md#por-qué-no-se-retrasa-la-carga-con-un-estado-comprobando-sesión).
 - **Toda ruta que no sea `/`, `/login` o `/registro` exige sesión** —hoy
   `/home` y `/estilos`— vía el hook `useRequiereSesion` (`src/hooks/`, mismo
-  mecanismo que `LoginPage` pero en sentido contrario). Es una guardia de
-  **UX en el cliente**, no un límite de seguridad: en export estático el
+  mecanismo que `LoginPage` pero en sentido contrario). Es una guardia
+  de **UX en el cliente**, no un límite de seguridad: en export estático el
   HTML de esas rutas es un archivo público igual que cualquier otro, el
   guard solo actúa cuando el JS ya cargó en el navegador. El día que una
   pantalla protegida muestre datos reales, esos datos deben venir de una
   llamada a un backend que los autorice él mismo — ver
   [`integracion-api.md`](./integracion-api.md#rutas-que-exigen-sesión).
+- **`/home` (`HomePage`) es el chat en sí**, conectado de verdad a
+  `chat-conversacion` (WebSocket en tiempo real + REST para el historial) —
+  detalle completo en
+  [`integracion-conversacion.md`](./integracion-conversacion.md).
 - Detalle en [`integracion-api.md`](./integracion-api.md).

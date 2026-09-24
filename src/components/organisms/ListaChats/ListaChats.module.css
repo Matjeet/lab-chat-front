@@ -1,0 +1,32 @@
+.lista {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  gap: var(--space-2);
+}
+
+.titulo {
+  margin: 0;
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-bold);
+}
+
+.items {
+  flex: 1;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.vacio {
+  padding: var(--space-4);
+  color: var(--color-text-subtle);
+  text-align: center;
+}
+
+.centinela {
+  height: var(--space-1);
+}

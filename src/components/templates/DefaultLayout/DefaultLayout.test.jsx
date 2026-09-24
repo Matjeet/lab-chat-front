@@ -63,6 +63,35 @@ describe('DefaultLayout', () => {
     expect(container.querySelector('svg[aria-hidden="true"]')).toBeInTheDocument();
   });
 
+  it('pasa `headerCentro` al centro de la cabecera', () => {
+    render(
+      <DefaultLayout title="Chat" headerCentro={<input aria-label="Chatear con" />}>
+        <p>Contenido</p>
+      </DefaultLayout>,
+    );
+    expect(screen.getByLabelText('Chatear con')).toBeInTheDocument();
+  });
+
+  it('sin `altoCompleto`, no fija el alto de pantalla ni el scroll interno', () => {
+    const { container } = render(
+      <DefaultLayout title="Chat">
+        <p>Contenido</p>
+      </DefaultLayout>,
+    );
+    expect(container.firstChild.className).not.toMatch(/altoCompleto/i);
+    expect(screen.getByRole('main').className).not.toMatch(/altoCompleto/i);
+  });
+
+  it('con `altoCompleto`, fija el layout al alto de pantalla y el scroll interno del contenido', () => {
+    const { container } = render(
+      <DefaultLayout title="Chat" altoCompleto>
+        <p>Contenido</p>
+      </DefaultLayout>,
+    );
+    expect(container.firstChild.className).toMatch(/layoutAltoCompleto/);
+    expect(screen.getByRole('main').className).toMatch(/contentAltoCompleto/);
+  });
+
   it('el fondo de burbujas cubre toda la pantalla, no solo el contenido', () => {
     const { container } = render(
       <DefaultLayout title="Chat" centered tarjeta>

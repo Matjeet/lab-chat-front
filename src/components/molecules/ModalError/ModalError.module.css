@@ -1,0 +1,50 @@
+.fondo {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4);
+  background-color: var(--color-overlay);
+  z-index: var(--z-overlay);
+}
+
+.dialogo {
+  width: 100%;
+  max-width: var(--layout-form-width);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-6);
+  background-color: var(--color-surface);
+  border: var(--border-width) solid var(--color-danger);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+}
+
+/* El diálogo recibe foco programático al abrirse (gestión de foco de un
+ * modal, no navegación real por teclado): el anillo de foco global
+ * (`--color-focus-ring`) sobra aquí, el propio borde rojo ya marca que está
+ * activo. */
+.dialogo:focus-visible {
+  outline: none;
+}
+
+.titulo {
+  margin: 0;
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-danger);
+}
+
+.mensaje {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+}
+
+.acciones {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: var(--space-2);
+}

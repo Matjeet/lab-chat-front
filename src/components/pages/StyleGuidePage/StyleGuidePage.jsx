@@ -1,5 +1,7 @@
 'use client';
 
+import { useState } from 'react';
+
 import DefaultLayout from '../../templates/DefaultLayout';
 import Button from '../../atoms/Button';
 import Input from '../../atoms/Input';
@@ -7,6 +9,8 @@ import Alert from '../../atoms/Alert';
 import PatronBurbujas from '../../atoms/PatronBurbujas';
 import FormField from '../../molecules/FormField';
 import RequisitosCampo from '../../molecules/RequisitosCampo';
+import SelectorInterlocutor from '../../molecules/SelectorInterlocutor';
+import ModalError from '../../molecules/ModalError';
 import useRequiereSesion from '../../../hooks/useRequiereSesion';
 import styles from './StyleGuidePage.module.css';
 
@@ -78,12 +82,18 @@ const Section = ({ title, children }) => (
  * (`useRequiereSesion`) — sin ella, navega a `/login`, pero el contenido se
  * pinta siempre de inmediato (no depende de ningún fetch): ver `HomePage`
  * para el razonamiento completo.
+ *
+ * Pasa `SelectorInterlocutor` como `headerCentro`, igual que `HomePage`:
+ * toda pantalla que exige sesión lo muestra centrado en la cabecera, aunque
+ * esta en particular no consuma el interlocutor elegido (ver
+ * `InterlocutorContext`).
  */
 const StyleGuidePage = () => {
   useRequiereSesion();
+  const [mostrarModalError, setMostrarModalError] = useState(false);
 
   return (
-    <DefaultLayout title="Sistema de diseño">
+    <DefaultLayout title="Sistema de diseño" headerCentro={<SelectorInterlocutor />}>
       <p className={styles.intro}>
         Fuente de verdad: <code>src/styles/tokens.css</code>. Cambia el tema desde
         la cabecera para revisar el modo oscuro.
@@ -175,6 +185,26 @@ const StyleGuidePage = () => {
           <Alert tipo="success">Operación completada correctamente.</Alert>
           <Alert tipo="error">No se pudo completar la operación.</Alert>
         </div>
+      </Section>
+
+      <Section title="Modal de error">
+        <p className={styles.intro}>
+          Estándar para un error <strong>bloqueante</strong> (interrumpe la
+          acción y exige que el usuario lo reconozca) — a diferencia de{' '}
+          <code>Alert</code>, que convive con el resto de la pantalla.
+        </p>
+        <div className={styles.row}>
+          <Button variant="danger" onClick={() => setMostrarModalError(true)}>
+            Simular error bloqueante
+          </Button>
+        </div>
+        {mostrarModalError && (
+          <ModalError
+            titulo="Usuario no encontrado"
+            mensaje="No existe ningún usuario con ese nombre. Revisa que esté bien escrito."
+            onCerrar={() => setMostrarModalError(false)}
+          />
+        )}
       </Section>
 
       <Section title="Campos de formulario">

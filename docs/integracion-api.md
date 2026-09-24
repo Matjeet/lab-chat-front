@@ -1,24 +1,31 @@
 # Integración con la API
 
-Cómo consume este frontend los microservicios backend. Contrato completo:
-[`../../chat-registro/docs/contratos-api.md`](../../chat-registro/docs/contratos-api.md).
+Cómo consume este frontend el backend. El cliente habla siempre con
+**chat-gateway** — único punto de entrada REST y WebSocket del sistema —
+nunca directo con `chat-registro` ni con `chat-conversacion`; el gateway
+reenvía cada petición por gRPC al microservicio correspondiente. Contrato
+completo (registro, datos de usuario, chat en tiempo real e historial, los
+cuatro en un solo documento):
+[`../../chat-gateway/docs/contratos-api.md`](../../chat-gateway/docs/contratos-api.md)
+(para el chat en concreto, ver también [`integracion-conversacion.md`](./integracion-conversacion.md)).
 
 ## Configuración
 
 | Variable | Por defecto | Notas |
 |----------|-------------|-------|
-| `NEXT_PUBLIC_API_BASE_URL` | `http://localhost:8080` | Base URL de `chat-registro`. Se **inyecta en tiempo de build** (export estático). Define en `.env.local` para desarrollo. |
+| `NEXT_PUBLIC_API_BASE_URL` | `http://localhost:8080` | Base URL de `chat-gateway`. Un solo origen para registro, historial de conversaciones y el WebSocket del chat. Se **inyecta en tiempo de build** (export estático). Define en `.env.local` para desarrollo. |
 
 `src/api/config.js` la lee y le quita la barra final.
 
 ### CORS
 
-`chat-registro` habilita CORS él mismo para `/api/**` (`CorsConfig` +
-`CORS_ALLOWED_ORIGINS`, ver contrato §1) — ya no lo resuelve un gateway.
+`chat-gateway` habilita CORS él mismo para `/api/**` (`CorsConfig` +
+`CORS_ALLOWED_ORIGINS`, ver su contrato §1) — ningún microservicio de detrás
+lo configura por su cuenta para lo que expone el gateway.
 
 - **Desarrollo**: el valor por defecto del backend es `http://localhost:3000`,
   que coincide con `npm run dev`. No hace falta tocar nada.
-- **Producción**: quien despliegue `chat-registro` debe incluir el origen real
+- **Producción**: quien despliegue `chat-gateway` debe incluir el origen real
   donde se sirve `out/` (el dominio, con esquema y puerto, sin barra final) en
   `CORS_ALLOWED_ORIGINS`. Sin eso, toda petición del frontend falla.
 - **Un origen no permitido responde `403` sin cabeceras `Access-Control-*`**:
@@ -46,7 +53,10 @@ Cómo consume este frontend los microservicios backend. Contrato completo:
 | `src/hooks/useRedirigirSiHaySesion.js` | Hook inverso, para pantallas públicas: `{ comprobando }`, navega a `/home` si SÍ hay usuario. |
 | `src/components/organisms/LoginForm/` | Formulario de login: valida, llama a `onIniciarSesion` y muestra el aviso según `error.kind` si falla. |
 | `src/components/pages/LoginPage/` | Monta `LoginForm`, le pasa `onIniciarSesion` (llama a `iniciarSesion` y navega a `/home` si sale bien) + enlace a `/registro`. También navega a `/home` si ya hay sesión, antes de mostrar el formulario. |
-| `src/components/pages/HomePage/` | Destino tras un login correcto. Exige sesión (`useRequiereSesion`). Placeholder: solo confirma la sesión, sin contenido real todavía. |
+| `src/api/usuario.js` | `obtenerUsuario(uid, idToken)` → `GET /api/v1/usuarios/{uid}` (contrato §4.2) y `existeUsuario(username, idToken)` → `GET /api/v1/usuarios/existe` (contrato §4.6) — dos de los tres endpoints autenticados del sistema. |
+| `src/hooks/useMiUsuario.js` | `{yo, establecerYo}` — sincroniza "tu usuario" con `obtenerUsuario` en cuanto hay sesión (ver [`integracion-conversacion.md`](./integracion-conversacion.md#identidad)); `localStorage` como respaldo/caché. |
+| `src/hooks/useExisteUsuario.js` | Función `(username) => Promise<ResultadoExisteUsuario>` — comprueba si un username existe, con el `idToken` de cualquier sesión activa. La usa `SelectorInterlocutor` antes de abrir un chat nuevo. |
+| `src/components/pages/HomePage/` | En `/home`, destino tras un login correcto — el chat 1 a 1 en sí (ver [`integracion-conversacion.md`](./integracion-conversacion.md)). Exige sesión (`useRequiereSesion`). |
 | `src/components/pages/StyleGuidePage/` | Guía de estilo. Exige sesión (`useRequiereSesion`) — no es pública. |
 
 ## Quién habla con Firebase
@@ -102,10 +112,75 @@ asíncrona, pero como la mayoría de las veces quien entra a `/` no tiene
 sesión todavía, demorar la carga de toda la pantalla para cubrir el caso
 contrario no compensa — ver más abajo "Por qué no se retrasa la carga".
 
-**Pendiente, a propósito:** qué hacer con el `idToken` frente a
-`chat-registro` (¿lo valida un endpoint nuevo? ¿el backend confía en Firebase
-y solo le importa el `uid`?) — `HomePage` hoy no recibe ni usa ese token, es
-solo la confirmación visual de que el login funcionó.
+El `idToken` de esta sesión ya tiene un uso real: `useMiUsuario`
+(`src/hooks/useMiUsuario.js`) lo manda a `GET /api/v1/usuarios/{uid}` —
+ver "Datos de usuario" más abajo.
+
+## Datos de usuario — endpoints autenticados
+
+Todo el sistema tiene solo tres endpoints que exigen autenticación
+(`Authorization: Bearer <idToken>`, verificado por el propio chat-gateway
+con su integración con Firebase Admin SDK — nunca reenvía el token a
+ningún microservicio): `GET /api/v1/usuarios/{uid}` (§4.2), `GET
+/api/v1/conversaciones/{usuario}/chats` (§4.5, ver
+[`integracion-conversacion.md`](./integracion-conversacion.md#la-lista-de-chats))
+y `GET /api/v1/usuarios/existe` (§4.6, ver más abajo). Los dos primeros
+**comparan identidad** (el `uid`/`username` del token tiene que coincidir
+con el recurso pedido); el tercero, no — cualquier sesión válida puede
+preguntar por la disponibilidad de cualquier `username`.
+
+### `GET /api/v1/usuarios/{uid}` — tus propios datos
+
+Chat-gateway comprueba que el `uid` que decodifica el token coincide con el
+`{uid}` de la URL — nadie puede leer el `username`/`email` de una cuenta
+ajena solo por conocer su `uid`.
+
+`src/api/usuario.js#obtenerUsuario(uid, idToken)` lo llama con el mismo
+patrón de resultado tipado que el resto de `src/api/`, mapeando el `type`
+del *Problem Detail* a un `kind`:
+
+```js
+{ ok: true,  data: { username, email } }        // 200
+{ ok: false, error: { kind: 'no-autenticado' } } // 401 unauthorized
+{ ok: false, error: { kind: 'prohibido' } }      // 403 forbidden (token de otro uid)
+{ ok: false, error: { kind: 'no-encontrado' } }  // 404 resource-not-found
+{ ok: false, error: { kind: 'servidor' } }       // 503/500 u otros
+{ ok: false, error: { kind: 'red' } }             // fetch falló
+```
+
+`src/hooks/useMiUsuario.js` es quien lo consume, no un organismo: en cuanto
+`observarSesion` entrega una sesión, pide `usuario.getIdToken()` y llama a
+`obtenerUsuario(usuario.uid, idToken)` — nunca con `uid`/token de otra
+cuenta, porque siempre son los de la sesión activa. Ver
+[`integracion-conversacion.md`](./integracion-conversacion.md#identidad)
+para cómo `HomePage` usa el resultado.
+
+### `GET /api/v1/usuarios/existe` — ¿existe este username?
+
+A diferencia del anterior, **no compara identidad**: sirve cualquier
+`idToken` válido, sin importar de quién sea — pensado para preguntar por
+*otro* usuario antes de iniciar un chat con él, no para resolver los datos
+de la sesión actual.
+
+`src/api/usuario.js#existeUsuario(username, idToken)`:
+
+```js
+{ ok: true,  data: { existe: boolean } }                    // 200 — existe: false NO es un error
+{ ok: false, error: { kind: 'validacion', mensaje } }        // 400 validation-error (username ausente/vacío)
+{ ok: false, error: { kind: 'no-autenticado' } }              // 401 unauthorized
+{ ok: false, error: { kind: 'servidor' } }                    // 503/500 u otros
+{ ok: false, error: { kind: 'red' } }                          // fetch falló
+```
+
+Sin `kind: 'prohibido'` ni `kind: 'no-encontrado'`: este endpoint no tiene
+ningún `403` posible (no compara identidad) y un username libre es
+`existe: false`, una respuesta válida, nunca un `404`.
+
+`src/hooks/useExisteUsuario.js` es quien lo consume (mismo patrón que
+`useMiUsuario`: `observarSesion` → `idToken` → llama a la función de
+`src/api/`), y `SelectorInterlocutor` es quien lo usa para no dejar
+empezar un chat con un username que no existe — ver
+[`integracion-conversacion.md`](./integracion-conversacion.md#identidad).
 
 ## Rutas que exigen sesión
 
@@ -148,13 +223,26 @@ contenido nunca es sensible (ver el aviso de seguridad justo abajo).
 export estático (`output: 'export'`) no tiene servidor: `out/home.html` es un
 archivo público como cualquier otro, descargable sin pasar por React ni por
 `useRequiereSesion` — el guard solo actúa una vez que el JS carga en el
-navegador. Hoy no importa (`HomePage` no tiene datos reales todavía), pero
-en cuanto una pantalla protegida muestre algo sensible, ese dato **no puede
-depender de que el cliente decida ocultarlo** — tiene que venir de una
-llamada a un backend que exija sus propias credenciales (el `idToken`, un
-header, lo que decida el contrato). `useRequiereSesion` evita que alguien sin
-sesión *use* la pantalla; no reemplaza la autorización del lado del
-servidor para los datos que esa pantalla vaya a pedir.
+navegador. `useRequiereSesion` evita que alguien sin sesión *use* la
+pantalla; no reemplaza la autorización del lado del servidor para los datos
+que esa pantalla vaya a pedir — esos datos **no pueden depender de que el
+cliente decida ocultarlos**, tienen que venir de una llamada a un backend
+que exija sus propias credenciales (el `idToken`, un header, lo que decida
+el contrato).
+
+Esto ya dejó de ser hipotético: `HomePage` ahora es el chat (ver
+[`integracion-conversacion.md`](./integracion-conversacion.md)) y sí muestra
+datos reales — mensajes de `chat-conversacion`. Ese servicio **todavía no
+tiene autenticación propia** (su contrato lo avisa explícitamente): cualquiera
+que sepa la URL puede pedir el historial de cualquier par de usuarios o
+conectarse al WebSocket con cualquier `{usuario}`, sin pasar por Firebase ni
+por nada de este frontend. `useRequiereSesion` en `HomePage` solo impide
+llegar a la pantalla sin sesión de *este* frontend — no protege los mensajes
+en sí, que siguen expuestos a quien hable directo con `chat-conversacion`
+(las únicas excepciones de todo el sistema son los tres endpoints
+autenticados — ver "Datos de usuario" más arriba). Sigue siendo, a
+propósito, una demo de la conexión — no algo listo para datos reales hasta
+que `chat-conversacion` resuelva su propia autenticación.
 
 ## Patrón: resultado tipado
 

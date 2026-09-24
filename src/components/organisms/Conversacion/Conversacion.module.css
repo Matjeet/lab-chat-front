@@ -1,0 +1,53 @@
+.conversacion {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  gap: var(--space-3);
+}
+
+.cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding-bottom: var(--space-3);
+  border-bottom: var(--border-width) solid var(--color-border);
+}
+
+.con {
+  margin: 0;
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+}
+
+.estado {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-subtle);
+}
+
+.estado.conectado {
+  color: var(--color-success);
+}
+
+.mensajes {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  margin: 0;
+  padding: var(--space-2);
+  overflow-y: auto;
+  list-style: none;
+}
+
+.vacio {
+  padding: var(--space-4);
+  color: var(--color-text-subtle);
+  text-align: center;
+  list-style: none;
+}
+
+.centinela {
+  height: 0;
+}
