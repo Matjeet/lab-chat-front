@@ -4,12 +4,15 @@ import { useState } from 'react';
 
 import Input from '../../atoms/Input';
 import Button from '../../atoms/Button';
+import ModalError from '../ModalError';
 import { useInterlocutor } from '../../../context/InterlocutorContext';
 import useExisteUsuario from '../../../hooks/useExisteUsuario';
 import { validarUsername } from '../../../utils/validacionConversacion';
 import styles from './SelectorInterlocutor.module.css';
 
-const MENSAJE_NO_EXISTE = 'Ese usuario no existe.';
+const TITULO_NO_EXISTE = 'Usuario no encontrado';
+const MENSAJE_NO_EXISTE = 'No existe ningún usuario con ese nombre. Revisa que esté bien escrito.';
+const TITULO_ERROR_COMPROBACION = 'No se pudo comprobar';
 const MENSAJE_ERROR_COMPROBACION = 'No se pudo comprobar el usuario. Inténtalo de nuevo.';
 
 /**
@@ -28,41 +31,53 @@ const MENSAJE_ERROR_COMPROBACION = 'No se pudo comprobar el usuario. Inténtalo 
  *    abrir un chat con alguien que no está en la aplicación. Mientras
  *    comprueba, deshabilita el campo y el botón (evita un doble envío con
  *    la respuesta anterior todavía en vuelo).
+ *
+ * Dos tipos de error, dos formas distintas a propósito (ver
+ * `docs/sistema-de-diseno.md` → "Modal de error"): un formato inválido
+ * (`validarUsername`, o el `kind: 'validacion'` que puede devolver el
+ * backend) es un error **de campo** — se corrige sin perder el resto del
+ * formulario, se muestra inline junto al input. Que el usuario no exista, o
+ * que la comprobación en sí falle (red, servidor, sesión), es un error
+ * **bloqueante** — corta el flujo y exige que el usuario lo reconozca antes
+ * de seguir — se muestra con `ModalError`.
  */
 const SelectorInterlocutor = () => {
   const { con, establecerCon } = useInterlocutor();
   const comprobarUsuario = useExisteUsuario();
   const [valor, setValor] = useState(con);
-  const [error, setError] = useState(null);
+  const [errorCampo, setErrorCampo] = useState(null);
+  const [errorModal, setErrorModal] = useState(null);
   const [comprobando, setComprobando] = useState(false);
 
   const alCambiar = (evento) => {
     setValor(evento.target.value);
-    if (error) setError(null);
+    if (errorCampo) setErrorCampo(null);
   };
 
   const alEnviar = async (evento) => {
     evento.preventDefault();
     const mensaje = validarUsername(valor);
     if (mensaje) {
-      setError(mensaje);
+      setErrorCampo(mensaje);
       return;
     }
 
     const limpio = valor.trim();
-    setError(null);
+    setErrorCampo(null);
     setComprobando(true);
     const resultado = await comprobarUsuario(limpio);
     setComprobando(false);
 
     if (!resultado.ok) {
-      setError(
-        resultado.error.kind === 'validacion' ? resultado.error.mensaje : MENSAJE_ERROR_COMPROBACION,
-      );
+      if (resultado.error.kind === 'validacion') {
+        setErrorCampo(resultado.error.mensaje);
+        return;
+      }
+      setErrorModal({ titulo: TITULO_ERROR_COMPROBACION, mensaje: MENSAJE_ERROR_COMPROBACION });
       return;
     }
     if (!resultado.data.existe) {
-      setError(MENSAJE_NO_EXISTE);
+      setErrorModal({ titulo: TITULO_NO_EXISTE, mensaje: MENSAJE_NO_EXISTE });
       return;
     }
     establecerCon(limpio);
@@ -80,18 +95,25 @@ const SelectorInterlocutor = () => {
           value={valor}
           placeholder="usuario"
           disabled={comprobando}
-          aria-invalid={error ? 'true' : undefined}
-          aria-describedby={error ? 'selector-interlocutor-error' : undefined}
+          aria-invalid={errorCampo ? 'true' : undefined}
+          aria-describedby={errorCampo ? 'selector-interlocutor-error' : undefined}
           onChange={alCambiar}
         />
       </div>
       <Button type="submit" disabled={comprobando}>
         Ir
       </Button>
-      {error && (
+      {errorCampo && (
         <p id="selector-interlocutor-error" role="alert" className={styles.error}>
-          {error}
+          {errorCampo}
         </p>
+      )}
+      {errorModal && (
+        <ModalError
+          titulo={errorModal.titulo}
+          mensaje={errorModal.mensaje}
+          onCerrar={() => setErrorModal(null)}
+        />
       )}
     </form>
   );

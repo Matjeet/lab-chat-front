@@ -110,6 +110,11 @@
   --color-on-danger: #ffffff;
 
   --color-focus-ring: #4f46e5;
+
+  /* Fondo semitransparente tras un modal (p. ej. ModalError). Mismo valor en
+   * los dos temas a propósito: atenúa por igual una superficie clara u
+   * oscura de detrás. */
+  --color-overlay: rgb(0 0 0 / 0.5);
 }
 
 /* --- COLOR · tema oscuro ---------------------------------------------------- *

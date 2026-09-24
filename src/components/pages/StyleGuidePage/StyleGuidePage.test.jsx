@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 
 import StyleGuidePage from './StyleGuidePage';
 import { InterlocutorProvider } from '../../../context/InterlocutorContext';
@@ -59,6 +60,18 @@ describe('StyleGuidePage', () => {
   it('muestra el selector de interlocutor en la cabecera', () => {
     montar();
     expect(screen.getByLabelText('Chatear con')).toBeInTheDocument();
+  });
+
+  it('simula y cierra el modal de error desde la guía viva', async () => {
+    const user = userEvent.setup();
+    montar();
+
+    await user.click(screen.getByRole('button', { name: 'Simular error bloqueante' }));
+    const modal = screen.getByRole('alertdialog', { name: 'Usuario no encontrado' });
+    expect(modal).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Entendido' }));
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
   });
 
   it('muestra el contenido de inmediato aunque la comprobación de sesión no haya resuelto', () => {

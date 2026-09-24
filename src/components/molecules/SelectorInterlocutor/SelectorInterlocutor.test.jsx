@@ -69,7 +69,7 @@ describe('SelectorInterlocutor', () => {
     expect(comprobarUsuario).not.toHaveBeenCalled();
   });
 
-  it('si el usuario no existe, avisa y no lo confirma en el contexto', async () => {
+  it('si el usuario no existe, muestra un modal de error y no lo confirma en el contexto', async () => {
     comprobarUsuario.mockResolvedValue({ ok: true, data: { existe: false } });
     const user = userEvent.setup();
     montar();
@@ -77,11 +77,12 @@ describe('SelectorInterlocutor', () => {
     await user.type(screen.getByLabelText('Chatear con'), 'fantasma');
     await user.click(screen.getByRole('button', { name: 'Ir' }));
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('Ese usuario no existe.');
+    const modal = await screen.findByRole('alertdialog', { name: 'Usuario no encontrado' });
+    expect(modal).toHaveTextContent(/no existe ningún usuario/i);
     expect(screen.getByText('con actual: (vacío)')).toBeInTheDocument();
   });
 
-  it('si falla la comprobación (red, servidor...), avisa y no lo confirma', async () => {
+  it('si falla la comprobación (red, servidor...), muestra un modal de error y no lo confirma', async () => {
     comprobarUsuario.mockResolvedValue({ ok: false, error: { kind: 'red' } });
     const user = userEvent.setup();
     montar();
@@ -89,16 +90,32 @@ describe('SelectorInterlocutor', () => {
     await user.type(screen.getByLabelText('Chatear con'), 'ana');
     await user.click(screen.getByRole('button', { name: 'Ir' }));
 
-    expect(await screen.findByRole('alert')).toHaveTextContent(/no se pudo comprobar/i);
+    const modal = await screen.findByRole('alertdialog', { name: 'No se pudo comprobar' });
+    expect(modal).toHaveTextContent(/no se pudo comprobar el usuario/i);
     expect(screen.getByText('con actual: (vacío)')).toBeInTheDocument();
   });
 
-  it('limpia el error al volver a escribir', async () => {
+  it('cierra el modal de error al pulsar Entendido, y deja escribir de nuevo', async () => {
     comprobarUsuario.mockResolvedValue({ ok: true, data: { existe: false } });
     const user = userEvent.setup();
     montar();
 
     await user.type(screen.getByLabelText('Chatear con'), 'fantasma');
+    await user.click(screen.getByRole('button', { name: 'Ir' }));
+    expect(await screen.findByRole('alertdialog')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Entendido' }));
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+
+    await user.type(screen.getByLabelText('Chatear con'), 'x');
+    expect(screen.getByLabelText('Chatear con')).toHaveValue('fantasmax');
+  });
+
+  it('limpia el error de campo (formato inválido) al volver a escribir', async () => {
+    const user = userEvent.setup();
+    montar();
+
+    await user.type(screen.getByLabelText('Chatear con'), 'a');
     await user.click(screen.getByRole('button', { name: 'Ir' }));
     expect(await screen.findByRole('alert')).toBeInTheDocument();
 
