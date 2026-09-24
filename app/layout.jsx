@@ -1,6 +1,7 @@
 import { Comic_Neue } from 'next/font/google';
 import Script from 'next/script';
 
+import { InterlocutorProvider } from '@/context/InterlocutorContext';
 import '@/styles/tokens.css';
 import '@/styles/global.css';
 
@@ -33,7 +34,7 @@ const RootLayout = ({ children }) => (
       <Script id="tema-inicial" strategy="beforeInteractive">
         {aplicarTemaGuardado}
       </Script>
-      {children}
+      <InterlocutorProvider>{children}</InterlocutorProvider>
     </body>
   </html>
 );

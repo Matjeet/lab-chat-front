@@ -47,29 +47,43 @@ Servidor de desarrollo en `http://localhost:3000`.
 ## Estructura
 
 ```
-assets/                       # Fuentes de diseño a inlinear a mano (ver su README)
+assets/                       # Fuentes de diseño a inlinear/procesar a mano (ver su README)
+public/                       # Estáticos servidos tal cual (logo...)
 app/                          # App Router: solo enrutado
 ├── layout.jsx                # Layout raíz (html/body + tokens + CSS global)
+├── favicon.ico                # Archivo especial de convención de Next.js
 ├── page.jsx                  # "/"         -> <LoginPage/> (arranque de la app)
+├── login/page.jsx            # "/login"    -> <LoginPage/> (misma pantalla que "/")
 ├── registro/page.jsx         # "/registro" -> <RegistroPage/>
-├── login/page.jsx            # "/login"    -> <LoginPage/> (sin backend conectado aún)
-├── estilos/page.jsx          # "/estilos"  -> guía viva del sistema de diseño
+├── home/page.jsx              # "/home"     -> <HomePage/> (destino tras login: el chat 1 a 1, exige sesión)
+├── estilos/page.jsx          # "/estilos"  -> guía viva del sistema de diseño (exige sesión)
 └── not-found.jsx             # 404 -> <NotFoundPage/> (se exporta como out/404.html)
 src/
 ├── setupTests.js             # Setup de Jest
-├── api/                      # Llamadas a los microservicios backend
+├── api/                      # Llamadas a chat-gateway
 │   ├── config.js             #   base URL (NEXT_PUBLIC_API_BASE_URL)
-│   └── registro.js           #   POST /api/v1/registro
-├── utils/                    # Helpers puros (validación de formularios...)
+│   ├── registro.js           #   POST /api/v1/registro
+│   └── usuario.js            #   GET /api/v1/usuarios/{uid} y /existe (autenticados)
+├── firebase/                  # SDK de cliente de Firebase Authentication (solo login)
+│   ├── config.js
+│   └── auth.js                #   iniciarSesion(...) + observarSesion(cb)
+├── conversacion/               # Llamadas al chat (WebSocket + historial REST + lista de chats), vía chat-gateway
+│   ├── config.js
+│   ├── historial.js
+│   └── listaChats.js
+├── context/                    # InterlocutorContext: con quién se está chateando ahora
+├── hooks/                      # useRequiereSesion, useRedirigirSiHaySesion, useMiUsuario, useListaChats, useExisteUsuario, useConversacion
+├── utils/                     # Helpers puros (validación de formularios, miUsuario...)
 ├── styles/
 │   ├── tokens.css            # Tokens de diseño (color, tipografía, espaciado...)
 │   └── global.css            # Reset y estilos base
 └── components/               # Atomic Design
-    ├── atoms/       Button, Input, Alert, Ilustracion404, PatronBurbujas
-    ├── molecules/   FormField, ThemeToggle, RequisitosCampo
-    ├── organisms/   Header, RegistroForm, LoginForm
+    ├── atoms/       Button, Input, Alert, Ilustracion404, PatronBurbujas, TextoAleatorio,
+    │                BurbujaMensaje, ItemChat
+    ├── molecules/   FormField, ThemeToggle, RequisitosCampo, CampoMensaje, SelectorInterlocutor
+    ├── organisms/   Header, RegistroForm, LoginForm, Conversacion, ListaChats
     ├── templates/   DefaultLayout
-    └── pages/       LoginPage, RegistroPage, StyleGuidePage, NotFoundPage
+    └── pages/       LoginPage, RegistroPage, HomePage, StyleGuidePage, NotFoundPage
 ```
 
 `app/` solo conecta URLs con componentes. Toda la UI y su lógica viven en
@@ -97,14 +111,31 @@ en [`docs/sistema-de-diseno.md`](./docs/sistema-de-diseno.md).
 
 ## Backend
 
-La ruta `/registro` consume `POST /api/v1/registro` de **chat-registro** con
-`{ username, email, password }`. Es el backend quien crea la cuenta en
-Firebase Auth antes de guardar el perfil — este frontend no habla con
-Firebase directamente. Copia `.env.example` a `.env.local` para configurar
-`NEXT_PUBLIC_API_BASE_URL`.
+La ruta `/registro` consume `POST /api/v1/registro` de **chat-gateway** (que
+reenvía por gRPC a `chat-registro`) con `{ username, email, password }`. Es
+el backend quien crea la cuenta en Firebase Auth antes de guardar el perfil
+— este frontend no habla con Firebase directamente para el alta. Copia
+`.env.example` a `.env.local` para configurar `NEXT_PUBLIC_API_BASE_URL`.
 
-La ruta `/login` es, de momento, **solo UI/UX**: valida en cliente pero no
-llama a ningún servicio — todavía no hay endpoint de login.
+La ruta `/login` sí habla con **Firebase Authentication** directamente (SDK
+de cliente, `src/firebase/auth.js`) — no hay endpoint de login en
+chat-registro. `/`, `/login` y `/registro` redirigen a `/home` si ya hay
+sesión; cualquier otra ruta (`/home`, `/estilos`) exige sesión y redirige a
+`/login` si no la hay.
+
+**`/home` es el chat en sí** — el destino tras iniciar sesión — conectado de
+verdad a **chat-conversacion vía chat-gateway**: WebSocket en tiempo real +
+REST para el historial, ambos contra el gateway (mismo origen que
+`NEXT_PUBLIC_API_BASE_URL`). "Tu usuario" se resuelve solo con `GET
+/api/v1/usuarios/{uid}` (autenticado, `idToken` de la sesión activa) en
+cuanto hay sesión; si ese backend no resuelve, cae a un formulario manual
+como respaldo. Dos columnas: a la izquierda, `ListaChats` — con quién se ha
+hablado y el último mensaje de cada uno, scroll infinito, `GET
+/api/v1/conversaciones/{usuario}/chats` —; a la derecha, la conversación
+elegida. Para empezar un chat nuevo desde la cabecera, antes se comprueba
+que el username exista de verdad (`GET /api/v1/usuarios/existe`) — si no
+existe, o si la comprobación falla, avisa y no lo abre. Detalle en
+[`docs/integracion-conversacion.md`](./docs/integracion-conversacion.md).
 
 Detalle del patrón de llamadas y manejo de errores en
 [`docs/integracion-api.md`](./docs/integracion-api.md).
