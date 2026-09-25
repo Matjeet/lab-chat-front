@@ -166,7 +166,7 @@ const HomePage = () => {
   return (
     <DefaultLayout
       title="Chat"
-      headerCentro={<SelectorInterlocutor />}
+      headerCentro={<SelectorInterlocutor yo={yo} />}
       headerActions={<Notificaciones />}
       altoCompleto
     >
