@@ -37,7 +37,7 @@ coincide con `npm run dev`.
 | `src/api/usuario.js` | `obtenerUsuario(uid, idToken)` → `GET /api/v1/usuarios/{uid}` (contrato §4.2, autenticado) — resultado tipado. |
 | `src/hooks/useMiUsuario.js` | `{yo, establecerYo}` — resuelve "tu usuario": `localStorage` de inmediato, y lo sincroniza con `obtenerUsuario` en cuanto hay sesión. Ver "Identidad" más abajo. |
 | `src/utils/miUsuario.js` | `localStorage` puro (leer/guardar `yo`) que usa `useMiUsuario` por debajo, y que `RegistroPage` sigue usando directamente tras un alta. |
-| `src/context/InterlocutorContext.jsx` | `{con, establecerCon}` — con quién se está chateando ahora. Lo escribe `ListaChats` (`SelectorInterlocutor` ya no — ver "Identidad"), lo lee `HomePage`. No persiste. |
+| `src/context/InterlocutorContext.jsx` | `{con, establecerCon}` — con quién se está chateando ahora. Lo escriben `ListaChats` y `Notificaciones` (al aceptar una solicitud) — `SelectorInterlocutor` ya no, ver "Identidad" —, lo lee `HomePage`. No persiste. |
 | `src/hooks/useExisteUsuario.js` | Función `(username) => Promise<ResultadoExisteUsuario>` — comprueba si un username existe, con el `idToken` de cualquier sesión activa. Ver "Identidad" más abajo. |
 | `src/conversacion/solicitudes.js` | `crearSolicitud(solicitante, solicitado, idToken)` → `POST /api/v1/conversaciones/solicitudes` (contrato §4.7, autenticado) — crea una solicitud de chat, resultado tipado. |
 | `src/hooks/useCrearSolicitudChat.js` | Función `(solicitante, solicitado) => Promise<ResultadoCrearSolicitud>` — mismo patrón que `useExisteUsuario`: resuelve el `idToken` de la sesión activa por debajo. |
@@ -72,17 +72,18 @@ separados, con dos ciclos de vida distintos:
      perfil de chat-registro todavía), `HomePage` cae a un formulario manual
      como respaldo — `establecerYo` guarda esa confirmación igual que la
      sincronización automática.
-- **Con quién chatear (`con`)**: **solo `ListaChats`** lo confirma en
-  `InterlocutorContext#establecerCon` hoy — un click en un chat ya existente,
-  a la izquierda de `/home`. `con` vive en `InterlocutorContext` y **no
+- **Con quién chatear (`con`)**: dos formas de confirmarlo en
+  `InterlocutorContext#establecerCon` hoy — un click en un chat ya existente
+  en `ListaChats`, a la izquierda de `/home`; o aceptar una solicitud de chat
+  entrante desde la campana de notificaciones (`Notificaciones`, ver
+  `docs/integracion-notificaciones.md`) — este segundo es justo el uso que
+  se preveía para este mecanismo cuando `SelectorInterlocutor` dejó de
+  dispararlo directamente. `con` vive en `InterlocutorContext` y **no
   persiste** (ni `localStorage` ni entre recargas): es solo la conversación
   activa de esta sesión de navegación — quien quiera la lista de con quién
   ya se ha hablado tiene `ListaChats`, que sí persiste (la sirve el
   backend). Cambiarlo, estando ya en `/home`, cambia la conversación abierta
-  al instante. Este mismo mecanismo (`establecerCon` → abre la conversación
-  de inmediato) es el que usará más adelante la pantalla de solicitudes
-  recibidas, al aceptar una — no se quitó, solo dejó de ser lo que dispara
-  `SelectorInterlocutor`.
+  al instante.
 
   **`SelectorInterlocutor` (la cabecera) ya no abre un chat nuevo
   directamente — manda una solicitud.** Empezar a chatear con alguien con

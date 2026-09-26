@@ -11,7 +11,7 @@ import FormField from '../../molecules/FormField';
 import RequisitosCampo from '../../molecules/RequisitosCampo';
 import SelectorInterlocutor from '../../molecules/SelectorInterlocutor';
 import Modal from '../../molecules/Modal';
-import Notificaciones from '../../molecules/Notificaciones';
+import Notificaciones from '../../organisms/Notificaciones';
 import useRequiereSesion from '../../../hooks/useRequiereSesion';
 import styles from './StyleGuidePage.module.css';
 
@@ -178,6 +178,7 @@ const StyleGuidePage = () => {
           <Button variant="secondary">Secondary</Button>
           <Button variant="ghost">Ghost</Button>
           <Button variant="danger">Danger</Button>
+          <Button variant="success">Success</Button>
           <Button variant="primary" disabled>
             Disabled
           </Button>

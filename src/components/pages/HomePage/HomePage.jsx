@@ -9,7 +9,7 @@ import Button from '../../atoms/Button';
 import Alert from '../../atoms/Alert';
 import FormField from '../../molecules/FormField';
 import SelectorInterlocutor from '../../molecules/SelectorInterlocutor';
-import Notificaciones from '../../molecules/Notificaciones';
+import Notificaciones from '../../organisms/Notificaciones';
 import useRequiereSesion from '../../../hooks/useRequiereSesion';
 import useConversacion from '../../../hooks/useConversacion';
 import useMiUsuario from '../../../hooks/useMiUsuario';
@@ -167,7 +167,7 @@ const HomePage = () => {
     <DefaultLayout
       title="Chat"
       headerCentro={<SelectorInterlocutor yo={yo} />}
-      headerActions={<Notificaciones />}
+      headerActions={<Notificaciones yo={yo} />}
       altoCompleto
     >
       {!yo && (

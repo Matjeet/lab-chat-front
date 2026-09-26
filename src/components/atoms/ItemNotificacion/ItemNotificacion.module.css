@@ -1,0 +1,72 @@
+.item {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  list-style: none;
+}
+
+.noLeida {
+  background-color: var(--color-primary-soft);
+}
+
+.contenido {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.texto {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+}
+
+.fecha {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-subtle);
+}
+
+.acciones {
+  display: flex;
+  flex-shrink: 0;
+  gap: var(--space-1);
+}
+
+.botonIcono {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--space-6);
+  height: var(--space-6);
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-full);
+  background-color: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+}
+
+.botonIcono:hover {
+  background-color: var(--color-surface-muted);
+}
+
+.aceptar {
+  color: var(--color-success);
+}
+
+.aceptar:hover {
+  background-color: var(--color-success-soft);
+}
+
+.rechazar {
+  color: var(--color-danger);
+}
+
+.rechazar:hover {
+  background-color: var(--color-danger-soft);
+}

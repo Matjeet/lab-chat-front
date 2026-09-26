@@ -35,9 +35,9 @@ Los tokens de color son **roles**, no nombres de color (`--color-primary`, no
 | `--color-primary` | Acción principal. `-hover` / `-active` para estados. |
 | `--color-primary-soft` / `--color-primary-soft-text` | Botón `secondary`, badges. |
 | `--color-on-primary` | Texto/icono sobre `--color-primary`. |
-| `--color-success` / `--color-warning` / `--color-danger` | Estados semánticos. |
+| `--color-success` / `--color-warning` / `--color-danger` | Estados semánticos. `-hover` en success/danger para el botón del mismo nombre. |
 | `--color-success-soft` / `--color-danger-soft` | Fondo de avisos (`Alert` de éxito / error). |
-| `--color-on-danger` | Texto sobre `--color-danger`. |
+| `--color-on-success` / `--color-on-danger` | Texto/icono sobre `--color-success` / `--color-danger`. |
 | `--color-focus-ring` | Color del anillo de foco. |
 | `--color-overlay` | Fondo semitransparente tras un modal (`Modal`). Mismo valor en los dos temas a propósito. |
 
@@ -211,7 +211,7 @@ otro tono, según el `kind` que devuelve la API).
 
 | Nivel | Estilo |
 |-------|--------|
-| **atoms** | Definen su aspecto con tokens. Exponen `variant` para las variaciones previstas (p. ej. `Button`: `primary` / `secondary` / `ghost` / `danger`). |
+| **atoms** | Definen su aspecto con tokens. Exponen `variant` para las variaciones previstas (p. ej. `Button`: `primary` / `secondary` / `ghost` / `danger` / `success`). |
 | **molecules** | Solo layout entre sus átomos (`gap`, dirección). No re-pintan los átomos. |
 | **organisms** | Layout de sección y espaciado. Color/tipografía siguen viniendo de tokens. |
 | **templates** | Rejilla de la pantalla, anchos máximos, zonas. Sin color de marca. |
