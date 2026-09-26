@@ -12,6 +12,7 @@ const solicitudFake = {
   solicitado: 'ana',
   aceptada: false,
   creadaEn: '2026-09-23T20:53:47.441193Z',
+  pendiente: true,
 };
 
 afterEach(() => {

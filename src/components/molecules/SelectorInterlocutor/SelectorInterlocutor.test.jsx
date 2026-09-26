@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import SelectorInterlocutor from './SelectorInterlocutor';
@@ -40,7 +40,7 @@ beforeEach(() => {
   comprobarUsuario = jest.fn().mockResolvedValue({ ok: true, data: { existe: true } });
   crearSolicitud = jest.fn().mockResolvedValue({
     ok: true,
-    data: { id: '1', solicitante: 'mateo', solicitado: 'ana', aceptada: false, creadaEn: '2026-01-01T00:00:00Z' },
+    data: { id: '1', solicitante: 'mateo', solicitado: 'ana', aceptada: false, creadaEn: '2026-01-01T00:00:00Z', pendiente: true },
   });
   useExisteUsuario.mockReturnValue(comprobarUsuario);
   useCrearSolicitudChat.mockReturnValue(crearSolicitud);
@@ -64,9 +64,26 @@ describe('SelectorInterlocutor', () => {
     await user.type(screen.getByLabelText('Chatear con'), 'ana');
     await user.click(screen.getByRole('button', { name: 'Ir' }));
 
-    expect(await screen.findByText(/solicitud enviada a ana/i)).toBeInTheDocument();
+    const aviso = await screen.findByRole('alertdialog', { name: 'Solicitud enviada' });
+    expect(aviso).toHaveTextContent('Solicitud enviada a ana. El chat empezará en cuanto la acepte.');
     expect(comprobarUsuario).toHaveBeenCalledWith('ana');
     expect(crearSolicitud).toHaveBeenCalledWith('mateo', 'ana');
+  });
+
+  it('resalta en negrilla el usuario y "acepte" en el aviso de éxito, en tono info (azul, no error)', async () => {
+    const user = userEvent.setup();
+    montar();
+
+    await user.type(screen.getByLabelText('Chatear con'), 'ana');
+    await user.click(screen.getByRole('button', { name: 'Ir' }));
+
+    const aviso = await screen.findByRole('alertdialog', { name: 'Solicitud enviada' });
+    const negrillas = aviso.querySelectorAll('strong');
+    expect(negrillas).toHaveLength(2);
+    expect(negrillas[0]).toHaveTextContent('ana');
+    expect(negrillas[1]).toHaveTextContent('acepte');
+    // El botón de confirmación es "primary" (tono info), no "danger" — no es un error.
+    expect(screen.getByRole('button', { name: 'Entendido' })).toHaveClass('primary');
   });
 
   it('tras enviar la solicitud, no abre el chat directamente (no escribe en el contexto)', async () => {
@@ -76,7 +93,7 @@ describe('SelectorInterlocutor', () => {
     await user.type(screen.getByLabelText('Chatear con'), 'ana');
     await user.click(screen.getByRole('button', { name: 'Ir' }));
 
-    await screen.findByText(/solicitud enviada/i);
+    await screen.findByRole('alertdialog', { name: 'Solicitud enviada' });
     expect(screen.getByText('con actual: (vacío)')).toBeInTheDocument();
   });
 
@@ -87,8 +104,20 @@ describe('SelectorInterlocutor', () => {
     await user.type(screen.getByLabelText('Chatear con'), 'ana');
     await user.click(screen.getByRole('button', { name: 'Ir' }));
 
-    await screen.findByText(/solicitud enviada/i);
+    await screen.findByRole('alertdialog', { name: 'Solicitud enviada' });
     expect(screen.getByLabelText('Chatear con')).toHaveValue('');
+  });
+
+  it('cierra el aviso de éxito al pulsar Entendido', async () => {
+    const user = userEvent.setup();
+    montar();
+
+    await user.type(screen.getByLabelText('Chatear con'), 'ana');
+    await user.click(screen.getByRole('button', { name: 'Ir' }));
+    expect(await screen.findByRole('alertdialog', { name: 'Solicitud enviada' })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Entendido' }));
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
   });
 
   it('no confirma un username con formato inválido (ni llega a comprobar si existe)', async () => {
@@ -130,7 +159,7 @@ describe('SelectorInterlocutor', () => {
     expect(crearSolicitud).not.toHaveBeenCalled();
   });
 
-  it('si ya existe una solicitud con ese usuario, muestra un modal específico', async () => {
+  it('si ya existe una solicitud pendiente con ese usuario, muestra un modal específico', async () => {
     crearSolicitud.mockResolvedValue({ ok: false, error: { kind: 'duplicada' } });
     const user = userEvent.setup();
     montar();
@@ -138,8 +167,8 @@ describe('SelectorInterlocutor', () => {
     await user.type(screen.getByLabelText('Chatear con'), 'ana');
     await user.click(screen.getByRole('button', { name: 'Ir' }));
 
-    const modal = await screen.findByRole('alertdialog', { name: 'Solicitud ya enviada' });
-    expect(modal).toHaveTextContent(/ya existe una solicitud de chat con este usuario/i);
+    const modal = await screen.findByRole('alertdialog', { name: 'Ya tienes una solicitud pendiente' });
+    expect(modal).toHaveTextContent(/ya existe una solicitud de chat pendiente con este usuario/i);
   });
 
   it('si la solicitud es hacia uno mismo (validación del backend), muestra un error de campo', async () => {
@@ -205,10 +234,27 @@ describe('SelectorInterlocutor', () => {
 
     await user.type(screen.getByLabelText('Chatear con'), 'ana');
     await user.click(screen.getByRole('button', { name: 'Ir' }));
-    expect(await screen.findByText(/solicitud enviada/i)).toBeInTheDocument();
+    expect(await screen.findByRole('alertdialog', { name: 'Solicitud enviada' })).toBeInTheDocument();
 
     await user.type(screen.getByLabelText('Chatear con'), 'x');
-    expect(screen.queryByText(/solicitud enviada/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+  });
+
+  it('el aviso de éxito desaparece solo, pasado un tiempo (sin esperar a que lo cierren)', async () => {
+    jest.useFakeTimers();
+    const user = userEvent.setup({ delay: null, advanceTimers: jest.advanceTimersByTime });
+    montar();
+
+    await user.type(screen.getByLabelText('Chatear con'), 'ana');
+    await user.click(screen.getByRole('button', { name: 'Ir' }));
+    expect(await screen.findByRole('alertdialog', { name: 'Solicitud enviada' })).toBeInTheDocument();
+
+    act(() => {
+      jest.advanceTimersByTime(5000);
+    });
+
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+    jest.useRealTimers();
   });
 
   it('deshabilita el campo y el botón mientras comprueba si el usuario existe', async () => {
@@ -250,7 +296,7 @@ describe('SelectorInterlocutor', () => {
 
     resolverSolicitud({
       ok: true,
-      data: { id: '1', solicitante: 'mateo', solicitado: 'ana', aceptada: false, creadaEn: '2026-01-01T00:00:00Z' },
+      data: { id: '1', solicitante: 'mateo', solicitado: 'ana', aceptada: false, creadaEn: '2026-01-01T00:00:00Z', pendiente: true },
     });
     await waitFor(() => expect(screen.getByLabelText('Chatear con')).not.toBeDisabled());
   });

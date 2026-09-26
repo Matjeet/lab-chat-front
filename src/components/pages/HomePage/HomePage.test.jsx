@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import HomePage from './HomePage';
@@ -47,7 +47,7 @@ const cargarMasChats = jest.fn();
 const comprobarUsuario = jest.fn().mockResolvedValue({ ok: true, data: { existe: true } });
 const crearSolicitud = jest.fn().mockResolvedValue({
   ok: true,
-  data: { id: '1', solicitante: 'mateo', solicitado: 'ana', aceptada: false, creadaEn: '2026-01-01T00:00:00Z' },
+  data: { id: '1', solicitante: 'mateo', solicitado: 'ana', aceptada: false, creadaEn: '2026-01-01T00:00:00Z', pendiente: true },
 });
 
 beforeEach(() => {
@@ -171,10 +171,13 @@ describe('HomePage', () => {
     const user = userEvent.setup();
     montar();
 
+    const cabecera = screen.getByLabelText('Chatear con').closest('form');
     await user.type(screen.getByLabelText('Chatear con'), 'ana');
     await user.click(screen.getByRole('button', { name: 'Ir' }));
 
-    expect(await screen.findByText(/solicitud enviada a ana/i)).toBeInTheDocument();
+    expect(await within(cabecera).findByRole('alertdialog', { name: 'Solicitud enviada' })).toHaveTextContent(
+      'Solicitud enviada a ana. El chat empezará en cuanto la acepte.',
+    );
     expect(crearSolicitud).toHaveBeenCalledWith('mateo', 'ana');
     expect(useConversacion).not.toHaveBeenCalled();
   });

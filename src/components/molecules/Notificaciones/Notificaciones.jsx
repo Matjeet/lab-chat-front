@@ -12,7 +12,7 @@ import styles from './Notificaciones.module.css';
  * sustituye ese estado vacío por la lista real, sin tocar el resto del
  * componente (la campana, el abrir/cerrar, el cierre por clic fuera/Escape).
  *
- * Es un desplegable típico, no un `ModalError`: no bloquea el resto de la
+ * Es un desplegable típico, no un `Modal`: no bloquea el resto de la
  * pantalla (sin fondo oscurecido) y no navega a ninguna página nueva. Se
  * cierra con un clic fuera, con Escape, o volviendo a pulsar la campana.
  */

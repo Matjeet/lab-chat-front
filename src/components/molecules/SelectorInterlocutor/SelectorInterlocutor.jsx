@@ -1,11 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import Input from '../../atoms/Input';
 import Button from '../../atoms/Button';
-import Alert from '../../atoms/Alert';
-import ModalError from '../ModalError';
+import Modal from '../Modal';
 import { useInterlocutor } from '../../../context/InterlocutorContext';
 import useExisteUsuario from '../../../hooks/useExisteUsuario';
 import useCrearSolicitudChat from '../../../hooks/useCrearSolicitudChat';
@@ -16,12 +15,14 @@ const TITULO_NO_EXISTE = 'Usuario no encontrado';
 const MENSAJE_NO_EXISTE = 'No existe ningún usuario con ese nombre. Revisa que esté bien escrito.';
 const TITULO_ERROR_COMPROBACION = 'No se pudo comprobar';
 const MENSAJE_ERROR_COMPROBACION = 'No se pudo comprobar el usuario. Inténtalo de nuevo.';
-const TITULO_SOLICITUD_DUPLICADA = 'Solicitud ya enviada';
+const TITULO_SOLICITUD_DUPLICADA = 'Ya tienes una solicitud pendiente';
 const MENSAJE_SOLICITUD_DUPLICADA =
-  'Ya existe una solicitud de chat con este usuario, en cualquiera de los dos sentidos. Espera a que se acepte.';
+  'Ya existe una solicitud de chat pendiente con este usuario, en cualquiera de los dos sentidos. Espera a que se acepte.';
 const TITULO_ERROR_SOLICITUD = 'No se pudo enviar la solicitud';
 const MENSAJE_ERROR_SOLICITUD = 'No se pudo enviar la solicitud de chat. Inténtalo de nuevo.';
 const MENSAJE_ERROR_SOLICITUD_VALIDACION = 'No puedes enviarte una solicitud de chat a ti mismo.';
+const TITULO_SOLICITUD_ENVIADA = 'Solicitud enviada';
+const DURACION_AVISO_EXITO_MS = 5000;
 
 /**
  * Molécula: elige con quién chatear, desde la cabecera. Vive en
@@ -46,22 +47,30 @@ const MENSAJE_ERROR_SOLICITUD_VALIDACION = 'No puedes enviarte una solicitud de 
  *    pedir una solicitud hacia alguien que no está en la aplicación.
  * 3. Se crea la solicitud con `yo` (el username autenticado, recibido por
  *    prop — quien la llama ya lo resolvió, p. ej. `useMiUsuario` en
- *    `HomePage`) como `solicitante`. Si se crea, se muestra un aviso de
- *    éxito explicando que el chat empieza cuando el otro usuario la acepte
- *    — nunca abre la conversación en el momento.
+ *    `HomePage`) como `solicitante`. Si se crea, se muestra un `Modal`
+ *    `tono="info"` explicando que el chat empieza cuando el otro usuario la
+ *    acepte — nunca abre la conversación en el momento. Ese modal, además de
+ *    sus formas normales de cerrarse, también se cierra solo (a los
+ *    `DURACION_AVISO_EXITO_MS`) o con un clic en cualquier parte de la
+ *    aplicación (el propio fondo del modal ya cubre "cualquier parte") — no
+ *    tiene sentido que una confirmación se quede en pantalla indefinidamente
+ *    si nadie la descarta.
  * Mientras cualquiera de las dos llamadas está en vuelo, deshabilita el
  * campo y el botón (evita un doble envío con la respuesta anterior todavía
  * sin resolver).
  *
- * Dos tipos de error, dos formas distintas a propósito (ver
- * `docs/sistema-de-diseno.md` → "Modal de error"): un formato inválido
+ * Tres formas de mensaje, cada una la que le corresponde (ver
+ * `docs/sistema-de-diseno.md` → "Modal"): un formato inválido
  * (`validarUsername`, o el `kind: 'validacion'` que puede devolver
  * cualquiera de los dos backends — incluido pedirte una solicitud a ti
  * mismo) es un error **de campo** — se corrige sin perder el resto del
- * formulario, se muestra inline junto al input. Que el usuario no exista, que
- * alguna de las dos comprobaciones falle, o que la solicitud ya exista, es un
- * error **bloqueante** — corta el flujo y exige que el usuario lo reconozca
- * antes de seguir — se muestra con `ModalError`.
+ * formulario, se muestra inline junto al input. Que el usuario no exista, o
+ * que alguna de las dos comprobaciones falle, es un error **bloqueante** de
+ * verdad — `Modal` `tono="error"`. Que ya haya una solicitud **pendiente**
+ * con ese usuario (`kind: 'duplicada'`, 409 — una solicitud ya resuelta no
+ * cuenta, aunque hoy no hay forma de llegar a ese estado), o que la propia
+ * solicitud se haya enviado, no son errores — son información que también
+ * corta el flujo, así que usan `Modal` `tono="info"` (azul, no rojo).
  *
  * @param {object} props
  * @param {string} [props.yo='']  username autenticado, dueño de la solicitud
@@ -75,14 +84,27 @@ const SelectorInterlocutor = ({ yo = '' }) => {
   const crearSolicitud = useCrearSolicitudChat();
   const [valor, setValor] = useState(con);
   const [errorCampo, setErrorCampo] = useState(null);
-  const [errorModal, setErrorModal] = useState(null);
-  const [mensajeExito, setMensajeExito] = useState(null);
+  const [modalAviso, setModalAviso] = useState(null);
+  const [solicitudEnviadaA, setSolicitudEnviadaA] = useState(null);
   const [comprobando, setComprobando] = useState(false);
+
+  useEffect(() => {
+    if (!solicitudEnviadaA) return undefined;
+
+    const temporizador = setTimeout(() => setSolicitudEnviadaA(null), DURACION_AVISO_EXITO_MS);
+    const alClicEnCualquierParte = () => setSolicitudEnviadaA(null);
+    document.addEventListener('click', alClicEnCualquierParte);
+
+    return () => {
+      clearTimeout(temporizador);
+      document.removeEventListener('click', alClicEnCualquierParte);
+    };
+  }, [solicitudEnviadaA]);
 
   const alCambiar = (evento) => {
     setValor(evento.target.value);
     if (errorCampo) setErrorCampo(null);
-    if (mensajeExito) setMensajeExito(null);
+    if (solicitudEnviadaA) setSolicitudEnviadaA(null);
   };
 
   const alEnviar = async (evento) => {
@@ -95,7 +117,7 @@ const SelectorInterlocutor = ({ yo = '' }) => {
 
     const limpio = valor.trim();
     setErrorCampo(null);
-    setMensajeExito(null);
+    setSolicitudEnviadaA(null);
     setComprobando(true);
 
     const resultadoExiste = await comprobarUsuario(limpio);
@@ -105,12 +127,12 @@ const SelectorInterlocutor = ({ yo = '' }) => {
         setErrorCampo(resultadoExiste.error.mensaje);
         return;
       }
-      setErrorModal({ titulo: TITULO_ERROR_COMPROBACION, mensaje: MENSAJE_ERROR_COMPROBACION });
+      setModalAviso({ tono: 'error', titulo: TITULO_ERROR_COMPROBACION, mensaje: MENSAJE_ERROR_COMPROBACION });
       return;
     }
     if (!resultadoExiste.data.existe) {
       setComprobando(false);
-      setErrorModal({ titulo: TITULO_NO_EXISTE, mensaje: MENSAJE_NO_EXISTE });
+      setModalAviso({ tono: 'error', titulo: TITULO_NO_EXISTE, mensaje: MENSAJE_NO_EXISTE });
       return;
     }
 
@@ -123,15 +145,15 @@ const SelectorInterlocutor = ({ yo = '' }) => {
         return;
       }
       if (resultadoSolicitud.error.kind === 'duplicada') {
-        setErrorModal({ titulo: TITULO_SOLICITUD_DUPLICADA, mensaje: MENSAJE_SOLICITUD_DUPLICADA });
+        setModalAviso({ tono: 'info', titulo: TITULO_SOLICITUD_DUPLICADA, mensaje: MENSAJE_SOLICITUD_DUPLICADA });
         return;
       }
-      setErrorModal({ titulo: TITULO_ERROR_SOLICITUD, mensaje: MENSAJE_ERROR_SOLICITUD });
+      setModalAviso({ tono: 'error', titulo: TITULO_ERROR_SOLICITUD, mensaje: MENSAJE_ERROR_SOLICITUD });
       return;
     }
 
     setValor('');
-    setMensajeExito(`Solicitud enviada a ${limpio}. El chat empezará en cuanto la acepte.`);
+    setSolicitudEnviadaA(limpio);
   };
 
   return (
@@ -159,16 +181,25 @@ const SelectorInterlocutor = ({ yo = '' }) => {
           {errorCampo}
         </p>
       )}
-      {mensajeExito && (
-        <div className={styles.exito}>
-          <Alert tipo="success">{mensajeExito}</Alert>
-        </div>
+      {solicitudEnviadaA && (
+        <Modal
+          tono="info"
+          titulo={TITULO_SOLICITUD_ENVIADA}
+          mensaje={
+            <>
+              Solicitud enviada a <strong>{solicitudEnviadaA}</strong>. El chat empezará en cuanto la{' '}
+              <strong>acepte</strong>.
+            </>
+          }
+          onCerrar={() => setSolicitudEnviadaA(null)}
+        />
       )}
-      {errorModal && (
-        <ModalError
-          titulo={errorModal.titulo}
-          mensaje={errorModal.mensaje}
-          onCerrar={() => setErrorModal(null)}
+      {modalAviso && (
+        <Modal
+          tono={modalAviso.tono}
+          titulo={modalAviso.titulo}
+          mensaje={modalAviso.mensaje}
+          onCerrar={() => setModalAviso(null)}
         />
       )}
     </form>

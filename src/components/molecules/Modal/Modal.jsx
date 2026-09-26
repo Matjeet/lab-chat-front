@@ -3,35 +3,47 @@
 import { useEffect, useId, useRef } from 'react';
 
 import Button from '../../atoms/Button';
-import styles from './ModalError.module.css';
+import styles from './Modal.module.css';
 
 const SELECTOR_FOCABLES =
   'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
 
+const BOTON_POR_TONO = { error: 'danger', info: 'primary' };
+const TITULO_POR_TONO = { error: 'Ha ocurrido un error', info: 'Aviso' };
+
 /**
- * Molécula: el estándar único para un error **bloqueante** — uno que
+ * Molécula: el estándar único para un mensaje **bloqueante** — uno que
  * interrumpe la acción que el usuario acaba de intentar y necesita su
- * confirmación explícita antes de seguir (p. ej. "ese usuario no existe" al
- * elegir con quién chatear). No sustituye a `Alert` (avisos de pantalla que
- * conviven con el resto del contenido) ni al error inline de `FormField`
- * (validación de un campo mientras se escribe): ver
- * `docs/sistema-de-diseno.md` → "Modal de error" para el criterio de cuándo
- * usar cada uno.
+ * confirmación explícita antes de seguir. Dos tonos, mismo componente y
+ * misma forma:
+ * - `tono="error"` (rojo, botón `danger`) — algo salió mal de verdad (p. ej.
+ *   "ese usuario no existe" al elegir con quién chatear).
+ * - `tono="info"` (azul, botón `primary`) — no es un error, es información
+ *   que igual necesita reconocerse antes de seguir (p. ej. "ya tienes una
+ *   solicitud pendiente con este usuario", o la confirmación de que una
+ *   solicitud se envió).
+ *
+ * No sustituye a `Alert` (avisos de pantalla que conviven con el resto del
+ * contenido) ni al error inline de `FormField` (validación de un campo
+ * mientras se escribe): ver `docs/sistema-de-diseno.md` → "Modal" para el
+ * criterio de cuándo usar cada uno.
  *
  * Siempre misma forma: título + mensaje + un único botón de confirmación.
  * Se cierra de tres formas equivalentes — botón, tecla Escape, o clic en el
  * fondo — todas disparan `onCerrar`. El padre controla el montaje (igual que
  * `Alert`): no hay prop `abierto`, se muestra condicionalmente
- * (`{error && <ModalError ... />}`).
+ * (`{error && <Modal ... />}`).
  *
  * @param {object} props
- * @param {string} [props.titulo='Ha ocurrido un error']
- * @param {string} props.mensaje
+ * @param {'error'|'info'} [props.tono='error']
+ * @param {string} [props.titulo]  Por defecto, uno genérico según `tono`.
+ * @param {React.ReactNode} props.mensaje
  * @param {() => void} props.onCerrar
  * @param {string} [props.textoBoton='Entendido']
  */
-const ModalError = ({
-  titulo = 'Ha ocurrido un error',
+const Modal = ({
+  tono = 'error',
+  titulo = TITULO_POR_TONO[tono],
   mensaje,
   onCerrar,
   textoBoton = 'Entendido',
@@ -76,7 +88,7 @@ const ModalError = ({
     <div className={styles.fondo} onClick={onCerrar}>
       <div
         ref={dialogoRef}
-        className={styles.dialogo}
+        className={`${styles.dialogo} ${styles[tono] || ''}`.trim()}
         role="alertdialog"
         aria-modal="true"
         aria-labelledby={tituloId}
@@ -84,14 +96,14 @@ const ModalError = ({
         tabIndex={-1}
         onClick={(evento) => evento.stopPropagation()}
       >
-        <h2 id={tituloId} className={styles.titulo}>
+        <h2 id={tituloId} className={`${styles.titulo} ${styles[tono] || ''}`.trim()}>
           {titulo}
         </h2>
         <p id={mensajeId} className={styles.mensaje}>
           {mensaje}
         </p>
         <div className={styles.acciones}>
-          <Button variant="danger" onClick={onCerrar}>
+          <Button variant={BOTON_POR_TONO[tono]} onClick={onCerrar}>
             {textoBoton}
           </Button>
         </div>
@@ -100,4 +112,4 @@ const ModalError = ({
   );
 };
 
-export default ModalError;
+export default Modal;

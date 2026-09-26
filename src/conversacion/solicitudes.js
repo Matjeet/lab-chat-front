@@ -7,6 +7,9 @@ import { API_BASE_URL } from '../api/config';
  * @property {string} solicitado
  * @property {boolean} aceptada
  * @property {string} creadaEn
+ * @property {boolean} pendiente  Siempre `true` por ahora (nace así; aceptar/rechazar no está
+ *   implementado todavía). Mientras sea `true`, bloquea una solicitud nueva entre el mismo par
+ *   de usuarios — de ahí el `kind: 'duplicada'` más abajo.
  */
 
 /**
@@ -24,8 +27,13 @@ import { API_BASE_URL } from '../api/config';
  * anterior, elegir un interlocutor nuevo desde la cabecera ya no abre la
  * conversación directamente (ver `docs/integracion-conversacion.md`).
  * `solicitante` debe ser el username del dueño de `idToken`: el gateway lo
- * comprueba él mismo y devuelve `prohibido` si no coincide. Nunca lanza:
- * resultado tipado, igual que el resto de `src/api/` y `src/conversacion/`.
+ * comprueba él mismo y devuelve `prohibido` si no coincide. `duplicada`
+ * (409) solo ocurre si ya hay una solicitud **pendiente** entre ambos
+ * usuarios, en cualquier sentido — una ya resuelta no bloquearía una nueva,
+ * aunque hoy no hay forma de resolver una (aceptar/rechazar no está
+ * implementado todavía, así que toda solicitud existente está pendiente).
+ * Nunca lanza: resultado tipado, igual que el resto de `src/api/` y
+ * `src/conversacion/`.
  *
  * @param {string} solicitante  username de chat-registro de quien inicia la solicitud.
  * @param {string} solicitado   username de chat-registro de quien la recibe.

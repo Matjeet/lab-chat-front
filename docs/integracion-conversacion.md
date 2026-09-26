@@ -101,18 +101,25 @@ separados, con dos ciclos de vida distintos:
      *cualquier* username.
   3. **Crear la solicitud** — `useCrearSolicitudChat`, con `yo` (recibido por
      prop, quien monta `SelectorInterlocutor` ya lo resolvió) como
-     `solicitante`. Si se crea, un aviso (`Alert` de éxito, no bloqueante)
-     confirma el envío y aclara que el chat empieza cuando el otro usuario la
-     acepte — la conversación **no** se abre en ese momento, ni se toca
-     `InterlocutorContext`.
+     `solicitante`. Si se crea, un `Modal` `tono="info"` (azul, con el
+     usuario y "acepte" en negrilla) confirma el envío y aclara que el chat
+     empieza cuando el otro usuario la acepte — la conversación **no** se
+     abre en ese momento, ni se toca `InterlocutorContext`. Ese modal, además
+     de sus formas normales de cerrarse (botón, Escape, clic en el fondo),
+     también se cierra solo a los 5 segundos.
 
   Mientras cualquiera de las dos llamadas está en vuelo, el campo y el botón
-  se deshabilitan (evita un doble envío). Errores, según su forma (ver
-  `docs/sistema-de-diseno.md` → "Modal de error"): de campo — formato
-  inválido, o un `kind: 'validacion'` del backend (incluye pedirte una
-  solicitud a ti mismo); bloqueantes (`ModalError`) — el usuario no existe,
-  alguna comprobación falla (red, servidor, sesión), o ya existe una
-  solicitud entre ambos (`kind: 'duplicada'`, 409).
+  se deshabilitan (evita un doble envío). Mensajes, según su forma (ver
+  `docs/sistema-de-diseno.md` → "Modal"): de campo — formato inválido, o un
+  `kind: 'validacion'` del backend (incluye pedirte una solicitud a ti
+  mismo); bloqueantes con `Modal` `tono="error"` (rojo, algo salió mal de
+  verdad) — el usuario no existe, alguna comprobación falla (red, servidor,
+  sesión); bloqueantes con `Modal` `tono="info"` (azul, no es un error) — ya
+  hay una solicitud **pendiente** entre ambos (`kind: 'duplicada'`, 409) o
+  la solicitud se envió. La respuesta trae ahora un campo `pendiente`
+  (`SolicitudChat`, `src/conversacion/solicitudes.js`), siempre `true` por
+  ahora: una solicitud ya resuelta no bloquearía una nueva, pero hoy no hay
+  forma de resolver una (aceptar/rechazar no está implementado todavía).
 
 `HomePage` decide qué mostrar según `yo`/`con`: sin `yo` resuelto (ni por
 `localStorage` ni por el backend), pide el formulario manual; con `yo` pero

@@ -42,7 +42,7 @@ describe('useCrearSolicitudChat', () => {
     });
     crearSolicitud.mockResolvedValue({
       ok: true,
-      data: { id: '1', solicitante: 'mateo', solicitado: 'ana', aceptada: false, creadaEn: '2026-01-01T00:00:00Z' },
+      data: { id: '1', solicitante: 'mateo', solicitado: 'ana', aceptada: false, creadaEn: '2026-01-01T00:00:00Z', pendiente: true },
     });
 
     const { result } = renderHook(() => useCrearSolicitudChat());
