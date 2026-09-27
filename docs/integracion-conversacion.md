@@ -223,7 +223,7 @@ descartaría en silencio.
 Con `chat-conversacion` y `chat-gateway` corriendo en local (`./gradlew
 bootRun` en ambos, MongoDB en `localhost:27017`) y `chat-frontend` en `npm run
 dev`, apuntando al gateway (`http://localhost:8080`): login → `/home` →
-identidad → historial cargado (`200` con CORS) → "Conectado" → mensaje
+identidad → historial cargado (`200` con CORS) → socket abierto → mensaje
 escrito en la UI, recibido de vuelta por el socket con `id`/`enviadoEn`
 reales, persistido (sigue ahí tras recargar la página) — todo pasando por
 `chat-gateway`, nunca directo contra el `8082` de `chat-conversacion`.

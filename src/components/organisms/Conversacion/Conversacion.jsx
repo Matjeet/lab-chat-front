@@ -37,9 +37,6 @@ const Conversacion = ({ yo, con, mensajes, conectado, onEnviar }) => {
     <div className={styles.conversacion}>
       <header className={styles.cabecera}>
         <p className={styles.con}>{con}</p>
-        <span className={`${styles.estado} ${conectado ? styles.conectado : ''}`.trim()}>
-          {conectado ? 'Conectado' : 'Conectando…'}
-        </span>
       </header>
 
       {!conectado && (
