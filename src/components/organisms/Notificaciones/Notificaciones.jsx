@@ -3,12 +3,24 @@
 import { useEffect, useRef, useState } from 'react';
 
 import Button from '../../atoms/Button';
+import Modal from '../../molecules/Modal';
 import ItemNotificacion from '../../atoms/ItemNotificacion';
 import { useInterlocutor } from '../../../context/InterlocutorContext';
 import useNotificaciones from '../../../hooks/useNotificaciones';
+import useActualizarSolicitud from '../../../hooks/useActualizarSolicitud';
 import styles from './Notificaciones.module.css';
 
 const INSIGNIA_MAXIMA = 9;
+const TITULO_ERROR_ACEPTAR = 'No se pudo confirmar la aceptación';
+const MENSAJE_ERROR_ACEPTAR =
+  'El chat ya se abrió, pero no se pudo confirmar la aceptación de la solicitud en el servidor. Inténtalo de nuevo.';
+const TITULO_ERROR_RECHAZAR = 'No se pudo rechazar la solicitud';
+const MENSAJE_ERROR_RECHAZAR = 'No se pudo rechazar la solicitud. Inténtalo de nuevo.';
+const MENSAJE_SOLICITUD_NO_ENCONTRADA =
+  'Esta solicitud ya no está disponible — puede que ya se haya resuelto.';
+const TITULO_SOLICITUD_RECHAZADA = 'Solicitud rechazada';
+const MENSAJE_SOLICITUD_RECHAZADA = 'La solicitud fue rechazada exitosamente.';
+const RETRASO_RECARGA_RECHAZO_MS = 500;
 
 /**
  * Organismo: campana de notificaciones de la cabecera. Al pulsarla abre un
@@ -25,17 +37,29 @@ const INSIGNIA_MAXIMA = 9;
  * ve como "9+") — ver `useNotificaciones` para su cálculo (aproximado: solo
  * cuenta la página cargada, el backend no expone un total de no leídas).
  *
- * Cada notificación de tipo `"solicitud"` trae dos botones (`ItemNotificacion`):
- * aceptar (verde) y rechazar (rojo). Ninguno de los dos consume todavía un
- * servicio de aceptar/rechazar — no existe (`chat-conversacion` no lo
- * implementa aún, ver `CLAUDE.md`) — así que, por ahora:
- * - **Aceptar** hace lo único que sí existe: abre la conversación de
- *   inmediato con quien la envió (`InterlocutorContext#establecerCon`, el
- *   mismo mecanismo que ya usa `ListaChats`), marca la notificación como
- *   leída y cierra el panel.
- * - **Rechazar** solo marca la notificación como leída (no hay nada más que
- *   hacer sin un endpoint de verdad) — un placeholder deliberado, a
- *   sustituir en cuanto ese servicio exista.
+ * Cada notificación de tipo `"solicitud"` pendiente trae dos botones
+ * (`ItemNotificacion`): aceptar (verde) y rechazar (rojo). Ambos llaman a
+ * `useActualizarSolicitud` (`PATCH /api/v1/conversaciones/solicitudes`,
+ * `solicitante` = quien la envió — `notificacion.remitente` —, `solicitado`
+ * = `yo`, `aceptada` = `true`/`false` según el botón):
+ * - **Aceptar**: abre la conversación de inmediato con quien la envió
+ *   (`InterlocutorContext#establecerCon`, el mismo mecanismo que ya usa
+ *   `ListaChats`) **en paralelo** con la llamada al backend — no espera su
+ *   respuesta para abrir el chat, son dos cosas independientes. También
+ *   marca la notificación como leída y cierra el panel de inmediato. Si la
+ *   llamada al backend falla en segundo plano, un `Modal` de error avisa
+ *   (el chat ya abierto no se deshace).
+ * - **Rechazar**: espera la respuesta del backend antes de hacer nada más
+ *   (no hay ningún chat que abrir). Si sale bien, marca la notificación
+ *   como leída, muestra un `Modal` `tono="info"` confirmando el rechazo, y
+ *   además vuelve a pedir la lista (`recargar`) medio segundo después —
+ *   solo en este caso — para darle tiempo a la actualización a propagarse
+ *   (chat-conversacion → RabbitMQ → chat-notificaciones) y reflejar el
+ *   `meta` ya resuelto sin esperar a que se cierre y abra el panel; si
+ *   falla, un `Modal` `tono="error"`.
+ * Mientras cualquiera de las dos llamadas está en vuelo, los botones de esa
+ * notificación (`ItemNotificacion` → `deshabilitado`) se desactivan, para
+ * evitar un doble envío.
  *
  * @param {object} props
  * @param {string} [props.yo='']  username autenticado, dueño de la bandeja de
@@ -45,10 +69,13 @@ const INSIGNIA_MAXIMA = 9;
  */
 const Notificaciones = ({ yo = '' }) => {
   const [abierto, setAbierto] = useState(false);
+  const [procesandoId, setProcesandoId] = useState(null);
+  const [modalAviso, setModalAviso] = useState(null);
   const contenedorRef = useRef(null);
   const { establecerCon } = useInterlocutor();
   const { notificaciones, cargando, error, noLeidas, recargar, marcarLeida, marcarNoLeida } =
     useNotificaciones(yo);
+  const actualizarSolicitud = useActualizarSolicitud();
 
   useEffect(() => {
     if (abierto) recargar();
@@ -77,9 +104,49 @@ const Notificaciones = ({ yo = '' }) => {
   }, [abierto]);
 
   const alAceptar = (notificacion) => {
+    // "En paralelo": abrir el chat no espera la respuesta del backend — son
+    // dos acciones independientes, no una cadena secuencial.
     establecerCon(notificacion.remitente);
     marcarLeida(notificacion.id);
     setAbierto(false);
+    setProcesandoId(notificacion.id);
+    actualizarSolicitud(notificacion.remitente, yo, true).then((resultado) => {
+      setProcesandoId(null);
+      if (!resultado.ok) {
+        setModalAviso({
+          tono: 'error',
+          titulo: TITULO_ERROR_ACEPTAR,
+          mensaje:
+            resultado.error.kind === 'no-encontrado' ? MENSAJE_SOLICITUD_NO_ENCONTRADA : MENSAJE_ERROR_ACEPTAR,
+        });
+      }
+    });
+  };
+
+  const alRechazar = (notificacion) => {
+    setProcesandoId(notificacion.id);
+    actualizarSolicitud(notificacion.remitente, yo, false).then((resultado) => {
+      setProcesandoId(null);
+      if (resultado.ok) {
+        marcarLeida(notificacion.id);
+        setModalAviso({
+          tono: 'info',
+          titulo: TITULO_SOLICITUD_RECHAZADA,
+          mensaje: MENSAJE_SOLICITUD_RECHAZADA,
+        });
+        // Le da tiempo al backend a propagar el rechazo (chat-conversacion →
+        // RabbitMQ → chat-notificaciones) antes de volver a pedir la lista,
+        // para que la notificación ya venga con el `meta` actualizado.
+        setTimeout(recargar, RETRASO_RECARGA_RECHAZO_MS);
+      } else {
+        setModalAviso({
+          tono: 'error',
+          titulo: TITULO_ERROR_RECHAZAR,
+          mensaje:
+            resultado.error.kind === 'no-encontrado' ? MENSAJE_SOLICITUD_NO_ENCONTRADA : MENSAJE_ERROR_RECHAZAR,
+        });
+      }
+    });
   };
 
   return (
@@ -132,16 +199,25 @@ const Notificaciones = ({ yo = '' }) => {
                   <ItemNotificacion
                     key={notificacion.id}
                     notificacion={notificacion}
+                    deshabilitado={procesandoId === notificacion.id}
                     onMarcarLeida={() => marcarLeida(notificacion.id)}
                     onMarcarNoLeida={() => marcarNoLeida(notificacion.id)}
                     onAceptar={() => alAceptar(notificacion)}
-                    onRechazar={() => marcarLeida(notificacion.id)}
+                    onRechazar={() => alRechazar(notificacion)}
                   />
                 ))}
               </ul>
             )}
           </div>
         </div>
+      )}
+      {modalAviso && (
+        <Modal
+          tono={modalAviso.tono}
+          titulo={modalAviso.titulo}
+          mensaje={modalAviso.mensaje}
+          onCerrar={() => setModalAviso(null)}
+        />
       )}
     </div>
   );

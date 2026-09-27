@@ -89,9 +89,11 @@ separados, con dos ciclos de vida distintos:
   directamente — manda una solicitud.** Empezar a chatear con alguien con
   quien `yo` no tenía conversación todavía pasa ahora por
   `POST /api/v1/conversaciones/solicitudes` (contrato §4.7): una solicitud
-  que el otro usuario debe aceptar (aceptar/rechazar no está implementado
-  todavía, ni en chat-conversacion ni aquí). Al enviar el formulario (click
-  en "Ir", o Enter), tres pasos:
+  que el otro usuario debe aceptar o rechazar — ver
+  `docs/integracion-notificaciones.md` para ese lado del flujo
+  (`PATCH /api/v1/conversaciones/solicitudes`, contrato §4.10, disparado
+  desde la campana de notificaciones, no desde aquí). Al enviar el
+  formulario (click en "Ir", o Enter), tres pasos:
   1. Formato (`validarUsername`) — error de campo si falla, no llega a pedir nada.
   2. **Que el username exista de verdad** — `useExisteUsuario` llama a
      `GET /api/v1/usuarios/existe` (`src/api/usuario.js#existeUsuario`,
@@ -117,10 +119,12 @@ separados, con dos ciclos de vida distintos:
   verdad) — el usuario no existe, alguna comprobación falla (red, servidor,
   sesión); bloqueantes con `Modal` `tono="info"` (azul, no es un error) — ya
   hay una solicitud **pendiente** entre ambos (`kind: 'duplicada'`, 409) o
-  la solicitud se envió. La respuesta trae ahora un campo `pendiente`
-  (`SolicitudChat`, `src/conversacion/solicitudes.js`), siempre `true` por
-  ahora: una solicitud ya resuelta no bloquearía una nueva, pero hoy no hay
-  forma de resolver una (aceptar/rechazar no está implementado todavía).
+  la solicitud se envió. La respuesta trae un campo `pendiente`
+  (`SolicitudChat`, `src/conversacion/solicitudes.js`), `true` mientras nadie
+  la haya aceptado o rechazado (`actualizarSolicitud`, en el mismo módulo,
+  usada desde la campana de notificaciones — ver
+  `docs/integracion-notificaciones.md`) — una solicitud ya resuelta no
+  bloquea una nueva.
 
 `HomePage` decide qué mostrar según `yo`/`con`: sin `yo` resuelto (ni por
 `localStorage` ni por el backend), pide el formulario manual; con `yo` pero

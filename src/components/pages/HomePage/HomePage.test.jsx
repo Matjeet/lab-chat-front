@@ -10,6 +10,7 @@ import useListaChats from '../../../hooks/useListaChats';
 import useExisteUsuario from '../../../hooks/useExisteUsuario';
 import useCrearSolicitudChat from '../../../hooks/useCrearSolicitudChat';
 import useNotificaciones from '../../../hooks/useNotificaciones';
+import useActualizarSolicitud from '../../../hooks/useActualizarSolicitud';
 
 // Factory explícita: un automock sin factory cargaría el Firebase real (sin
 // las variables de entorno que solo existen en build/dev).
@@ -41,9 +42,11 @@ jest.mock('../../../hooks/useListaChats');
 // un automock sin factory cargaría el hook real, que importa firebase/auth.
 jest.mock('../../../hooks/useExisteUsuario', () => jest.fn());
 jest.mock('../../../hooks/useCrearSolicitudChat', () => jest.fn());
-// Notificaciones (también en la cabecera) usa este hook internamente por el
-// mismo motivo — ver src/hooks/useNotificaciones.test.js para el hook en sí.
+// Notificaciones (también en la cabecera) usa estos dos hooks internamente
+// por el mismo motivo — ver src/hooks/useNotificaciones.test.js y
+// src/hooks/useActualizarSolicitud.test.js para los hooks en sí.
 jest.mock('../../../hooks/useNotificaciones', () => jest.fn());
+jest.mock('../../../hooks/useActualizarSolicitud', () => jest.fn());
 
 const establecerYo = jest.fn();
 const registrarMensajeEnviado = jest.fn();
@@ -88,6 +91,7 @@ beforeEach(() => {
     marcarLeida: jest.fn(),
     marcarNoLeida: jest.fn(),
   });
+  useActualizarSolicitud.mockReturnValue(jest.fn());
 });
 
 afterEach(() => {

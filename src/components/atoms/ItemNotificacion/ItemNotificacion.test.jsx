@@ -37,10 +37,10 @@ describe('ItemNotificacion', () => {
     expect(screen.getByText('Tienes una notificación nueva')).toBeInTheDocument();
   });
 
-  it('si es una solicitud, muestra los botones de aceptar y rechazar', () => {
+  it('si es una solicitud pendiente, muestra los botones de aceptar y rechazar', () => {
     render(
       <ItemNotificacion
-        notificacion={notificacionSolicitud()}
+        notificacion={notificacionSolicitud({ meta: { aceptada: false, pendiente: true } })}
         onMarcarLeida={jest.fn()}
         onMarcarNoLeida={jest.fn()}
         onAceptar={jest.fn()}
@@ -49,6 +49,46 @@ describe('ItemNotificacion', () => {
     );
     expect(screen.getByRole('button', { name: 'Aceptar solicitud de ana' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Rechazar solicitud de ana' })).toBeInTheDocument();
+  });
+
+  it('sin "meta", asume pendiente y muestra los botones (compatibilidad hacia atrás)', () => {
+    render(
+      <ItemNotificacion
+        notificacion={notificacionSolicitud({ meta: null })}
+        onMarcarLeida={jest.fn()}
+        onMarcarNoLeida={jest.fn()}
+        onAceptar={jest.fn()}
+        onRechazar={jest.fn()}
+      />,
+    );
+    expect(screen.getByRole('button', { name: 'Aceptar solicitud de ana' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Rechazar solicitud de ana' })).toBeInTheDocument();
+  });
+
+  it('si la solicitud ya no está pendiente y fue aceptada, muestra "Aceptada" en vez de los botones', () => {
+    render(
+      <ItemNotificacion
+        notificacion={notificacionSolicitud({ meta: { aceptada: true, pendiente: false } })}
+        onMarcarLeida={jest.fn()}
+        onMarcarNoLeida={jest.fn()}
+      />,
+    );
+    expect(screen.getByText('Aceptada')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /aceptar/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /rechazar/i })).not.toBeInTheDocument();
+  });
+
+  it('si la solicitud ya no está pendiente y no fue aceptada, muestra "Rechazada" en vez de los botones', () => {
+    render(
+      <ItemNotificacion
+        notificacion={notificacionSolicitud({ meta: { aceptada: false, pendiente: false } })}
+        onMarcarLeida={jest.fn()}
+        onMarcarNoLeida={jest.fn()}
+      />,
+    );
+    expect(screen.getByText('Rechazada')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /aceptar/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /rechazar/i })).not.toBeInTheDocument();
   });
 
   it('si no es una solicitud, no muestra los botones de aceptar/rechazar', () => {
@@ -131,6 +171,21 @@ describe('ItemNotificacion', () => {
     await user.click(boton);
 
     expect(onMarcarNoLeida).toHaveBeenCalledTimes(1);
+  });
+
+  it('con deshabilitado, los botones de aceptar y rechazar quedan inhabilitados', () => {
+    render(
+      <ItemNotificacion
+        notificacion={notificacionSolicitud({ meta: { aceptada: false, pendiente: true } })}
+        onMarcarLeida={jest.fn()}
+        onMarcarNoLeida={jest.fn()}
+        onAceptar={jest.fn()}
+        onRechazar={jest.fn()}
+        deshabilitado
+      />,
+    );
+    expect(screen.getByRole('button', { name: 'Aceptar solicitud de ana' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Rechazar solicitud de ana' })).toBeDisabled();
   });
 
   it('una notificación sin leer no muestra el botón de marcar como no leída', () => {

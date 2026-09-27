@@ -7,7 +7,26 @@ import { API_BASE_URL } from '../api/config';
  * @property {string} tipo  Hoy solo `"solicitud"`.
  * @property {boolean} leida
  * @property {string} createdAt  ISO-8601 UTC.
+ * @property {Object|null} meta  Información adicional propia de `tipo`, ya parseada (el backend
+ *   la manda como texto JSON crudo, sin interpretar — este módulo hace ese parseo, para que el
+ *   resto de la app nunca toque JSON a mano). Para `tipo: "solicitud"`: `{ aceptada, pendiente }`
+ *   (booleanos). `null` si la notificación no tiene meta, o si el JSON no se pudo parsear.
  */
+
+/**
+ * `meta` llega como string JSON crudo (o `null`) — lo parsea una sola vez aquí para que el
+ * resto de la app (`ItemNotificacion` incluido) trabaje siempre con un objeto, nunca con texto.
+ * Un JSON corrupto se trata igual que "sin meta" (`null`), no como un error de la llamada: no
+ * hay nada que el usuario pueda hacer al respecto.
+ */
+const conMetaParseada = (notificacion) => {
+  if (!notificacion.meta) return { ...notificacion, meta: null };
+  try {
+    return { ...notificacion, meta: JSON.parse(notificacion.meta) };
+  } catch {
+    return { ...notificacion, meta: null };
+  }
+};
 
 /**
  * @typedef {Object} PaginaNotificaciones
@@ -60,7 +79,8 @@ export const obtenerNotificaciones = async (receptor, idToken, opciones = {}) =>
   }
 
   if (respuesta.ok) {
-    return { ok: true, data: await respuesta.json() };
+    const pagina = await respuesta.json();
+    return { ok: true, data: { ...pagina, content: pagina.content.map(conMetaParseada) } };
   }
 
   let problema = null;
@@ -116,7 +136,7 @@ export const actualizarLeida = async (id, uid, leida, idToken) => {
   }
 
   if (respuesta.ok) {
-    return { ok: true, data: await respuesta.json() };
+    return { ok: true, data: conMetaParseada(await respuesta.json()) };
   }
 
   let problema = null;

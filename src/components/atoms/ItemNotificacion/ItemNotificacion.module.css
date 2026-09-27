@@ -55,6 +55,15 @@
   background-color: var(--color-surface-muted);
 }
 
+.botonIcono:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.botonIcono:disabled:hover {
+  background-color: transparent;
+}
+
 .aceptar {
   color: var(--color-success);
 }
@@ -69,4 +78,21 @@
 
 .rechazar:hover {
   background-color: var(--color-danger-soft);
+}
+
+.estadoAceptada,
+.estadoRechazada {
+  align-self: center;
+  padding: 0 var(--space-2);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  white-space: nowrap;
+}
+
+.estadoAceptada {
+  color: var(--color-success);
+}
+
+.estadoRechazada {
+  color: var(--color-danger);
 }

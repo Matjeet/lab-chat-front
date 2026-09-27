@@ -7,7 +7,16 @@ const respuestaFake = (status, cuerpo) => ({
 });
 
 const paginaFake = {
-  content: [{ id: 1, remitente: 'mateo', tipo: 'solicitud', leida: false, createdAt: '2026-01-01T00:00:00Z' }],
+  content: [
+    {
+      id: 1,
+      remitente: 'mateo',
+      tipo: 'solicitud',
+      leida: false,
+      createdAt: '2026-01-01T00:00:00Z',
+      meta: '{"aceptada":false,"pendiente":true}',
+    },
+  ],
   page: 0,
   size: 20,
   totalElements: 1,
@@ -27,10 +36,37 @@ describe('obtenerNotificaciones', () => {
 
     const resultado = await obtenerNotificaciones('ana', 'token-abc');
 
-    expect(resultado).toEqual({ ok: true, data: paginaFake });
+    expect(resultado).toEqual({
+      ok: true,
+      data: { ...paginaFake, content: [{ ...paginaFake.content[0], meta: { aceptada: false, pendiente: true } }] },
+    });
     expect(global.fetch).toHaveBeenCalledWith('http://localhost:8080/api/v1/notificaciones/ana', {
       headers: { Authorization: 'Bearer token-abc' },
     });
+  });
+
+  it('parsea "meta" de cada notificación (viene como texto JSON crudo del backend)', async () => {
+    global.fetch = jest.fn().mockResolvedValue(respuestaFake(200, paginaFake));
+
+    const resultado = await obtenerNotificaciones('ana', 'token');
+
+    expect(resultado.data.content[0].meta).toEqual({ aceptada: false, pendiente: true });
+  });
+
+  it('si "meta" es null, o el JSON no se puede parsear, la deja en null', async () => {
+    const paginaConMetaRota = {
+      ...paginaFake,
+      content: [
+        { ...paginaFake.content[0], id: 1, meta: null },
+        { ...paginaFake.content[0], id: 2, meta: 'no es json' },
+      ],
+    };
+    global.fetch = jest.fn().mockResolvedValue(respuestaFake(200, paginaConMetaRota));
+
+    const resultado = await obtenerNotificaciones('ana', 'token');
+
+    expect(resultado.data.content[0].meta).toBeNull();
+    expect(resultado.data.content[1].meta).toBeNull();
   });
 
   it('agrega page, size y sort como query params cuando se pasan', async () => {
@@ -70,14 +106,24 @@ describe('obtenerNotificaciones', () => {
 });
 
 describe('actualizarLeida', () => {
-  const notificacionFake = { id: 1, remitente: 'mateo', tipo: 'solicitud', leida: true, createdAt: '2026-01-01T00:00:00Z' };
+  const notificacionFake = {
+    id: 1,
+    remitente: 'mateo',
+    tipo: 'solicitud',
+    leida: true,
+    createdAt: '2026-01-01T00:00:00Z',
+    meta: '{"aceptada":false,"pendiente":true}',
+  };
 
-  it('manda uid y leida en el cuerpo, con el idToken como Bearer', async () => {
+  it('manda uid y leida en el cuerpo, con el idToken como Bearer, y parsea "meta"', async () => {
     global.fetch = jest.fn().mockResolvedValue(respuestaFake(200, notificacionFake));
 
     const resultado = await actualizarLeida(1, 'uid-123', true, 'token-abc');
 
-    expect(resultado).toEqual({ ok: true, data: notificacionFake });
+    expect(resultado).toEqual({
+      ok: true,
+      data: { ...notificacionFake, meta: { aceptada: false, pendiente: true } },
+    });
     expect(global.fetch).toHaveBeenCalledWith('http://localhost:8080/api/v1/notificaciones/1', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', Authorization: 'Bearer token-abc' },
