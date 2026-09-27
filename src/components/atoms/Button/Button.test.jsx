@@ -18,6 +18,11 @@ describe('Button', () => {
     expect(onClick).toHaveBeenCalledTimes(1);
   });
 
+  it('aplica la clase del variant "success" cuando se indica', () => {
+    render(<Button variant="success">Aceptar</Button>);
+    expect(screen.getByRole('button', { name: 'Aceptar' })).toHaveClass('success');
+  });
+
   it('no ejecuta onClick cuando está deshabilitado', async () => {
     const onClick = jest.fn();
     render(

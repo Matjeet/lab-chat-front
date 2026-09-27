@@ -57,3 +57,12 @@
 .danger:not(:disabled):hover {
   background-color: var(--color-danger-hover);
 }
+
+.success {
+  background-color: var(--color-success);
+  color: var(--color-on-success);
+}
+
+.success:not(:disabled):hover {
+  background-color: var(--color-success-hover);
+}

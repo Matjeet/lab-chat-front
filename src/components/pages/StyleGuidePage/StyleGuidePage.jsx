@@ -10,7 +10,8 @@ import PatronBurbujas from '../../atoms/PatronBurbujas';
 import FormField from '../../molecules/FormField';
 import RequisitosCampo from '../../molecules/RequisitosCampo';
 import SelectorInterlocutor from '../../molecules/SelectorInterlocutor';
-import ModalError from '../../molecules/ModalError';
+import Modal from '../../molecules/Modal';
+import Notificaciones from '../../organisms/Notificaciones';
 import useRequiereSesion from '../../../hooks/useRequiereSesion';
 import styles from './StyleGuidePage.module.css';
 
@@ -90,10 +91,14 @@ const Section = ({ title, children }) => (
  */
 const StyleGuidePage = () => {
   useRequiereSesion();
-  const [mostrarModalError, setMostrarModalError] = useState(false);
+  const [modalDemo, setModalDemo] = useState(null);
 
   return (
-    <DefaultLayout title="Sistema de diseño" headerCentro={<SelectorInterlocutor />}>
+    <DefaultLayout
+      title="Sistema de diseño"
+      headerCentro={<SelectorInterlocutor />}
+      headerActions={<Notificaciones />}
+    >
       <p className={styles.intro}>
         Fuente de verdad: <code>src/styles/tokens.css</code>. Cambia el tema desde
         la cabecera para revisar el modo oscuro.
@@ -173,6 +178,7 @@ const StyleGuidePage = () => {
           <Button variant="secondary">Secondary</Button>
           <Button variant="ghost">Ghost</Button>
           <Button variant="danger">Danger</Button>
+          <Button variant="success">Success</Button>
           <Button variant="primary" disabled>
             Disabled
           </Button>
@@ -187,22 +193,37 @@ const StyleGuidePage = () => {
         </div>
       </Section>
 
-      <Section title="Modal de error">
+      <Section title="Modal">
         <p className={styles.intro}>
-          Estándar para un error <strong>bloqueante</strong> (interrumpe la
+          Estándar para un mensaje <strong>bloqueante</strong> (interrumpe la
           acción y exige que el usuario lo reconozca) — a diferencia de{' '}
-          <code>Alert</code>, que convive con el resto de la pantalla.
+          <code>Alert</code>, que convive con el resto de la pantalla. Dos
+          tonos: <code>error</code> (rojo, algo salió mal de verdad) e{' '}
+          <code>info</code> (azul, no es un error — solo información que
+          también corta el flujo).
         </p>
         <div className={styles.row}>
-          <Button variant="danger" onClick={() => setMostrarModalError(true)}>
+          <Button variant="danger" onClick={() => setModalDemo('error')}>
             Simular error bloqueante
           </Button>
+          <Button variant="primary" onClick={() => setModalDemo('info')}>
+            Simular aviso bloqueante
+          </Button>
         </div>
-        {mostrarModalError && (
-          <ModalError
+        {modalDemo === 'error' && (
+          <Modal
+            tono="error"
             titulo="Usuario no encontrado"
             mensaje="No existe ningún usuario con ese nombre. Revisa que esté bien escrito."
-            onCerrar={() => setMostrarModalError(false)}
+            onCerrar={() => setModalDemo(null)}
+          />
+        )}
+        {modalDemo === 'info' && (
+          <Modal
+            tono="info"
+            titulo="Ya tienes una solicitud pendiente"
+            mensaje="Ya existe una solicitud de chat pendiente con este usuario. Espera a que se acepte."
+            onCerrar={() => setModalDemo(null)}
           />
         )}
       </Section>

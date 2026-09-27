@@ -102,7 +102,9 @@
   --color-on-primary: #ffffff;
 
   --color-success: #15803d;
+  --color-success-hover: #116932;
   --color-success-soft: #e7f6ec;
+  --color-on-success: #ffffff;
   --color-warning: #b45309;
   --color-danger: #c02626;
   --color-danger-hover: #a01f1f;
@@ -111,7 +113,7 @@
 
   --color-focus-ring: #4f46e5;
 
-  /* Fondo semitransparente tras un modal (p. ej. ModalError). Mismo valor en
+  /* Fondo semitransparente tras un modal (ver el componente Modal). Mismo valor en
    * los dos temas a propósito: atenúa por igual una superficie clara u
    * oscura de detrás. */
   --color-overlay: rgb(0 0 0 / 0.5);
@@ -142,7 +144,9 @@
     --color-on-primary: #14121f;
 
     --color-success: #4ade80;
+    --color-success-hover: #6ee7a0;
     --color-success-soft: #14281b;
+    --color-on-success: #052e13;
     --color-warning: #fbbf24;
     --color-danger: #f87171;
     --color-danger-hover: #fca5a5;
@@ -172,7 +176,9 @@
   --color-on-primary: #14121f;
 
   --color-success: #4ade80;
+  --color-success-hover: #6ee7a0;
   --color-success-soft: #14281b;
+  --color-on-success: #052e13;
   --color-warning: #fbbf24;
   --color-danger: #f87171;
   --color-danger-hover: #fca5a5;

@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import HomePage from './HomePage';
@@ -8,6 +8,9 @@ import useConversacion from '../../../hooks/useConversacion';
 import useMiUsuario from '../../../hooks/useMiUsuario';
 import useListaChats from '../../../hooks/useListaChats';
 import useExisteUsuario from '../../../hooks/useExisteUsuario';
+import useCrearSolicitudChat from '../../../hooks/useCrearSolicitudChat';
+import useNotificaciones from '../../../hooks/useNotificaciones';
+import useActualizarSolicitud from '../../../hooks/useActualizarSolicitud';
 
 // Factory explícita: un automock sin factory cargaría el Firebase real (sin
 // las variables de entorno que solo existen en build/dev).
@@ -32,18 +35,27 @@ jest.mock('../../../hooks/useMiUsuario');
 // chats, solo qué hace con lo que el hook expone — ver
 // src/hooks/useListaChats.test.js para el hook en sí.
 jest.mock('../../../hooks/useListaChats');
-// SelectorInterlocutor (montado dentro de HomePage, en la cabecera) usa este
-// hook internamente para comprobar si el usuario existe antes de abrir el
-// chat — se mockea aquí también para no depender de una sesión de Firebase
-// real al enviar el formulario de la cabecera (ver `elegirInterlocutor`).
-// Factory explícita: un automock sin factory cargaría el hook real, que
-// importa firebase/auth.
+// SelectorInterlocutor (montado dentro de HomePage, en la cabecera) usa estos
+// dos hooks internamente para comprobar si el usuario existe y para mandar la
+// solicitud de chat — se mockean aquí también para no depender de una sesión
+// de Firebase real al enviar el formulario de la cabecera. Factory explícita:
+// un automock sin factory cargaría el hook real, que importa firebase/auth.
 jest.mock('../../../hooks/useExisteUsuario', () => jest.fn());
+jest.mock('../../../hooks/useCrearSolicitudChat', () => jest.fn());
+// Notificaciones (también en la cabecera) usa estos dos hooks internamente
+// por el mismo motivo — ver src/hooks/useNotificaciones.test.js y
+// src/hooks/useActualizarSolicitud.test.js para los hooks en sí.
+jest.mock('../../../hooks/useNotificaciones', () => jest.fn());
+jest.mock('../../../hooks/useActualizarSolicitud', () => jest.fn());
 
 const establecerYo = jest.fn();
 const registrarMensajeEnviado = jest.fn();
 const cargarMasChats = jest.fn();
 const comprobarUsuario = jest.fn().mockResolvedValue({ ok: true, data: { existe: true } });
+const crearSolicitud = jest.fn().mockResolvedValue({
+  ok: true,
+  data: { id: '1', solicitante: 'mateo', solicitado: 'ana', aceptada: false, creadaEn: '2026-01-01T00:00:00Z', pendiente: true },
+});
 
 beforeEach(() => {
   observarSesion.mockImplementation((callback) => {
@@ -69,6 +81,17 @@ beforeEach(() => {
     registrarMensajeEnviado,
   });
   useExisteUsuario.mockReturnValue(comprobarUsuario);
+  useCrearSolicitudChat.mockReturnValue(crearSolicitud);
+  useNotificaciones.mockReturnValue({
+    notificaciones: [],
+    cargando: false,
+    error: null,
+    noLeidas: 0,
+    recargar: jest.fn(),
+    marcarLeida: jest.fn(),
+    marcarNoLeida: jest.fn(),
+  });
+  useActualizarSolicitud.mockReturnValue(jest.fn());
 });
 
 afterEach(() => {
@@ -91,13 +114,22 @@ const confirmarMiUsuario = async (user, yo = 'mateo') => {
   await user.click(screen.getByRole('button', { name: 'Guardar' }));
 };
 
-const elegirInterlocutor = async (user, con = 'ana') => {
-  await user.type(screen.getByLabelText('Chatear con'), con);
-  await user.click(screen.getByRole('button', { name: 'Ir' }));
-  // SelectorInterlocutor comprueba primero (async) si el usuario existe —
-  // espera a que ese envío termine (el botón se rehabilita al resolver)
-  // antes de dar por hecho que `con` ya se actualizó en el contexto.
-  await waitFor(() => expect(screen.getByRole('button', { name: 'Ir' })).not.toBeDisabled());
+// SelectorInterlocutor (cabecera) ya no abre la conversación directamente:
+// solo manda una solicitud de chat (ver SelectorInterlocutor.test.jsx para el
+// detalle de ese flujo). El único camino que sigue conectando `con` de forma
+// inmediata, dentro de HomePage, es elegir un chat ya existente en la lista
+// de la izquierda — de ahí este helper, en vez de "escribir en la cabecera y
+// pulsar Ir" como antes.
+const elegirChatExistente = (chats) => {
+  useListaChats.mockReturnValue({
+    chats,
+    cargando: false,
+    cargandoMas: false,
+    error: null,
+    hasMore: false,
+    cargarMas: cargarMasChats,
+    registrarMensajeEnviado,
+  });
 };
 
 describe('HomePage', () => {
@@ -151,12 +183,34 @@ describe('HomePage', () => {
     expect(useConversacion).not.toHaveBeenCalled();
   });
 
-  it('no deja chatear contigo mismo', async () => {
+  it('enviar una solicitud desde la cabecera avisa del envío y no abre la conversación directamente', async () => {
     useMiUsuario.mockReturnValue({ yo: 'mateo', establecerYo });
     const user = userEvent.setup();
     montar();
 
-    await elegirInterlocutor(user, 'mateo');
+    const cabecera = screen.getByLabelText('Chatear con').closest('form');
+    await user.type(screen.getByLabelText('Chatear con'), 'ana');
+    await user.click(screen.getByRole('button', { name: 'Ir' }));
+
+    expect(await within(cabecera).findByRole('alertdialog', { name: 'Solicitud enviada' })).toHaveTextContent(
+      'Solicitud enviada a ana. El chat empezará en cuanto la acepte.',
+    );
+    expect(crearSolicitud).toHaveBeenCalledWith('mateo', 'ana');
+    expect(useConversacion).not.toHaveBeenCalled();
+  });
+
+  it('si el interlocutor activo coincide con "yo" (defensivo), no abre la conversación', async () => {
+    // No alcanzable hoy desde la cabecera (ahora manda una solicitud, y el
+    // backend la rechaza si solicitante === solicitado — ver
+    // SelectorInterlocutor.test.jsx) ni desde una lista de chats real (nunca
+    // incluye a "yo"). Se prueba aquí de todos modos, vía una lista de chats
+    // contrived, como red de seguridad de este guard en HomePage.
+    useMiUsuario.mockReturnValue({ yo: 'mateo', establecerYo });
+    elegirChatExistente([{ otroUsuario: 'mateo', ultimoMensaje: { contenido: 'Hola!' } }]);
+    const user = userEvent.setup();
+    montar();
+
+    await user.click(screen.getByText('mateo'));
 
     expect(
       await screen.findByText('No puedes chatear contigo mismo. Elige otro usuario en la cabecera.'),
@@ -164,28 +218,30 @@ describe('HomePage', () => {
     expect(useConversacion).not.toHaveBeenCalled();
   });
 
-  it('con "yo" resuelto y un interlocutor válido elegido en la cabecera, conecta la conversación', async () => {
+  it('al hacer click en un chat de la lista, abre esa conversación', async () => {
     useMiUsuario.mockReturnValue({ yo: 'mateo', establecerYo });
+    elegirChatExistente([{ otroUsuario: 'ana', ultimoMensaje: { contenido: 'Hola!' } }]);
     const user = userEvent.setup();
     montar();
 
-    await elegirInterlocutor(user, 'ana');
+    await user.click(screen.getByText('ana'));
 
     expect(useConversacion).toHaveBeenCalledWith({ yo: 'mateo', con: 'ana' });
-    expect(screen.getByText('ana')).toBeInTheDocument();
   });
 
-  it('cambiar el interlocutor desde la cabecera cambia la conversación abierta', async () => {
+  it('elegir otro chat de la lista cambia la conversación abierta', async () => {
     useMiUsuario.mockReturnValue({ yo: 'mateo', establecerYo });
+    elegirChatExistente([
+      { otroUsuario: 'ana', ultimoMensaje: { contenido: 'Hola!' } },
+      { otroUsuario: 'luis', ultimoMensaje: { contenido: 'Qué tal' } },
+    ]);
     const user = userEvent.setup();
     montar();
 
-    await elegirInterlocutor(user, 'ana');
+    await user.click(screen.getByText('ana'));
     expect(useConversacion).toHaveBeenCalledWith({ yo: 'mateo', con: 'ana' });
 
-    await user.clear(screen.getByLabelText('Chatear con'));
-    await elegirInterlocutor(user, 'luis');
-
+    await user.click(screen.getByText('luis'));
     expect(useConversacion).toHaveBeenCalledWith({ yo: 'mateo', con: 'luis' });
   });
 
@@ -199,10 +255,11 @@ describe('HomePage', () => {
       enviarMensaje: jest.fn(),
       reintentarHistorial: jest.fn(),
     });
+    elegirChatExistente([{ otroUsuario: 'ana', ultimoMensaje: { contenido: 'Hola!' } }]);
     const user = userEvent.setup();
     montar();
 
-    await elegirInterlocutor(user);
+    await user.click(screen.getByText('ana'));
 
     expect(screen.getByText(/cargando conversación/i)).toBeInTheDocument();
   });
@@ -218,10 +275,11 @@ describe('HomePage', () => {
       enviarMensaje: jest.fn(),
       reintentarHistorial,
     });
+    elegirChatExistente([{ otroUsuario: 'ana', ultimoMensaje: { contenido: 'Hola!' } }]);
     const user = userEvent.setup();
     montar();
 
-    await elegirInterlocutor(user);
+    await user.click(screen.getByText('ana'));
 
     expect(screen.getByText(/no se pudo cargar el historial/i)).toBeInTheDocument();
 
@@ -238,15 +296,7 @@ describe('HomePage', () => {
 
   it('con "yo" resuelto, muestra la lista de chats a la izquierda', () => {
     useMiUsuario.mockReturnValue({ yo: 'mateo', establecerYo });
-    useListaChats.mockReturnValue({
-      chats: [{ otroUsuario: 'ana', ultimoMensaje: { contenido: 'Hola!' } }],
-      cargando: false,
-      cargandoMas: false,
-      error: null,
-      hasMore: false,
-      cargarMas: cargarMasChats,
-      registrarMensajeEnviado,
-    });
+    elegirChatExistente([{ otroUsuario: 'ana', ultimoMensaje: { contenido: 'Hola!' } }]);
 
     montar();
 
@@ -258,25 +308,6 @@ describe('HomePage', () => {
   it('sin "yo" resuelto todavía, no muestra la lista de chats', () => {
     montar();
     expect(screen.queryByRole('heading', { name: 'Chats' })).not.toBeInTheDocument();
-  });
-
-  it('al hacer click en un chat de la lista, abre esa conversación', async () => {
-    useMiUsuario.mockReturnValue({ yo: 'mateo', establecerYo });
-    useListaChats.mockReturnValue({
-      chats: [{ otroUsuario: 'ana', ultimoMensaje: { contenido: 'Hola!' } }],
-      cargando: false,
-      cargandoMas: false,
-      error: null,
-      hasMore: false,
-      cargarMas: cargarMasChats,
-      registrarMensajeEnviado,
-    });
-    const user = userEvent.setup();
-    montar();
-
-    await user.click(screen.getByText('ana'));
-
-    expect(useConversacion).toHaveBeenCalledWith({ yo: 'mateo', con: 'ana' });
   });
 
   it('al confirmarse un mensaje propio, registra el chat en la lista', async () => {
@@ -297,10 +328,11 @@ describe('HomePage', () => {
       enviarMensaje: jest.fn(),
       reintentarHistorial: jest.fn(),
     });
+    elegirChatExistente([{ otroUsuario: 'ana', ultimoMensaje: { contenido: 'Hola!' } }]);
     const user = userEvent.setup();
     montar();
 
-    await elegirInterlocutor(user, 'ana');
+    await user.click(screen.getByText('ana'));
 
     expect(registrarMensajeEnviado).toHaveBeenCalledWith(
       'ana',
@@ -326,10 +358,11 @@ describe('HomePage', () => {
       enviarMensaje: jest.fn(),
       reintentarHistorial: jest.fn(),
     });
+    elegirChatExistente([{ otroUsuario: 'ana', ultimoMensaje: { contenido: 'Hola!' } }]);
     const user = userEvent.setup();
     montar();
 
-    await elegirInterlocutor(user, 'ana');
+    await user.click(screen.getByText('ana'));
 
     expect(registrarMensajeEnviado).not.toHaveBeenCalled();
   });

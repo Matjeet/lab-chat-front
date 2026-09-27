@@ -35,11 +35,11 @@ Los tokens de color son **roles**, no nombres de color (`--color-primary`, no
 | `--color-primary` | Acción principal. `-hover` / `-active` para estados. |
 | `--color-primary-soft` / `--color-primary-soft-text` | Botón `secondary`, badges. |
 | `--color-on-primary` | Texto/icono sobre `--color-primary`. |
-| `--color-success` / `--color-warning` / `--color-danger` | Estados semánticos. |
+| `--color-success` / `--color-warning` / `--color-danger` | Estados semánticos. `-hover` en success/danger para el botón del mismo nombre. |
 | `--color-success-soft` / `--color-danger-soft` | Fondo de avisos (`Alert` de éxito / error). |
-| `--color-on-danger` | Texto sobre `--color-danger`. |
+| `--color-on-success` / `--color-on-danger` | Texto/icono sobre `--color-success` / `--color-danger`. |
 | `--color-focus-ring` | Color del anillo de foco. |
-| `--color-overlay` | Fondo semitransparente tras un modal (`ModalError`). Mismo valor en los dos temas a propósito. |
+| `--color-overlay` | Fondo semitransparente tras un modal (`Modal`). Mismo valor en los dos temas a propósito. |
 
 Contraste objetivo: **AA** (≥ 4.5:1 texto normal, ≥ 3:1 texto grande y bordes de
 componentes) en ambos temas. Al añadir o cambiar un color, verificarlo.
@@ -153,35 +153,46 @@ de burbujas de chat en movimiento:
   fundirse con el fondo de la página (ver más abajo), y superponerle esta
   tarjeta rompería ese efecto.
 
-## Modal de error
+## Modal
 
-Estándar único para cualquier error **bloqueante** — uno que interrumpe la
+Estándar único para cualquier mensaje **bloqueante** — uno que interrumpe la
 acción que el usuario acaba de intentar y necesita su confirmación explícita
-antes de seguir. Componente: `src/components/molecules/ModalError`. Antes de
-esto, cada sitio inventaba su propia forma (p. ej. un `<p>` en rojo sin fondo
-ni estructura); ahora todos comparten el mismo componente y la misma forma.
+antes de seguir, sea o no un error de verdad. Componente:
+`src/components/molecules/Modal`. Antes de esto, cada sitio inventaba su
+propia forma (p. ej. un `<p>` en rojo sin fondo ni estructura); ahora todos
+comparten el mismo componente y la misma forma.
 
-**Cuándo usarlo, y cuándo no** — tres niveles de error, tres componentes
-distintos, sin solaparse:
+**Dos tonos, prop `tono`** — mismo componente, mismo comportamiento, solo
+cambia el color y qué variante de `Button` usa el botón de confirmación:
 
-| Error | Componente | Ejemplo |
-|-------|-----------|---------|
+| `tono` | Color | Botón | Cuándo |
+|--------|-------|-------|--------|
+| `"error"` (por defecto) | Rojo (`--color-danger`) | `danger` | Algo salió mal de verdad — el usuario no existe, una comprobación falló. |
+| `"info"` | Azul (`--color-primary`) | `primary` | No es un error, es información que igual corta el flujo — ya existe una solicitud pendiente, o la confirmación de que algo se envió. |
+
+**Cuándo usar `Modal`, y cuándo no** — tres niveles de mensaje, tres
+componentes distintos, sin solaparse:
+
+| Mensaje | Componente | Ejemplo |
+|---------|-----------|---------|
 | De campo (formato inválido mientras se rellena un formulario) | `FormField` (prop `error`) o un `<p role="alert">` junto al campo | Username con formato inválido en `SelectorInterlocutor` |
 | De pantalla (convive con el resto del contenido, no bloquea nada) | `Alert` | "No se pudo cargar la lista de chats" en `ListaChats` |
-| **Bloqueante** (corta el flujo, exige reconocimiento) | **`ModalError`** | "Ese usuario no existe" al elegir con quién chatear |
+| **Bloqueante** (corta el flujo, exige reconocimiento) | **`Modal`** | "Ese usuario no existe" (`tono="error"`) o "Ya tienes una solicitud pendiente" (`tono="info"`) al elegir con quién chatear |
 
 Regla práctica: si el usuario puede seguir viendo e interactuando con el
-resto de la pantalla mientras decide qué hacer con el error, no es
-`ModalError` — es `Alert` o un error de campo. `ModalError` es para cuando no
-tiene sentido dejar que continúe sin que primero reconozca el error.
+resto de la pantalla mientras decide qué hacer con el mensaje, no es
+`Modal` — es `Alert` o un error de campo. `Modal` es para cuando no tiene
+sentido dejar que continúe sin que primero lo reconozca — el `tono` decide
+solo el color, nunca si se usa `Modal` o no.
 
 **Forma fija** (no se improvisa una nueva cada vez):
 - Fondo semitransparente que cubre toda la pantalla (`--color-overlay`,
   `--z-overlay`), tarjeta centrada (`--color-surface`, `--radius-lg`,
-  `--shadow-md`, borde `--color-danger`).
-- Título (`titulo`, opcional — por defecto "Ha ocurrido un error") + mensaje
-  (`mensaje`) + un único botón de confirmación (`textoBoton`, por defecto
-  "Entendido").
+  `--shadow-md`, borde del color del `tono`).
+- Título (`titulo`, opcional — por defecto uno genérico según `tono`) +
+  mensaje (`mensaje`, admite JSX además de texto plano — p. ej. para resaltar
+  una palabra en negrilla) + un único botón de confirmación (`textoBoton`,
+  por defecto "Entendido").
 - Se cierra de tres formas equivalentes, todas llaman a la misma prop
   `onCerrar`: el botón, la tecla Escape, o un clic en el fondo.
 - `role="alertdialog"` + `aria-modal="true"` + `aria-labelledby`/
@@ -189,18 +200,18 @@ tiene sentido dejar que continúe sin que primero reconozca el error.
   diálogo al abrirse, queda atrapado dentro (Tab/Shift+Tab no se escapan a la
   página de detrás) y vuelve al elemento que lo tenía antes al cerrarse.
 - El padre controla el montaje, igual que `Alert` — no hay prop `abierto`:
-  `{error && <ModalError mensaje={...} onCerrar={() => setError(null)} />}`.
+  `{error && <Modal tono="error" mensaje={...} onCerrar={() => setError(null)} />}`.
 
-Ver la sección "Modal de error" en `/estilos` para probarlo en caliente, y
+Ver la sección "Modal" en `/estilos` para probar ambos tonos en caliente, y
 `SelectorInterlocutor` para un uso real (distingue error de campo, con
-`FormField`/`<p role="alert">`, de error bloqueante, con `ModalError`, según
-el `kind` que devuelve la API).
+`FormField`/`<p role="alert">`, de mensaje bloqueante, con `Modal` en uno u
+otro tono, según el `kind` que devuelve la API).
 
 ## Reglas por nivel de Atomic Design
 
 | Nivel | Estilo |
 |-------|--------|
-| **atoms** | Definen su aspecto con tokens. Exponen `variant` para las variaciones previstas (p. ej. `Button`: `primary` / `secondary` / `ghost` / `danger`). |
+| **atoms** | Definen su aspecto con tokens. Exponen `variant` para las variaciones previstas (p. ej. `Button`: `primary` / `secondary` / `ghost` / `danger` / `success`). |
 | **molecules** | Solo layout entre sus átomos (`gap`, dirección). No re-pintan los átomos. |
 | **organisms** | Layout de sección y espaciado. Color/tipografía siguen viniendo de tokens. |
 | **templates** | Rejilla de la pantalla, anchos máximos, zonas. Sin color de marca. |
