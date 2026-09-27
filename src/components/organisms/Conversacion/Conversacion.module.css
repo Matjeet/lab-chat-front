@@ -21,15 +21,6 @@
   font-weight: var(--font-weight-bold);
 }
 
-.estado {
-  font-size: var(--font-size-xs);
-  color: var(--color-text-subtle);
-}
-
-.estado.conectado {
-  color: var(--color-success);
-}
-
 .mensajes {
   display: flex;
   flex: 1;
