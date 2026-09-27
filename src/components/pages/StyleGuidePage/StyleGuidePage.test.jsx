@@ -62,12 +62,24 @@ describe('StyleGuidePage', () => {
     expect(screen.getByLabelText('Chatear con')).toBeInTheDocument();
   });
 
-  it('simula y cierra el modal de error desde la guía viva', async () => {
+  it('simula y cierra el modal de error (tono error) desde la guía viva', async () => {
     const user = userEvent.setup();
     montar();
 
     await user.click(screen.getByRole('button', { name: 'Simular error bloqueante' }));
     const modal = screen.getByRole('alertdialog', { name: 'Usuario no encontrado' });
+    expect(modal).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Entendido' }));
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+  });
+
+  it('simula y cierra el modal de aviso (tono info) desde la guía viva', async () => {
+    const user = userEvent.setup();
+    montar();
+
+    await user.click(screen.getByRole('button', { name: 'Simular aviso bloqueante' }));
+    const modal = screen.getByRole('alertdialog', { name: 'Ya tienes una solicitud pendiente' });
     expect(modal).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Entendido' }));

@@ -37,9 +37,11 @@ coincide con `npm run dev`.
 | `src/api/usuario.js` | `obtenerUsuario(uid, idToken)` → `GET /api/v1/usuarios/{uid}` (contrato §4.2, autenticado) — resultado tipado. |
 | `src/hooks/useMiUsuario.js` | `{yo, establecerYo}` — resuelve "tu usuario": `localStorage` de inmediato, y lo sincroniza con `obtenerUsuario` en cuanto hay sesión. Ver "Identidad" más abajo. |
 | `src/utils/miUsuario.js` | `localStorage` puro (leer/guardar `yo`) que usa `useMiUsuario` por debajo, y que `RegistroPage` sigue usando directamente tras un alta. |
-| `src/context/InterlocutorContext.jsx` | `{con, establecerCon}` — con quién se está chateando ahora. Lo escribe `SelectorInterlocutor`, lo lee `HomePage`. No persiste (ver "Identidad"). |
+| `src/context/InterlocutorContext.jsx` | `{con, establecerCon}` — con quién se está chateando ahora. Lo escriben `ListaChats` y `Notificaciones` (al aceptar una solicitud) — `SelectorInterlocutor` ya no, ver "Identidad" —, lo lee `HomePage`. No persiste. |
 | `src/hooks/useExisteUsuario.js` | Función `(username) => Promise<ResultadoExisteUsuario>` — comprueba si un username existe, con el `idToken` de cualquier sesión activa. Ver "Identidad" más abajo. |
-| `src/components/molecules/SelectorInterlocutor/` | Elige `con` desde la cabecera (`headerCentro` de `DefaultLayout`) — valida el formato y que el usuario exista de verdad antes de confirmar. |
+| `src/conversacion/solicitudes.js` | `crearSolicitud(solicitante, solicitado, idToken)` → `POST /api/v1/conversaciones/solicitudes` (contrato §4.7, autenticado) — crea una solicitud de chat, resultado tipado. |
+| `src/hooks/useCrearSolicitudChat.js` | Función `(solicitante, solicitado) => Promise<ResultadoCrearSolicitud>` — mismo patrón que `useExisteUsuario`: resuelve el `idToken` de la sesión activa por debajo. |
+| `src/components/molecules/SelectorInterlocutor/` | Desde la cabecera (`headerCentro` de `DefaultLayout`), **manda una solicitud de chat** hacia un usuario nuevo — valida el formato y que exista de verdad antes de mandarla. Ya no abre la conversación directamente. |
 | `src/components/atoms/BurbujaMensaje/` | Una burbuja de mensaje (propio/ajeno). |
 | `src/components/molecules/CampoMensaje/` | Campo de texto + botón de envío. |
 | `src/components/organisms/Conversacion/` | Lista de mensajes (auto-scroll) + `CampoMensaje`. |
@@ -70,33 +72,59 @@ separados, con dos ciclos de vida distintos:
      perfil de chat-registro todavía), `HomePage` cae a un formulario manual
      como respaldo — `establecerYo` guarda esa confirmación igual que la
      sincronización automática.
-- **Con quién chatear (`con`)**: dos formas de elegirlo, mismo destino
-  (`InterlocutorContext#establecerCon`) — `SelectorInterlocutor`, **en la
-  cabecera** (visible en toda pantalla que exige sesión: `HomePage`,
-  `StyleGuidePage`; nunca en `/login` ni `/registro`), para empezar un chat
-  con alguien nuevo; o un click en `ListaChats`, a la izquierda de `/home`,
-  para reabrir uno ya existente. `con` vive en `InterlocutorContext` y **no
+- **Con quién chatear (`con`)**: dos formas de confirmarlo en
+  `InterlocutorContext#establecerCon` hoy — un click en un chat ya existente
+  en `ListaChats`, a la izquierda de `/home`; o aceptar una solicitud de chat
+  entrante desde la campana de notificaciones (`Notificaciones`, ver
+  `docs/integracion-notificaciones.md`) — este segundo es justo el uso que
+  se preveía para este mecanismo cuando `SelectorInterlocutor` dejó de
+  dispararlo directamente. `con` vive en `InterlocutorContext` y **no
   persiste** (ni `localStorage` ni entre recargas): es solo la conversación
   activa de esta sesión de navegación — quien quiera la lista de con quién
   ya se ha hablado tiene `ListaChats`, que sí persiste (la sirve el
   backend). Cambiarlo, estando ya en `/home`, cambia la conversación abierta
   al instante.
 
-  Desde `SelectorInterlocutor` (no desde `ListaChats`, que ya muestra
-  usuarios reales), confirmar pasa por dos pasos: primero el formato
-  (`validarUsername`), luego **que el username exista de verdad** —
-  `useExisteUsuario` llama a `GET /api/v1/usuarios/existe`
-  (`src/api/usuario.js#existeUsuario`, chat-gateway contrato §4.6, el
-  tercer endpoint autenticado del sistema) — para no abrir un chat con
-  alguien que no está en la aplicación. Se comprueba al enviar el
-  formulario (al hacer click en "Ir", o al enviarlo con Enter), no
-  mientras se escribe; mientras la respuesta está en vuelo, el campo y el
-  botón se deshabilitan. Tres desenlaces: existe → `establecerCon`; no
-  existe → "Ese usuario no existe."; falla la comprobación (red, backend
-  caído) → aviso genérico, tampoco se confirma — a diferencia de
-  `obtenerUsuario`/`obtenerListaChats`, este endpoint no compara identidad,
-  así que cualquier sesión de Firebase activa sirve para preguntar por
-  *cualquier* username.
+  **`SelectorInterlocutor` (la cabecera) ya no abre un chat nuevo
+  directamente — manda una solicitud.** Empezar a chatear con alguien con
+  quien `yo` no tenía conversación todavía pasa ahora por
+  `POST /api/v1/conversaciones/solicitudes` (contrato §4.7): una solicitud
+  que el otro usuario debe aceptar o rechazar — ver
+  `docs/integracion-notificaciones.md` para ese lado del flujo
+  (`PATCH /api/v1/conversaciones/solicitudes`, contrato §4.10, disparado
+  desde la campana de notificaciones, no desde aquí). Al enviar el
+  formulario (click en "Ir", o Enter), tres pasos:
+  1. Formato (`validarUsername`) — error de campo si falla, no llega a pedir nada.
+  2. **Que el username exista de verdad** — `useExisteUsuario` llama a
+     `GET /api/v1/usuarios/existe` (`src/api/usuario.js#existeUsuario`,
+     chat-gateway contrato §4.6) — para no mandar una solicitud hacia
+     alguien que no está en la aplicación. A diferencia de
+     `obtenerUsuario`/`obtenerListaChats`, este endpoint no compara
+     identidad: cualquier sesión de Firebase activa sirve para preguntar por
+     *cualquier* username.
+  3. **Crear la solicitud** — `useCrearSolicitudChat`, con `yo` (recibido por
+     prop, quien monta `SelectorInterlocutor` ya lo resolvió) como
+     `solicitante`. Si se crea, un `Modal` `tono="info"` (azul, con el
+     usuario y "acepte" en negrilla) confirma el envío y aclara que el chat
+     empieza cuando el otro usuario la acepte — la conversación **no** se
+     abre en ese momento, ni se toca `InterlocutorContext`. Ese modal, además
+     de sus formas normales de cerrarse (botón, Escape, clic en el fondo),
+     también se cierra solo a los 5 segundos.
+
+  Mientras cualquiera de las dos llamadas está en vuelo, el campo y el botón
+  se deshabilitan (evita un doble envío). Mensajes, según su forma (ver
+  `docs/sistema-de-diseno.md` → "Modal"): de campo — formato inválido, o un
+  `kind: 'validacion'` del backend (incluye pedirte una solicitud a ti
+  mismo); bloqueantes con `Modal` `tono="error"` (rojo, algo salió mal de
+  verdad) — el usuario no existe, alguna comprobación falla (red, servidor,
+  sesión); bloqueantes con `Modal` `tono="info"` (azul, no es un error) — ya
+  hay una solicitud **pendiente** entre ambos (`kind: 'duplicada'`, 409) o
+  la solicitud se envió. La respuesta trae un campo `pendiente`
+  (`SolicitudChat`, `src/conversacion/solicitudes.js`), `true` mientras nadie
+  la haya aceptado o rechazado (`actualizarSolicitud`, en el mismo módulo,
+  usada desde la campana de notificaciones — ver
+  `docs/integracion-notificaciones.md`) — una solicitud ya resuelta no
+  bloquea una nueva.
 
 `HomePage` decide qué mostrar según `yo`/`con`: sin `yo` resuelto (ni por
 `localStorage` ni por el backend), pide el formulario manual; con `yo` pero
