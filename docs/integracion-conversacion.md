@@ -47,6 +47,7 @@ coincide con `npm run dev`.
 | `src/components/molecules/CampoMensaje/` | Campo de texto + botón de envío. |
 | `src/components/organisms/Conversacion/` | Lista de mensajes (auto-scroll) + `CampoMensaje`. |
 | `src/components/pages/HomePage/` | En `/home`, el destino tras iniciar sesión. `yo` sale de `useMiUsuario`; `con` llega de `InterlocutorContext` (por la cabecera o por `ListaChats`). Dos columnas: `ListaChats` a la izquierda, `Conversacion` (o un aviso) a la derecha. Exige sesión (`useRequiereSesion`). |
+| `src/utils/sonidosMensajes.js` | `reproducirSonidoEnviado()` / `reproducirSonidoRecibido()` — aviso sonoro (Web Audio API, sin archivos de audio) que `HomePage` dispara con cada `canal.ultimoMensaje` nuevo. |
 
 ## Identidad
 
@@ -165,6 +166,16 @@ const { chats, cargando, cargandoMas, error, hasMore, cargarMas, registrarMensaj
   un mensaje enviado por `yo`, y solo con la conversación abierta (ver
   `especificacion-canal-mensajes-tiempo-real.md`) — un chat nuevo iniciado
   por la otra persona no aparecía hasta recargar la página.
+- **Ese mismo momento también dispara un aviso sonoro** —
+  `src/utils/sonidosMensajes.js`, dos tonos sintetizados con la Web Audio
+  API (sin archivos de audio): `reproducirSonidoEnviado()` para un mensaje
+  propio confirmado, `reproducirSonidoRecibido()` (más llamativo, dos notas)
+  para uno recibido — decidido con el mismo `esPropio` que calcula
+  `otroUsuario`. Un chat nuevo que aparece porque alguien más mandó el
+  primer mensaje suena igual que cualquier otro mensaje recibido, no hay un
+  tercer sonido para "chat nuevo". Tolerante a fallos: sin `AudioContext`
+  disponible, no hace nada — es puramente decorativo, nunca debe romper el
+  envío o la recepción de un mensaje real.
 
 ## El canal de mensajes en tiempo real (`useCanalMensajes`)
 

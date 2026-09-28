@@ -17,6 +17,7 @@ import useMiUsuario from '../../../hooks/useMiUsuario';
 import useListaChats from '../../../hooks/useListaChats';
 import { useInterlocutor } from '../../../context/InterlocutorContext';
 import { validarUsername } from '../../../utils/validacionConversacion';
+import { reproducirSonidoEnviado, reproducirSonidoRecibido } from '../../../utils/sonidosMensajes';
 import styles from './HomePage.module.css';
 
 /**
@@ -121,6 +122,11 @@ const VistaConversacion = ({ yo, con, canal }) => {
  * en cuanto se conoce `yo`, y se reparte a `VistaConversacion` (para pintar
  * la conversación activa) y al efecto de abajo (para `ListaChats`,
  * independientemente de cuál esté abierta o si hay alguna).
+ *
+ * Ese mismo efecto también dispara un aviso sonoro (`src/utils/sonidosMensajes.js`):
+ * uno para un mensaje propio confirmado, otro (más llamativo) para uno
+ * recibido — incluido el caso de un chat nuevo que aparece porque alguien
+ * más mandó el primero, que suena igual que cualquier otro recibido.
  */
 const HomePage = () => {
   useRequiereSesion();
@@ -151,8 +157,14 @@ const HomePage = () => {
     if (mensaje.id === ultimoIdRegistradoRef.current) return;
     ultimoIdRegistradoRef.current = mensaje.id;
 
-    const otroUsuario = mensaje.remitente === yo ? mensaje.destinatario : mensaje.remitente;
+    const esPropio = mensaje.remitente === yo;
+    const otroUsuario = esPropio ? mensaje.destinatario : mensaje.remitente;
     registrarMensajeNuevo(otroUsuario, mensaje);
+    if (esPropio) {
+      reproducirSonidoEnviado();
+    } else {
+      reproducirSonidoRecibido();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- `registrarMensajeNuevo`
     // es estable (useCallback sin dependencias, ver useListaChats.js); solo
     // debe reaccionar a un mensaje nuevo de verdad, no a un cambio de "yo" sin
