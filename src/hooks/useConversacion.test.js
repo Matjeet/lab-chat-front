@@ -19,24 +19,6 @@ const PAGINA_VACIA = {
   empty: true,
 };
 
-/** WebSocket falso: registra instancias creadas y lo último enviado por cada una. */
-class WebSocketFalso {
-  constructor(url) {
-    this.url = url;
-    this.readyState = 0;
-    WebSocketFalso.instancias.push(this);
-  }
-
-  send(datos) {
-    this.ultimoEnviado = datos;
-  }
-
-  close() {
-    this.readyState = 3;
-  }
-}
-WebSocketFalso.instancias = [];
-
 const mensaje = (overrides) => ({
   id: '1',
   remitente: 'ana',
@@ -46,22 +28,27 @@ const mensaje = (overrides) => ({
   ...overrides,
 });
 
+/** `canal` falso — lo que devolvería `useCanalMensajes`, sin abrir ningún socket real. */
+const canalFalso = (overrides = {}) => ({
+  conectado: true,
+  ultimoMensaje: null,
+  enviarMensaje: jest.fn().mockReturnValue({ ok: true }),
+  ...overrides,
+});
+
 /** Monta el hook y espera a que el historial (mockeado) termine de resolver. */
-const montar = async (props = { yo: 'mateo', con: 'ana' }) => {
+const montar = async (props = { yo: 'mateo', con: 'ana', canal: canalFalso() }) => {
   const utils = renderHook((p) => useConversacion(p), { initialProps: props });
   await waitFor(() => expect(utils.result.current.cargandoHistorial).toBe(false));
   return utils;
 };
 
 beforeEach(() => {
-  WebSocketFalso.instancias = [];
-  global.WebSocket = WebSocketFalso;
   obtenerHistorial.mockResolvedValue({ ok: true, data: PAGINA_VACIA });
 });
 
 afterEach(() => {
   jest.clearAllMocks();
-  jest.useRealTimers();
 });
 
 describe('useConversacion', () => {
@@ -95,147 +82,61 @@ describe('useConversacion', () => {
     expect(result.current.mensajes).toEqual([]);
   });
 
-  it('abre un WebSocket a /ws/chat/{yo}', async () => {
-    await montar();
-
-    expect(WebSocketFalso.instancias).toHaveLength(1);
-    expect(WebSocketFalso.instancias[0].url).toBe('ws://localhost:8080/ws/chat/mateo');
-  });
-
-  it('"conectado" pasa a true cuando el socket abre, y a false al cerrarse', async () => {
-    const { result } = await montar();
+  it('"conectado" refleja directamente el "conectado" del canal', async () => {
+    const { result, rerender } = await montar({ yo: 'mateo', con: 'ana', canal: canalFalso({ conectado: false }) });
     expect(result.current.conectado).toBe(false);
 
-    act(() => WebSocketFalso.instancias[0].onopen());
+    rerender({ yo: 'mateo', con: 'ana', canal: canalFalso({ conectado: true }) });
     expect(result.current.conectado).toBe(true);
-
-    act(() => WebSocketFalso.instancias[0].onclose());
-    expect(result.current.conectado).toBe(false);
   });
 
-  it('añade un mensaje de esta conversación recibido por el socket', async () => {
-    const { result } = await montar();
+  it('añade un mensaje de esta conversación recibido por el canal', async () => {
+    const { result, rerender } = await montar();
 
-    act(() => {
-      WebSocketFalso.instancias[0].onmessage({ data: JSON.stringify(mensaje()) });
-    });
+    rerender({ yo: 'mateo', con: 'ana', canal: canalFalso({ ultimoMensaje: mensaje() }) });
 
     expect(result.current.mensajes).toHaveLength(1);
     expect(result.current.mensajes[0].contenido).toBe('hola');
   });
 
   it('ignora un mensaje de un tercero ajeno a esta conversación', async () => {
-    const { result } = await montar();
+    const { result, rerender } = await montar();
 
-    act(() => {
-      WebSocketFalso.instancias[0].onmessage({
-        data: JSON.stringify(mensaje({ remitente: 'carlos', destinatario: 'mateo' })),
-      });
+    rerender({
+      yo: 'mateo',
+      con: 'ana',
+      canal: canalFalso({ ultimoMensaje: mensaje({ remitente: 'carlos', destinatario: 'mateo' }) }),
     });
 
     expect(result.current.mensajes).toHaveLength(0);
   });
 
   it('no duplica un mensaje con el mismo id', async () => {
-    const { result } = await montar();
-    const frame = { data: JSON.stringify(mensaje()) };
+    const { result, rerender } = await montar();
+    const unMensaje = mensaje();
 
-    act(() => {
-      WebSocketFalso.instancias[0].onmessage(frame);
-      WebSocketFalso.instancias[0].onmessage(frame);
-    });
+    rerender({ yo: 'mateo', con: 'ana', canal: canalFalso({ ultimoMensaje: unMensaje }) });
+    rerender({ yo: 'mateo', con: 'ana', canal: canalFalso({ ultimoMensaje: { ...unMensaje } }) });
 
     expect(result.current.mensajes).toHaveLength(1);
   });
 
-  it('enviarMensaje valida antes de mandar: un mensaje vacío no llega al socket', async () => {
-    const { result } = await montar();
-
-    const resultado = result.current.enviarMensaje('   ');
-
-    expect(resultado.ok).toBe(false);
-    expect(WebSocketFalso.instancias[0].ultimoEnviado).toBeUndefined();
-  });
-
-  it('enviarMensaje manda el frame correcto por el socket', async () => {
-    const { result } = await montar();
+  it('enviarMensaje delega en canal.enviarMensaje con el interlocutor actual (la validación vive en el canal)', async () => {
+    const canal = canalFalso();
+    const { result } = await montar({ yo: 'mateo', con: 'ana', canal });
 
     const resultado = result.current.enviarMensaje('Hola!');
 
     expect(resultado).toEqual({ ok: true });
-    expect(JSON.parse(WebSocketFalso.instancias[0].ultimoEnviado)).toEqual({
-      destinatario: 'ana',
-      contenido: 'Hola!',
-    });
+    expect(canal.enviarMensaje).toHaveBeenCalledWith('ana', 'Hola!');
   });
 
-  it('cierra el socket al desmontarse', async () => {
-    const { unmount } = await montar();
-    const cerrarSpy = jest.spyOn(WebSocketFalso.instancias[0], 'close');
+  it('propaga tal cual un resultado de error de canal.enviarMensaje (p. ej. validación)', async () => {
+    const errorValidacion = { ok: false, error: { kind: 'validacion', mensaje: 'Escribe un mensaje.' } };
+    const canal = canalFalso({ enviarMensaje: jest.fn().mockReturnValue(errorValidacion) });
+    const { result } = await montar({ yo: 'mateo', con: 'ana', canal });
 
-    unmount();
-
-    expect(cerrarSpy).toHaveBeenCalled();
-  });
-
-  it('si el socket se cierra (caída, o nunca llegó a abrir), reintenta pasado un tiempo', async () => {
-    await montar();
-    jest.useFakeTimers();
-
-    act(() => {
-      WebSocketFalso.instancias[0].onclose();
-    });
-    expect(WebSocketFalso.instancias).toHaveLength(1); // no reintenta al instante
-
-    act(() => {
-      jest.advanceTimersByTime(3000);
-    });
-    expect(WebSocketFalso.instancias).toHaveLength(2); // reconectó solo
-
-    act(() => {
-      WebSocketFalso.instancias[1].onopen();
-    });
-  });
-
-  it('sigue reintentando mientras el servidor siga caído', async () => {
-    const { result } = await montar();
-    jest.useFakeTimers();
-
-    act(() => {
-      WebSocketFalso.instancias[0].onclose();
-    });
-    act(() => {
-      jest.advanceTimersByTime(3000);
-    });
-    act(() => {
-      WebSocketFalso.instancias[1].onclose();
-    });
-    act(() => {
-      jest.advanceTimersByTime(3000);
-    });
-
-    expect(WebSocketFalso.instancias).toHaveLength(3);
-
-    act(() => {
-      WebSocketFalso.instancias[2].onopen();
-    });
-    expect(result.current.conectado).toBe(true);
-  });
-
-  it('cancela el reintento pendiente al desmontarse (no reconecta después)', async () => {
-    const { unmount } = await montar();
-    jest.useFakeTimers();
-
-    act(() => {
-      WebSocketFalso.instancias[0].onclose();
-    });
-    unmount();
-
-    act(() => {
-      jest.advanceTimersByTime(10000);
-    });
-
-    expect(WebSocketFalso.instancias).toHaveLength(1);
+    expect(result.current.enviarMensaje('   ')).toEqual(errorValidacion);
   });
 
   it('reintentarHistorial vuelve a pedir el historial (mismo yo/con)', async () => {
@@ -256,10 +157,10 @@ describe('useConversacion', () => {
     });
   });
 
-  it('cambiar de interlocutor sin cambiar "yo" no reabre el socket, pero sí cambia el filtro', async () => {
-    const { result, rerender } = await montar({ yo: 'mateo', con: 'ana' });
+  it('cambiar de interlocutor cambia el filtro: un mensaje del nuevo "con" ya se acepta', async () => {
+    const { result, rerender } = await montar({ yo: 'mateo', con: 'ana', canal: canalFalso() });
 
-    rerender({ yo: 'mateo', con: 'carlos' });
+    rerender({ yo: 'mateo', con: 'carlos', canal: canalFalso() });
     await waitFor(() =>
       expect(obtenerHistorial).toHaveBeenLastCalledWith('mateo', 'carlos', {
         size: 50,
@@ -267,14 +168,21 @@ describe('useConversacion', () => {
       }),
     );
 
-    expect(WebSocketFalso.instancias).toHaveLength(1); // mismo socket, no se reabrió
-
-    act(() => {
-      WebSocketFalso.instancias[0].onmessage({
-        data: JSON.stringify(mensaje({ remitente: 'carlos', destinatario: 'mateo' })),
-      });
+    rerender({
+      yo: 'mateo',
+      con: 'carlos',
+      canal: canalFalso({ ultimoMensaje: mensaje({ remitente: 'carlos', destinatario: 'mateo' }) }),
     });
 
     expect(result.current.mensajes.some((m) => m.remitente === 'carlos')).toBe(true);
+  });
+
+  it('mismo "canal" (mismo objeto) al cambiar de interlocutor: no rompe nada, solo cambia a qué mensajes hace caso', async () => {
+    const canal = canalFalso();
+    const { result, rerender } = await montar({ yo: 'mateo', con: 'ana', canal });
+
+    rerender({ yo: 'mateo', con: 'carlos', canal });
+
+    expect(result.current.conectado).toBe(true);
   });
 });

@@ -12,6 +12,7 @@ import SelectorInterlocutor from '../../molecules/SelectorInterlocutor';
 import Notificaciones from '../../organisms/Notificaciones';
 import useRequiereSesion from '../../../hooks/useRequiereSesion';
 import useConversacion from '../../../hooks/useConversacion';
+import useCanalMensajes from '../../../hooks/useCanalMensajes';
 import useMiUsuario from '../../../hooks/useMiUsuario';
 import useListaChats from '../../../hooks/useListaChats';
 import { useInterlocutor } from '../../../context/InterlocutorContext';
@@ -20,22 +21,20 @@ import styles from './HomePage.module.css';
 
 /**
  * Sub-componente interno: solo se monta una vez hay `{yo, con}` confirmados,
- * así `useConversacion` (que abre el WebSocket y carga el historial) se
- * llama siempre de forma incondicional dentro de su propio componente —
- * `HomePage` no podría llamarlo condicionalmente sin romper las reglas de
- * hooks.
+ * así `useConversacion` (que carga el historial y observa `canal` para los
+ * mensajes en tiempo real) se llama siempre de forma incondicional dentro
+ * de su propio componente — `HomePage` no podría llamarlo condicionalmente
+ * sin romper las reglas de hooks.
  *
  * @param {object} props
  * @param {string} props.yo
  * @param {string} props.con
- * @param {(otroUsuario: string, mensaje: object) => void} [props.onMensajeEnviado]
- *   Avisa a `ListaChats` (vía `useListaChats#registrarMensajeEnviado`) en
- *   cuanto se confirma un mensaje propio — es lo que hace aparecer un chat
- *   nuevo en la lista la primera vez, justo al mandar su primer mensaje (no
- *   antes: chat-conversacion agrupa por mensajes reales, así que hasta
- *   entonces ese chat no existe para la lista).
+ * @param {ReturnType<typeof useCanalMensajes>} props.canal
+ *   El mismo canal de mensajes que `HomePage` abre una sola vez (ver más
+ *   abajo) — aquí solo se observa para pintar los mensajes de esta
+ *   conversación en concreto.
  */
-const VistaConversacion = ({ yo, con, onMensajeEnviado }) => {
+const VistaConversacion = ({ yo, con, canal }) => {
   const {
     mensajes,
     cargandoHistorial,
@@ -43,16 +42,7 @@ const VistaConversacion = ({ yo, con, onMensajeEnviado }) => {
     reintentarHistorial,
     conectado,
     enviarMensaje,
-  } = useConversacion({ yo, con });
-  const ultimoIdRegistradoRef = useRef(null);
-
-  useEffect(() => {
-    const ultimo = mensajes[mensajes.length - 1];
-    if (!ultimo || ultimo.remitente !== yo) return;
-    if (ultimo.id === ultimoIdRegistradoRef.current) return;
-    ultimoIdRegistradoRef.current = ultimo.id;
-    onMensajeEnviado?.(con, ultimo);
-  }, [mensajes, yo, con, onMensajeEnviado]);
+  } = useConversacion({ yo, con, canal });
 
   return (
     <div className={styles.vista}>
@@ -117,15 +107,26 @@ const VistaConversacion = ({ yo, con, onMensajeEnviado }) => {
  *   `useListaChats`) la que hace ese papel.
  *
  * Un chat nuevo (con alguien con quien `yo` no tenía mensajes todavía) no
- * aparece en `ListaChats` solo por elegirlo en la cabecera — aparece recién
- * al mandar su primer mensaje (`onMensajeEnviado` en `VistaConversacion`
- * llama a `registrarMensajeEnviado`), porque para chat-conversacion ese chat
- * tampoco existe hasta entonces (agrupa por mensajes reales).
+ * aparece en `ListaChats` solo por elegirlo en la cabecera — aparece en
+ * cuanto se confirma el primer mensaje entre ambos, enviado o recibido (ver
+ * el efecto sobre `canal.ultimoMensaje`, más abajo, que llama a
+ * `registrarMensajeNuevo`), porque para chat-conversacion ese chat tampoco
+ * existe hasta entonces (agrupa por mensajes reales).
+ *
+ * **Mensajes en tiempo real, un solo canal para toda la página**
+ * (`useCanalMensajes`, ver `especificacion-canal-mensajes-tiempo-real.md`):
+ * antes, el WebSocket vivía dentro de `useConversacion` y solo existía con
+ * una conversación abierta — un mensaje de un chat sin abrir nunca hacía
+ * aparecer nada en `ListaChats`. Ahora `canal` se abre aquí, una sola vez,
+ * en cuanto se conoce `yo`, y se reparte a `VistaConversacion` (para pintar
+ * la conversación activa) y al efecto de abajo (para `ListaChats`,
+ * independientemente de cuál esté abierta o si hay alguna).
  */
 const HomePage = () => {
   useRequiereSesion();
   const { con, establecerCon } = useInterlocutor();
   const { yo, establecerYo } = useMiUsuario();
+  const canal = useCanalMensajes(yo);
   const {
     chats,
     cargando: cargandoChats,
@@ -133,15 +134,30 @@ const HomePage = () => {
     error: errorChats,
     hasMore: hasMoreChats,
     cargarMas: cargarMasChats,
-    registrarMensajeEnviado,
+    registrarMensajeNuevo,
   } = useListaChats(yo);
 
   const [valorYo, setValorYo] = useState('');
   const [errorYo, setErrorYo] = useState(null);
+  const ultimoIdRegistradoRef = useRef(null);
 
   useEffect(() => {
     setValorYo(yo);
   }, [yo]);
+
+  useEffect(() => {
+    const mensaje = canal.ultimoMensaje;
+    if (!mensaje) return;
+    if (mensaje.id === ultimoIdRegistradoRef.current) return;
+    ultimoIdRegistradoRef.current = mensaje.id;
+
+    const otroUsuario = mensaje.remitente === yo ? mensaje.destinatario : mensaje.remitente;
+    registrarMensajeNuevo(otroUsuario, mensaje);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `registrarMensajeNuevo`
+    // es estable (useCallback sin dependencias, ver useListaChats.js); solo
+    // debe reaccionar a un mensaje nuevo de verdad, no a un cambio de "yo" sin
+    // mensaje asociado.
+  }, [canal.ultimoMensaje, yo]);
 
   const alCambiarYo = (evento) => {
     setValorYo(evento.target.value);
@@ -218,7 +234,7 @@ const HomePage = () => {
             )}
 
             {conLimpio && !chateandoContigoMismo && (
-              <VistaConversacion yo={yo} con={conLimpio} onMensajeEnviado={registrarMensajeEnviado} />
+              <VistaConversacion yo={yo} con={conLimpio} canal={canal} />
             )}
           </div>
         </div>
