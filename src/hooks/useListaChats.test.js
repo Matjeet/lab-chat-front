@@ -125,7 +125,7 @@ describe('useListaChats', () => {
     expect(obtenerListaChats).toHaveBeenCalledTimes(1);
   });
 
-  it('registrarMensajeEnviado mueve (o crea) el chat al principio de la lista', async () => {
+  it('registrarMensajeNuevo mueve (o crea) el chat al principio de la lista', async () => {
     observarSesion.mockImplementation((callback) => {
       callback(usuarioFake('uid-123'));
       return jest.fn();
@@ -139,7 +139,7 @@ describe('useListaChats', () => {
 
     const mensajeNuevo = { id: '99', remitente: 'mateo', destinatario: 'luis', contenido: 'Nuevo!' };
     act(() => {
-      result.current.registrarMensajeEnviado('luis', mensajeNuevo);
+      result.current.registrarMensajeNuevo('luis', mensajeNuevo);
     });
 
     expect(result.current.chats).toEqual([
@@ -148,7 +148,7 @@ describe('useListaChats', () => {
     ]);
   });
 
-  it('registrarMensajeEnviado con un usuario nuevo lo agrega como primer chat', async () => {
+  it('registrarMensajeNuevo con un usuario nuevo lo agrega como primer chat', async () => {
     observarSesion.mockImplementation((callback) => {
       callback(usuarioFake('uid-123'));
       return jest.fn();
@@ -160,9 +160,27 @@ describe('useListaChats', () => {
 
     const mensajeNuevo = { id: '1', remitente: 'mateo', destinatario: 'ana', contenido: 'Hola!' };
     act(() => {
-      result.current.registrarMensajeEnviado('ana', mensajeNuevo);
+      result.current.registrarMensajeNuevo('ana', mensajeNuevo);
     });
 
     expect(result.current.chats).toEqual([{ otroUsuario: 'ana', ultimoMensaje: mensajeNuevo }]);
+  });
+
+  it('registrarMensajeNuevo también funciona para un mensaje recibido (no propio)', async () => {
+    observarSesion.mockImplementation((callback) => {
+      callback(usuarioFake('uid-123'));
+      return jest.fn();
+    });
+    obtenerListaChats.mockResolvedValue(paginaFake([]));
+
+    const { result } = renderHook(() => useListaChats('mateo'));
+    await waitFor(() => expect(result.current.cargando).toBe(false));
+
+    const mensajeRecibido = { id: '1', remitente: 'ana', destinatario: 'mateo', contenido: 'Hola!' };
+    act(() => {
+      result.current.registrarMensajeNuevo('ana', mensajeRecibido);
+    });
+
+    expect(result.current.chats).toEqual([{ otroUsuario: 'ana', ultimoMensaje: mensajeRecibido }]);
   });
 });

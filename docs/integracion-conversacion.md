@@ -29,11 +29,12 @@ coincide con `npm run dev`.
 | `src/conversacion/config.js` | `urlSocketConversacion(usuario)`, sobre `API_BASE_URL` (`src/api/config.js`). |
 | `src/conversacion/historial.js` | `obtenerHistorial(usuarioA, usuarioB, opciones)` → `GET /api/v1/conversaciones/{a}/{b}` (contra chat-gateway), resultado tipado igual que `src/api/registro.js`. |
 | `src/conversacion/listaChats.js` | `obtenerListaChats(usuario, idToken, opciones)` → `GET /api/v1/conversaciones/{usuario}/chats` (contrato §4.5, autenticado, paginado por cursor) — resumen de cada chat con el último mensaje. |
-| `src/hooks/useListaChats.js` | `{chats, cargando, cargandoMas, error, hasMore, cargarMas, registrarMensajeEnviado}` — pide la lista en cuanto hay `yo` y sesión, pagina por cursor (scroll infinito) y permite actualizarla al vuelo sin refrescar. Ver "La lista de chats" más abajo. |
+| `src/hooks/useListaChats.js` | `{chats, cargando, cargandoMas, error, hasMore, cargarMas, registrarMensajeNuevo}` — pide la lista en cuanto hay `yo` y sesión, pagina por cursor (scroll infinito) y permite actualizarla al vuelo sin refrescar, tanto para un mensaje enviado como recibido. Ver "La lista de chats" más abajo. |
 | `src/components/atoms/ItemChat/` | Un elemento de la lista: el otro usuario (fuente grande) + su último mensaje (fuente pequeña, color apagado, recortado con `…`). |
 | `src/components/organisms/ListaChats/` | La lista completa, a la izquierda de `/home` — estados de carga/error/vacío + el scroll infinito (`IntersectionObserver` sobre un centinela al final). |
 | `src/utils/validacionConversacion.js` | Formato de username (espejo del de chat-registro) y de `contenido` (no vacío, ≤ 2000) — espejo del contrato, la autoritativa sigue siendo el servidor. |
-| `src/hooks/useConversacion.js` | El hook central: carga el historial, abre el WebSocket de `{yo}`, filtra los mensajes de esta conversación, expone `enviarMensaje`. |
+| `src/hooks/useCanalMensajes.js` | Único punto que abre el WebSocket de `{yo}` (`/ws/chat/{yo}`) — un solo socket para toda la app, llamado una vez en `HomePage`, no uno por conversación. Expone `{conectado, ultimoMensaje, enviarMensaje}`; `ultimoMensaje` no filtra por interlocutor, cada consumidor decide qué hacer con él. Ver "El canal de mensajes en tiempo real" más abajo. |
+| `src/hooks/useConversacion.js` | Carga el historial de una conversación y observa `useCanalMensajes` (recibido como prop `canal`) para quedarse solo con los mensajes de `con`; expone `enviarMensaje`. Ya no abre ningún socket propio. |
 | `src/api/usuario.js` | `obtenerUsuario(uid, idToken)` → `GET /api/v1/usuarios/{uid}` (contrato §4.2, autenticado) — resultado tipado. |
 | `src/hooks/useMiUsuario.js` | `{yo, establecerYo}` — resuelve "tu usuario": `localStorage` de inmediato, y lo sincroniza con `obtenerUsuario` en cuanto hay sesión. Ver "Identidad" más abajo. |
 | `src/utils/miUsuario.js` | `localStorage` puro (leer/guardar `yo`) que usa `useMiUsuario` por debajo, y que `RegistroPage` sigue usando directamente tras un alta. |
@@ -136,7 +137,7 @@ conversación.
 ## La lista de chats
 
 ```jsx
-const { chats, cargando, cargandoMas, error, hasMore, cargarMas, registrarMensajeEnviado } =
+const { chats, cargando, cargandoMas, error, hasMore, cargarMas, registrarMensajeNuevo } =
   useListaChats(yo);
 ```
 
@@ -152,17 +153,55 @@ const { chats, cargando, cargandoMas, error, hasMore, cargarMas, registrarMensaj
 - **Un chat nuevo no aparece por elegirlo en la cabecera.** Para
   chat-conversacion, un chat no existe hasta que hay al menos un mensaje
   real (agrupa por mensajes, no hay una entidad "conversación" aparte) —
-  así que la lista tampoco debe inventárselo antes. `VistaConversacion`
-  (en `HomePage`) vigila los mensajes que expone `useConversacion` y, en
-  cuanto confirma uno **propio** (`remitente === yo` — el eco que vuelve
-  por el socket, único momento en que un envío se da por confirmado, ver
-  más abajo), llama a `onMensajeEnviado(con, mensaje)`, que es
-  `registrarMensajeEnviado`: mueve (o crea) la entrada de `con` a la
-  primera posición de `chats`, con ese mensaje como el último — sin
-  esperar a un refresco completo de la lista. Un mensaje **recibido** (de
-  otro usuario) no reordena la lista todavía — solo se pidió para el envío
-  propio; si hace falta también para el otro sentido, es una extensión
-  aparte.
+  así que la lista tampoco debe inventárselo antes. `HomePage` observa
+  directamente `canal.ultimoMensaje` (el canal centralizado de
+  `useCanalMensajes`, ver más abajo) y, con cada mensaje nuevo —
+  **enviado o recibido, sin importar si esa conversación está abierta**—,
+  calcula el otro usuario (`remitente` si `yo` es el `destinatario`,
+  `destinatario` si `yo` es el `remitente`) y llama a
+  `registrarMensajeNuevo(otroUsuario, mensaje)`: mueve (o crea) esa entrada
+  a la primera posición de `chats`, con ese mensaje como el último — sin
+  esperar a un refresco completo de la lista. Antes, esto solo pasaba para
+  un mensaje enviado por `yo`, y solo con la conversación abierta (ver
+  `especificacion-canal-mensajes-tiempo-real.md`) — un chat nuevo iniciado
+  por la otra persona no aparecía hasta recargar la página.
+
+## El canal de mensajes en tiempo real (`useCanalMensajes`)
+
+```jsx
+const { conectado, ultimoMensaje, enviarMensaje } = useCanalMensajes(yo);
+```
+
+Único punto del frontend que abre el WebSocket de `{yo}` a chat-gateway
+(`/ws/chat/{yo}`, contrato §2.1) — `HomePage` lo llama **una sola vez**, en
+cuanto conoce `yo`, y reparte el resultado (`canal`) a quien lo necesite:
+`VistaConversacion` → `useConversacion` (para pintar la conversación
+abierta) y el propio `HomePage` (para `ListaChats`, ver arriba). Antes,
+esta conexión vivía dentro de `useConversacion`, que solo se monta con una
+conversación abierta — un mensaje de un chat sin abrir (o sin ningún chat
+seleccionado) no llegaba a ningún sitio.
+
+1. **Conecta solo con `yo` no vacío** — sin sesión resuelta todavía,
+   `conectado` es `false` y no hay socket.
+2. **Un solo socket por `yo`**: cambiar de conversación (`con`, en quien lo
+   consume) no lo reabre — eso ya no depende de este hook, que ni siquiera
+   conoce `con`.
+3. **Reconexión automática**: si el socket se cierra —cayó, chat-gateway
+   reinició, o ni siquiera llegó a abrirse porque el backend estaba caído en
+   ese momento—, se reintenta solo pasados 3 segundos
+   (`RETRASO_REINTENTO_SOCKET_MS`), sin límite de intentos y sin acción del
+   usuario — el contrato lo pide explícitamente
+   (`chat-gateway/docs/contratos-api.md` §4.3: "el cliente debe tratar eso
+   como una desconexión y reintentar").
+4. **Sin filtrar por conversación**: cada mensaje válido que llega se expone
+   tal cual en `ultimoMensaje` — siempre un objeto nuevo, nunca la misma
+   referencia entre dos mensajes distintos, para que un `useEffect` con
+   `[ultimoMensaje]` como dependencia dispare en cada uno. Decidir qué hacer
+   con él es cosa de quien consuma el hook.
+5. **`enviarMensaje(destinatario, contenido)`** valida `contenido` en
+   cliente (contrato §5.2: ni el gateway ni chat-conversacion devuelven un
+   *frame* de rechazo por un mensaje inválido, lo descartan en silencio —
+   validar antes de mandar no es opcional) y manda el frame.
 
 ## Cómo funciona `useConversacion`
 
@@ -174,8 +213,12 @@ const {
   reintentarHistorial,
   conectado,
   enviarMensaje,
-} = useConversacion({ yo, con });
+} = useConversacion({ yo, con, canal });
 ```
+
+`canal` es lo que devuelve `useCanalMensajes` (ver arriba) — `HomePage` lo
+abre una sola vez y se lo pasa a `VistaConversacion`, que a su vez se lo
+pasa a este hook.
 
 1. **Historial** (`GET /api/v1/conversaciones/{yo}/{con}` contra chat-gateway,
    contrato §3): se pide con `sort=enviadoEn,desc` (lo más reciente primero,
@@ -184,34 +227,23 @@ const {
    lo vuelve a pedir con el mismo `yo`/`con` (un contador interno,
    `intentoHistorial`, entra en las dependencias del efecto solo para poder
    repetirlo a voluntad) — `VistaConversacion` (`HomePage`) lo cuelga de un
-   botón "Reintentar" en el aviso de error.
-2. **WebSocket** (`/ws/chat/{yo}` contra chat-gateway, contrato §2.1): se abre
-   una sola vez por `yo` — cambiar de `con` (interlocutor) **no** reabre la
-   conexión, solo cambia a qué mensajes hace caso (vía un `ref`, no en las
-   dependencias del efecto, para no perder mensajes que lleguen justo al
-   cambiar).
-3. **Reconexión automática**: si el socket se cierra —cayó, chat-gateway
-   reinició, o ni siquiera llegó a abrirse porque el backend estaba caído en
-   ese momento—, se reintenta solo pasados 3 segundos (`RETRASO_REINTENTO_SOCKET_MS`),
-   sin límite de intentos y sin acción del usuario — el contrato lo pide
-   explícitamente (`chat-gateway/docs/contratos-api.md` §4.3: "el cliente
-   debe tratar eso como una desconexión y reintentar"). Antes de esto,
-   `conectado` se quedaba en `false` para siempre tras un solo fallo —
-   incluso si el backend volvía, no había forma de recuperar la conversación
-   sin recargar la página entera.
-4. **Filtro de terceros**: el socket de `{yo}` recibe *todo* lo dirigido a
-   `{yo}` (contrato §2.3) — incluida la entrega que llegue por un cliente
-   conectado directo a chat-conversacion en vez de por el gateway, ver §2.3 —,
-   no solo lo de esta conversación: un mensaje que no sea entre `yo` y `con`
-   se descarta antes de añadirse a `mensajes`.
-5. **`enviarMensaje(contenido)`** valida `contenido` en cliente (contrato
-   §5.2: ni el gateway ni chat-conversacion devuelven un *frame* de rechazo
-   por un mensaje inválido, lo descartan en silencio — validar antes de
-   mandar no es opcional) y manda el frame; nunca lo añade a `mensajes` de
-   forma optimista — el mensaje que vuelve por el socket (contrato §5.3) es
-   la única confirmación, tanto para quien lo manda como para quien lo
+   botón "Reintentar" en el aviso de error. Sin cambios respecto a antes.
+2. **Mensajes en tiempo real, vía `canal`**: un `useEffect` con
+   `canal.ultimoMensaje` como dependencia filtra si ese mensaje es de esta
+   conversación (`con`) — mismo criterio que antes, solo que ahora sobre el
+   mensaje que expone el canal compartido en vez del `onmessage` de un
+   socket propio: el socket de `{yo}` recibe *todo* lo dirigido a `{yo}`
+   (contrato §2.3), no solo lo de esta conversación, así que un mensaje que
+   no sea entre `yo` y `con` se descarta antes de añadirse a `mensajes`.
+3. **`conectado`** es directamente `canal.conectado` — ya no hay estado
+   propio para esto.
+4. **`enviarMensaje(contenido)`** es un envoltorio delgado sobre
+   `canal.enviarMensaje(con, contenido)` — la validación de `contenido` vive
+   en `useCanalMensajes`, no se duplica aquí. Nunca añade nada a `mensajes`
+   de forma optimista — el mensaje que vuelve por el canal (contrato §5.3)
+   es la única confirmación, tanto para quien lo manda como para quien lo
    recibe.
-6. **Deduplicación por `id`**: por si el mismo mensaje llegara dos veces
+5. **Deduplicación por `id`**: por si el mismo mensaje llegara dos veces
    (reconexión del socket, etc.).
 
 `Conversacion` (el organismo) deshabilita `CampoMensaje` mientras
@@ -227,3 +259,11 @@ identidad → historial cargado (`200` con CORS) → socket abierto → mensaje
 escrito en la UI, recibido de vuelta por el socket con `id`/`enviadoEn`
 reales, persistido (sigue ahí tras recargar la página) — todo pasando por
 `chat-gateway`, nunca directo contra el `8082` de `chat-conversacion`.
+
+**El canal centralizado (`useCanalMensajes`) no se re-verificó en caliente**
+tras introducirlo — el cambio está cubierto por la suite de hooks/integración
+(`useCanalMensajes.test.js`, `useConversacion.test.js`,
+`HomePage.test.jsx`, incluido el caso de un mensaje de un chat sin abrir
+apareciendo en `ListaChats`), pero no hay una sesión real contra los tres
+backends confirmando el caso de punta a punta descrito en
+`especificacion-canal-mensajes-tiempo-real.md`.

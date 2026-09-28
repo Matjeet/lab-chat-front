@@ -27,7 +27,7 @@ const TAMANO_PAGINA = 20;
  *   error: {kind: string}|null,
  *   hasMore: boolean,
  *   cargarMas: () => void,
- *   registrarMensajeEnviado: (otroUsuario: string, mensaje: import('../conversacion/historial').Mensaje) => void,
+ *   registrarMensajeNuevo: (otroUsuario: string, mensaje: import('../conversacion/historial').Mensaje) => void,
  * }}
  */
 const useListaChats = (yo) => {
@@ -88,22 +88,23 @@ const useListaChats = (yo) => {
   }, [yo, idToken, cursor, hasMore, cargandoMas]);
 
   /**
-   * Actualiza la lista en cuanto se manda (y confirma) un mensaje, sin
-   * esperar a un refresco completo: mueve (o crea) el chat con
-   * `otroUsuario` a la primera posición con `mensaje` como su último. Es lo
-   * que hace que un chat nuevo aparezca en la lista la primera vez —
-   * antes de mandar el primer mensaje, ese chat no existe para
-   * chat-conversacion (agrupa por mensajes reales), así que tampoco debe
-   * existir en esta lista.
+   * Actualiza la lista en cuanto se confirma un mensaje nuevo — enviado por
+   * `yo` o recibido de alguien más (`canal.ultimoMensaje`, ver
+   * `useCanalMensajes`) —, sin esperar a un refresco completo: mueve (o
+   * crea) el chat con `otroUsuario` a la primera posición con `mensaje`
+   * como su último. Es lo que hace que un chat nuevo aparezca en la lista
+   * la primera vez — antes del primer mensaje entre ambos, ese chat no
+   * existe para chat-conversacion (agrupa por mensajes reales), así que
+   * tampoco debe existir en esta lista.
    */
-  const registrarMensajeEnviado = useCallback((otroUsuario, mensaje) => {
+  const registrarMensajeNuevo = useCallback((otroUsuario, mensaje) => {
     setChats((prev) => [
       { otroUsuario, ultimoMensaje: mensaje },
       ...prev.filter((chat) => chat.otroUsuario !== otroUsuario),
     ]);
   }, []);
 
-  return { chats, cargando, cargandoMas, error, hasMore, cargarMas, registrarMensajeEnviado };
+  return { chats, cargando, cargandoMas, error, hasMore, cargarMas, registrarMensajeNuevo };
 };
 
 export default useListaChats;

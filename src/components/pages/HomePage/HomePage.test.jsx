@@ -5,6 +5,7 @@ import HomePage from './HomePage';
 import { InterlocutorProvider } from '../../../context/InterlocutorContext';
 import { observarSesion } from '../../../firebase/auth';
 import useConversacion from '../../../hooks/useConversacion';
+import useCanalMensajes from '../../../hooks/useCanalMensajes';
 import useMiUsuario from '../../../hooks/useMiUsuario';
 import useListaChats from '../../../hooks/useListaChats';
 import useExisteUsuario from '../../../hooks/useExisteUsuario';
@@ -27,6 +28,10 @@ jest.mock('next/navigation', () => ({
 // no necesitan saber cómo se conecta, solo qué hace con lo que el hook expone
 // (ver src/hooks/useConversacion.test.js para el hook en sí).
 jest.mock('../../../hooks/useConversacion');
+// Mismo criterio: HomePage ahora llama a este hook directamente (antes vivía
+// dentro de useConversacion) — ver src/hooks/useCanalMensajes.test.js para el
+// hook en sí.
+jest.mock('../../../hooks/useCanalMensajes');
 // Mismo criterio: HomePage no necesita saber cómo se resuelve "tu usuario"
 // (localStorage, el backend...), solo qué hace con {yo, establecerYo} — ver
 // src/hooks/useMiUsuario.test.js para el hook en sí.
@@ -49,7 +54,7 @@ jest.mock('../../../hooks/useNotificaciones', () => jest.fn());
 jest.mock('../../../hooks/useActualizarSolicitud', () => jest.fn());
 
 const establecerYo = jest.fn();
-const registrarMensajeEnviado = jest.fn();
+const registrarMensajeNuevo = jest.fn();
 const cargarMasChats = jest.fn();
 const comprobarUsuario = jest.fn().mockResolvedValue({ ok: true, data: { existe: true } });
 const crearSolicitud = jest.fn().mockResolvedValue({
@@ -70,6 +75,7 @@ beforeEach(() => {
     enviarMensaje: jest.fn(),
     reintentarHistorial: jest.fn(),
   });
+  useCanalMensajes.mockReturnValue({ conectado: true, ultimoMensaje: null, enviarMensaje: jest.fn() });
   useMiUsuario.mockReturnValue({ yo: '', establecerYo });
   useListaChats.mockReturnValue({
     chats: [],
@@ -78,7 +84,7 @@ beforeEach(() => {
     error: null,
     hasMore: false,
     cargarMas: cargarMasChats,
-    registrarMensajeEnviado,
+    registrarMensajeNuevo,
   });
   useExisteUsuario.mockReturnValue(comprobarUsuario);
   useCrearSolicitudChat.mockReturnValue(crearSolicitud);
@@ -128,9 +134,18 @@ const elegirChatExistente = (chats) => {
     error: null,
     hasMore: false,
     cargarMas: cargarMasChats,
-    registrarMensajeEnviado,
+    registrarMensajeNuevo,
   });
 };
+
+const mensajeConversacion = (overrides) => ({
+  id: '1',
+  remitente: 'ana',
+  destinatario: 'mateo',
+  contenido: 'Hola!',
+  enviadoEn: '2026-01-01T00:00:00Z',
+  ...overrides,
+});
 
 describe('HomePage', () => {
   it('el selector de interlocutor está en la cabecera desde el principio', () => {
@@ -226,7 +241,11 @@ describe('HomePage', () => {
 
     await user.click(screen.getByText('ana'));
 
-    expect(useConversacion).toHaveBeenCalledWith({ yo: 'mateo', con: 'ana' });
+    expect(useConversacion).toHaveBeenCalledWith({
+      yo: 'mateo',
+      con: 'ana',
+      canal: { conectado: true, ultimoMensaje: null, enviarMensaje: expect.any(Function) },
+    });
   });
 
   it('elegir otro chat de la lista cambia la conversación abierta', async () => {
@@ -239,10 +258,14 @@ describe('HomePage', () => {
     montar();
 
     await user.click(screen.getByText('ana'));
-    expect(useConversacion).toHaveBeenCalledWith({ yo: 'mateo', con: 'ana' });
+    expect(useConversacion).toHaveBeenLastCalledWith(
+      expect.objectContaining({ yo: 'mateo', con: 'ana' }),
+    );
 
     await user.click(screen.getByText('luis'));
-    expect(useConversacion).toHaveBeenCalledWith({ yo: 'mateo', con: 'luis' });
+    expect(useConversacion).toHaveBeenLastCalledWith(
+      expect.objectContaining({ yo: 'mateo', con: 'luis' }),
+    );
   });
 
   it('mientras carga el historial, avisa en vez de mostrar la conversación vacía', async () => {
@@ -310,61 +333,93 @@ describe('HomePage', () => {
     expect(screen.queryByRole('heading', { name: 'Chats' })).not.toBeInTheDocument();
   });
 
-  it('al confirmarse un mensaje propio, registra el chat en la lista', async () => {
+  it('al llegar un mensaje propio por el canal, registra el chat en la lista', async () => {
     useMiUsuario.mockReturnValue({ yo: 'mateo', establecerYo });
-    useConversacion.mockReturnValue({
-      mensajes: [
-        {
-          id: '1',
-          remitente: 'mateo',
-          destinatario: 'ana',
-          contenido: 'Hola!',
-          enviadoEn: '2026-01-01T00:00:00Z',
-        },
-      ],
-      cargandoHistorial: false,
-      errorHistorial: null,
-      conectado: true,
-      enviarMensaje: jest.fn(),
-      reintentarHistorial: jest.fn(),
-    });
     elegirChatExistente([{ otroUsuario: 'ana', ultimoMensaje: { contenido: 'Hola!' } }]);
     const user = userEvent.setup();
-    montar();
-
+    const { rerender } = montar();
     await user.click(screen.getByText('ana'));
 
-    expect(registrarMensajeEnviado).toHaveBeenCalledWith(
+    const propio = mensajeConversacion({ id: '1', remitente: 'mateo', destinatario: 'ana' });
+    useCanalMensajes.mockReturnValue({ conectado: true, ultimoMensaje: propio, enviarMensaje: jest.fn() });
+    rerender(
+      <InterlocutorProvider>
+        <HomePage />
+      </InterlocutorProvider>,
+    );
+
+    expect(registrarMensajeNuevo).toHaveBeenCalledWith(
       'ana',
       expect.objectContaining({ id: '1', contenido: 'Hola!' }),
     );
   });
 
-  it('no registra en la lista un mensaje recibido (no propio)', async () => {
+  it('al llegar un mensaje recibido por el canal, también registra el chat en la lista', async () => {
     useMiUsuario.mockReturnValue({ yo: 'mateo', establecerYo });
-    useConversacion.mockReturnValue({
-      mensajes: [
-        {
-          id: '1',
-          remitente: 'ana',
-          destinatario: 'mateo',
-          contenido: 'Hola!',
-          enviadoEn: '2026-01-01T00:00:00Z',
-        },
-      ],
-      cargandoHistorial: false,
-      errorHistorial: null,
-      conectado: true,
-      enviarMensaje: jest.fn(),
-      reintentarHistorial: jest.fn(),
-    });
     elegirChatExistente([{ otroUsuario: 'ana', ultimoMensaje: { contenido: 'Hola!' } }]);
     const user = userEvent.setup();
-    montar();
-
+    const { rerender } = montar();
     await user.click(screen.getByText('ana'));
 
-    expect(registrarMensajeEnviado).not.toHaveBeenCalled();
+    const recibido = mensajeConversacion({ id: '1', remitente: 'ana', destinatario: 'mateo' });
+    useCanalMensajes.mockReturnValue({ conectado: true, ultimoMensaje: recibido, enviarMensaje: jest.fn() });
+    rerender(
+      <InterlocutorProvider>
+        <HomePage />
+      </InterlocutorProvider>,
+    );
+
+    expect(registrarMensajeNuevo).toHaveBeenCalledWith(
+      'ana',
+      expect.objectContaining({ id: '1', contenido: 'Hola!' }),
+    );
+  });
+
+  it('un mensaje de una conversación nueva, sin "con" seleccionado todavía, igual aparece en la lista', async () => {
+    // Caso que motiva todo el canal centralizado: antes, sin una conversación
+    // abierta, `useConversacion` (y su WebSocket) ni siquiera se montaba —
+    // nada podía llegar. Ahora `useCanalMensajes` vive en `HomePage`, así que
+    // un mensaje de un chat sin abrir (aquí, sin ningún "con" elegido) igual
+    // hace aparecer el chat en la lista.
+    useMiUsuario.mockReturnValue({ yo: 'mateo', establecerYo });
+    const { rerender } = montar();
+    expect(useConversacion).not.toHaveBeenCalled();
+
+    const deUnChatNuevo = mensajeConversacion({ id: '1', remitente: 'luis', destinatario: 'mateo' });
+    useCanalMensajes.mockReturnValue({ conectado: true, ultimoMensaje: deUnChatNuevo, enviarMensaje: jest.fn() });
+    rerender(
+      <InterlocutorProvider>
+        <HomePage />
+      </InterlocutorProvider>,
+    );
+
+    expect(registrarMensajeNuevo).toHaveBeenCalledWith(
+      'luis',
+      expect.objectContaining({ id: '1', contenido: 'Hola!' }),
+    );
+  });
+
+  it('no reprocesa el mismo mensaje del canal en un re-render (dedupe por id)', async () => {
+    useMiUsuario.mockReturnValue({ yo: 'mateo', establecerYo });
+    const { rerender } = montar();
+
+    const mensaje = mensajeConversacion({ id: '1', remitente: 'luis', destinatario: 'mateo' });
+    useCanalMensajes.mockReturnValue({ conectado: true, ultimoMensaje: mensaje, enviarMensaje: jest.fn() });
+    rerender(
+      <InterlocutorProvider>
+        <HomePage />
+      </InterlocutorProvider>,
+    );
+    expect(registrarMensajeNuevo).toHaveBeenCalledTimes(1);
+
+    // Mismo objeto, otro re-render (p. ej. por cualquier otro estado que
+    // cambie) — no debe volver a registrar el mismo mensaje.
+    rerender(
+      <InterlocutorProvider>
+        <HomePage />
+      </InterlocutorProvider>,
+    );
+    expect(registrarMensajeNuevo).toHaveBeenCalledTimes(1);
   });
 
   it('sin sesión, navega a /login en segundo plano (sin bloquear el formulario)', async () => {
