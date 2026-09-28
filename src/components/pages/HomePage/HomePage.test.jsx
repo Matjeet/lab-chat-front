@@ -12,6 +12,7 @@ import useExisteUsuario from '../../../hooks/useExisteUsuario';
 import useCrearSolicitudChat from '../../../hooks/useCrearSolicitudChat';
 import useNotificaciones from '../../../hooks/useNotificaciones';
 import useActualizarSolicitud from '../../../hooks/useActualizarSolicitud';
+import { reproducirSonidoEnviado, reproducirSonidoRecibido } from '../../../utils/sonidosMensajes';
 
 // Factory explícita: un automock sin factory cargaría el Firebase real (sin
 // las variables de entorno que solo existen en build/dev).
@@ -52,6 +53,14 @@ jest.mock('../../../hooks/useCrearSolicitudChat', () => jest.fn());
 // src/hooks/useActualizarSolicitud.test.js para los hooks en sí.
 jest.mock('../../../hooks/useNotificaciones', () => jest.fn());
 jest.mock('../../../hooks/useActualizarSolicitud', () => jest.fn());
+// El aviso sonoro es un efecto colateral puramente decorativo (Web Audio
+// API) — HomePage solo necesita saber que llama a la función correcta según
+// quién mandó el mensaje, no cómo suena — ver
+// src/utils/sonidosMensajes.test.js para el sonido en sí.
+jest.mock('../../../utils/sonidosMensajes', () => ({
+  reproducirSonidoEnviado: jest.fn(),
+  reproducirSonidoRecibido: jest.fn(),
+}));
 
 const establecerYo = jest.fn();
 const registrarMensajeNuevo = jest.fn();
@@ -352,6 +361,8 @@ describe('HomePage', () => {
       'ana',
       expect.objectContaining({ id: '1', contenido: 'Hola!' }),
     );
+    expect(reproducirSonidoEnviado).toHaveBeenCalledTimes(1);
+    expect(reproducirSonidoRecibido).not.toHaveBeenCalled();
   });
 
   it('al llegar un mensaje recibido por el canal, también registra el chat en la lista', async () => {
@@ -373,6 +384,8 @@ describe('HomePage', () => {
       'ana',
       expect.objectContaining({ id: '1', contenido: 'Hola!' }),
     );
+    expect(reproducirSonidoRecibido).toHaveBeenCalledTimes(1);
+    expect(reproducirSonidoEnviado).not.toHaveBeenCalled();
   });
 
   it('un mensaje de una conversación nueva, sin "con" seleccionado todavía, igual aparece en la lista', async () => {
@@ -397,6 +410,10 @@ describe('HomePage', () => {
       'luis',
       expect.objectContaining({ id: '1', contenido: 'Hola!' }),
     );
+    // El chat nuevo apareció porque "luis" mandó el primer mensaje: suena
+    // como cualquier mensaje recibido, no el de uno propio.
+    expect(reproducirSonidoRecibido).toHaveBeenCalledTimes(1);
+    expect(reproducirSonidoEnviado).not.toHaveBeenCalled();
   });
 
   it('no reprocesa el mismo mensaje del canal en un re-render (dedupe por id)', async () => {
@@ -411,15 +428,17 @@ describe('HomePage', () => {
       </InterlocutorProvider>,
     );
     expect(registrarMensajeNuevo).toHaveBeenCalledTimes(1);
+    expect(reproducirSonidoRecibido).toHaveBeenCalledTimes(1);
 
     // Mismo objeto, otro re-render (p. ej. por cualquier otro estado que
-    // cambie) — no debe volver a registrar el mismo mensaje.
+    // cambie) — no debe volver a registrar el mismo mensaje ni sonar de nuevo.
     rerender(
       <InterlocutorProvider>
         <HomePage />
       </InterlocutorProvider>,
     );
     expect(registrarMensajeNuevo).toHaveBeenCalledTimes(1);
+    expect(reproducirSonidoRecibido).toHaveBeenCalledTimes(1);
   });
 
   it('sin sesión, navega a /login en segundo plano (sin bloquear el formulario)', async () => {
