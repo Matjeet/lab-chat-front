@@ -84,7 +84,29 @@ describe('RegistroForm', () => {
       username: 'mateo29',
       email: 'mateo@example.com',
       password: 'Passw0rd!',
+      avatar: '<Blobatar name="mateo29" />',
     });
+  });
+
+  it('envía el avatar personalizado si se abrió el selector y se cambió algo', async () => {
+    const user = userEvent.setup();
+    registrarUsuario.mockResolvedValue({
+      ok: true,
+      data: { id: 1, username: 'mateo29', email: 'mateo@example.com', activo: true },
+    });
+    render(<RegistroForm onRegistroCompleto={jest.fn()} />);
+
+    await user.click(screen.getByRole('button', { name: 'Personalizar avatar' }));
+    await user.selectOptions(screen.getByLabelText('Emoción'), 'happy');
+    await rellenarFormulario(user, DATOS_VALIDOS);
+    await user.click(screen.getByRole('button', { name: 'Crear cuenta' }));
+
+    await waitFor(() => expect(registrarUsuario).toHaveBeenCalled());
+    expect(registrarUsuario).toHaveBeenCalledWith(
+      expect.objectContaining({
+        avatar: '<Blobatar name="mateo29" shape="round" hue="200" tone="0.5" expression="happy" />',
+      }),
+    );
   });
 
   it('muestra un aviso genérico ante un 409 y no marca ningún campo', async () => {
