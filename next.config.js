@@ -13,6 +13,12 @@ const nextConfig = {
   // Quita el botón flotante de Next (indicador de dev, esquina inferior
   // izquierda). Solo afecta a `npm run dev`; no existe en el build de producción.
   devIndicators: false,
+
+  // `blobatar`/`@blobatar/react` se publican solo como ESM, sin build CJS —
+  // `next/jest` deriva su `transformIgnorePatterns` de esta lista (no de un
+  // override manual en jest.config.js), así que sin esto Jest revienta con
+  // "Unexpected token 'export'" al hacer `require()` de su `export { ... }`.
+  transpilePackages: ['blobatar', '@blobatar/react'],
 };
 
 module.exports = nextConfig;
