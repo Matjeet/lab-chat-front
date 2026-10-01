@@ -162,6 +162,30 @@ describe('HomePage', () => {
     expect(screen.getByLabelText('Chatear con')).toBeInTheDocument();
   });
 
+  it('muestra el avatar de "mi usuario" en la cabecera, a la izquierda del botón de tema', () => {
+    useMiUsuario.mockReturnValue({
+      yo: 'mateo',
+      avatar: '<Blobatar name="mateo" shape="sun" />',
+      establecerYo,
+    });
+    montar();
+
+    const avatar = screen.getByTitle('Avatar de mateo');
+    const botonTema = screen.getByRole('button', { name: /cambiar tema/i });
+    // `compareDocumentPosition` con el bit `PRECEDING`: el avatar aparece
+    // antes que el botón de tema en el documento, que en una cabecera que
+    // fluye de izquierda a derecha es "a su izquierda".
+    // eslint-disable-next-line no-bitwise
+    expect(botonTema.compareDocumentPosition(avatar) & Node.DOCUMENT_POSITION_PRECEDING).toBeTruthy();
+  });
+
+  it('sin avatar guardado, el de la cabecera cae al automático por el username', () => {
+    useMiUsuario.mockReturnValue({ yo: 'mateo', avatar: null, establecerYo });
+    montar();
+
+    expect(screen.getByTitle('Avatar de mateo')).toBeInTheDocument();
+  });
+
   it('sin "yo" resuelto, pide "Tu usuario" como respaldo', () => {
     montar();
     expect(screen.getByLabelText('Tu usuario')).toBeInTheDocument();

@@ -7,6 +7,7 @@ import Conversacion from '../../organisms/Conversacion';
 import ListaChats from '../../organisms/ListaChats';
 import Button from '../../atoms/Button';
 import Alert from '../../atoms/Alert';
+import AvatarUsuario from '../../atoms/AvatarUsuario';
 import FormField from '../../molecules/FormField';
 import SelectorInterlocutor from '../../molecules/SelectorInterlocutor';
 import Notificaciones from '../../organisms/Notificaciones';
@@ -99,7 +100,13 @@ const VistaConversacion = ({ yo, con, canal }) => {
  *   backend no resuelve (caído, cuenta sin perfil de chat-registro
  *   todavía...), cae a un formulario manual, aquí en la página, como
  *   respaldo — se recuerda en `localStorage` (`src/utils/miUsuario.js`;
- *   `RegistroPage` ya lo guarda solo si te registraste aquí).
+ *   `RegistroPage` ya lo guarda solo si te registraste aquí). El mismo
+ *   `GET` también resuelve `avatar` (sin respaldo en `localStorage`, a
+ *   diferencia de `yo`): `AvatarUsuario`, en la cabecera, a la izquierda de
+ *   `ThemeToggle`, lo pinta tal cual (el fragmento `<Blobatar .../>` que
+ *   generó `AvatarPersonalizable` al registrarse, o la imagen si fuera un
+ *   enlace), con el mismo automático de siempre si todavía no resolvió o si
+ *   la cuenta no tiene uno.
  * - **Con quién chatear (`con`)**: se elige con `SelectorInterlocutor`, en la
  *   cabecera (`InterlocutorContext`) — visible en toda pantalla que exija
  *   sesión, no solo aquí — o haciendo click en un chat de `ListaChats`, a la
@@ -131,7 +138,7 @@ const VistaConversacion = ({ yo, con, canal }) => {
 const HomePage = () => {
   useRequiereSesion();
   const { con, establecerCon } = useInterlocutor();
-  const { yo, establecerYo } = useMiUsuario();
+  const { yo, avatar, establecerYo } = useMiUsuario();
   const canal = useCanalMensajes(yo);
   const {
     chats,
@@ -195,7 +202,12 @@ const HomePage = () => {
     <DefaultLayout
       title="Chat"
       headerCentro={<SelectorInterlocutor yo={yo} />}
-      headerActions={<Notificaciones yo={yo} />}
+      headerActions={
+        <>
+          <Notificaciones yo={yo} />
+          <AvatarUsuario avatar={avatar} username={yo} />
+        </>
+      }
       altoCompleto
     >
       {!yo && (

@@ -1,0 +1,6 @@
+.imagen {
+  width: var(--space-6);
+  height: var(--space-6);
+  border-radius: var(--radius-full);
+  object-fit: cover;
+}
