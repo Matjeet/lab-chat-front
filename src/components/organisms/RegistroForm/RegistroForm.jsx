@@ -1,11 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 
 import FormField from '../../molecules/FormField';
 import Button from '../../atoms/Button';
 import Alert from '../../atoms/Alert';
+import AvatarPersonalizable from '../../molecules/AvatarPersonalizable';
 import { registrarUsuario } from '../../../api/registro';
+import { etiquetaBlobatar } from '../../../utils/avatarBlobatar';
 import {
   REGLAS,
   requisitosPassword,
@@ -30,6 +32,13 @@ const MENSAJE_RED =
  * recibir la respuesta reparte el error entre los campos o en un aviso general.
  * El `409` es genérico a propósito: nunca se atribuye a un campo.
  *
+ * Arriba del todo, `AvatarPersonalizable` pinta un avatar de `blobatar` en
+ * vivo a partir de `valores.username` (con opción de personalizar forma,
+ * color y emoción) y avisa, con cada cambio, del fragmento `<Blobatar .../>`
+ * que le corresponde — se guarda en `avatarRef` (no en estado: no hace falta
+ * re-renderizar el formulario por esto) y se manda tal cual en el campo
+ * `avatar` de la petición.
+ *
  * @param {object} props
  * @param {(usuario: import('../../../api/registro').RegistroResponse) => void} props.onRegistroCompleto
  */
@@ -38,6 +47,10 @@ const RegistroForm = ({ onRegistroCompleto }) => {
   const [errores, setErrores] = useState({});
   const [aviso, setAviso] = useState(null);
   const [enviando, setEnviando] = useState(false);
+  // El avatar no necesita re-render propio: `AvatarPersonalizable` ya pinta
+  // su propia vista previa, esto solo guarda el último fragmento avisado
+  // para tenerlo listo al enviar el formulario.
+  const avatarRef = useRef(etiquetaBlobatar('', {}));
 
   const alCambiar = (campo) => (evento) => {
     const { value } = evento.target;
@@ -61,6 +74,7 @@ const RegistroForm = ({ onRegistroCompleto }) => {
       username: valores.username.trim(),
       email: valores.email.trim().toLowerCase(),
       password: valores.password,
+      avatar: avatarRef.current,
     });
 
     setEnviando(false);
@@ -91,6 +105,13 @@ const RegistroForm = ({ onRegistroCompleto }) => {
   return (
     <form className={styles.form} onSubmit={alEnviar} noValidate>
       {aviso && <Alert tipo={aviso.tipo}>{aviso.mensaje}</Alert>}
+
+      <AvatarPersonalizable
+        username={valores.username}
+        onCambiarAvatar={(etiqueta) => {
+          avatarRef.current = etiqueta;
+        }}
+      />
 
       <FormField
         id="username"

@@ -44,6 +44,8 @@ lo configura por su cuenta para lo que expone el gateway.
 | `src/api/config.js` | `API_BASE_URL`. |
 | `src/api/registro.js` | `registrarUsuario(datos)` → `POST /api/v1/registro`. Es lo único que llama `RegistroForm`. |
 | `src/utils/validacionRegistro.js` | Validación de cliente + `requisitos{Username,Password}` (estado en vivo de cada requisito). |
+| `src/utils/avatarBlobatar.js` | Puente entre `blobatar`/`@blobatar/react` y el campo `avatar` del contrato: `FORMAS`/`EMOCIONES` (catálogo con etiqueta en español), `opcionesBlobatar` (para `<Blobatar {...opciones} />`) y `etiquetaBlobatar` (el fragmento `<Blobatar .../>` que se envía). Ver "Avatar generado con blobatar" más abajo. |
+| `src/components/molecules/AvatarPersonalizable/` | El avatar del registro, en vivo desde el `username` que se escribe, con panel de personalización (forma/color/tono/emoción). |
 | `src/components/organisms/RegistroForm/` | Estado del formulario + reparto de errores. |
 | `src/components/pages/RegistroPage/` | Alterna formulario ↔ confirmación. También navega a `/home` si ya hay sesión, antes de mostrar el formulario (mismo criterio que `LoginPage`). |
 | `src/utils/validacionLogin.js` | Validación de cliente del login: email válido, contraseña no vacía. Sin política de fortaleza — no aplica a una cuenta ya existente. |
@@ -64,10 +66,12 @@ lo configura por su cuenta para lo que expone el gateway.
 **Depende de la operación — y es a propósito, no una inconsistencia:**
 
 - **Alta de usuario**: nadie, en este frontend. Es una única llamada,
-  `POST /api/v1/registro` con `{ username, email, password }`; es
+  `POST /api/v1/registro` con `{ username, email, password, avatar }`; es
   **`chat-registro`** quien crea la cuenta en Firebase Auth (Admin SDK) antes
   de guardar el perfil. El cliente nunca ve un `uid` ni un proveedor, y no
-  importa el SDK de Firebase para esto.
+  importa el SDK de Firebase para esto. `avatar` no tiene nada que ver con
+  Firebase — es el fragmento `<Blobatar .../>` que arma
+  `AvatarPersonalizable` (ver "Avatar generado con blobatar" más abajo).
 - **Inicio de sesión**: sí, este frontend, con el **SDK de cliente** de
   Firebase Authentication (`firebase/auth`, `signInWithEmailAndPassword`) —
   ver `src/firebase/auth.js`. No hay endpoint de login en `chat-registro`;
@@ -79,6 +83,66 @@ lo configura por su cuenta para lo que expone el gateway.
 > pasó a orquestar la creación en Firebase él mismo para el alta. El SDK de
 > cliente que existe ahora en `src/firebase/` es una integración **distinta e
 > independiente** de aquella — solo para login, nunca para crear cuentas.
+
+## Avatar generado con blobatar
+
+`chat-gateway` acepta en `avatar` (`POST /api/v1/registro`, contrato §4.1,
+opcional) un enlace `http(s)` **o** una etiqueta `<Blobatar .../>` en una
+sola línea, ≤500 caracteres — el frontend hoy solo genera la segunda forma,
+con [`blobatar`](https://www.npmjs.com/package/blobatar) +
+[`@blobatar/react`](https://www.npmjs.com/package/@blobatar/react)
+(avatares geométricos deterministas: el mismo nombre siempre genera el mismo
+avatar).
+
+- **`AvatarPersonalizable`** (arriba del todo en `RegistroForm`): pinta
+  `<Blobatar name={username} />` en vivo mientras se escribe el nombre de
+  usuario — automático, sin ningún atributo fijado, hasta que se abre el
+  panel de personalización (icono de ajustes, encima del avatar). Al
+  abrirse, siembra cuatro controles — forma, color (`hue`), tono (`tone`),
+  emoción (`expression`) — con unos valores por defecto; cualquier cambio
+  después reemplaza las cuatro a la vez (sin mezcla "tres automáticas, una
+  fijada"). "Usar automático" vuelve a la versión sin personalizar sin
+  cerrar el panel.
+- **`src/utils/avatarBlobatar.js`** hace de puente entre esos controles
+  simples y las opciones reales de `blobatar`:
+  - `FORMAS`: las diez siluetas de Blobatar 2, con una posición 0–1
+    representativa de cada una — `blobatar` no expone un nombre de forma
+    como opción directa, solo `traits.shape` como posición dentro de una
+    tabla de umbrales interna (ver el comentario en el propio archivo: los
+    números están calculados a mano contra el paquete instalado, y una
+    subida de *major* de `blobatar` podría desplazarlos).
+  - `EMOCIONES`: las catorce poses de `blobatar/expression`, con el objeto
+    real ya importado (la librería los pasa como valor, no como string).
+  - `opcionesBlobatar(personalizacion)`: traduce `{shape, hue, tone,
+    expression}` (los cuatro opcionales) a las `BlobatarOptions` que espera
+    `<Blobatar {...opciones} />`.
+  - `etiquetaBlobatar(username, personalizacion)`: arma a mano el fragmento
+    `<Blobatar .../>` que se manda en `avatar` — nada de un serializador
+    XML/JSX genérico, el formato es lo bastante acotado (regex del backend:
+    empieza por `<Blobatar`, sin `<`/`>` salvo los de apertura/cierre, una
+    sola línea, termina en `/>`) para construirlo directamente.
+- **`RegistroForm`** guarda el último fragmento avisado en un `ref` (no en
+  estado — no hace falta re-renderizar el formulario por esto) y lo manda
+  tal cual en `avatar` al confirmar el registro.
+- **Animado siempre** (`animate="always"`, con `import "blobatar/motion.css"`
+  — sin ese import no anima nada): respira, parpadea y desvía la mirada de
+  vez en cuando. `"always"` en vez de `"hover"` porque aquí es un único
+  avatar grande (el otro modo es para una lista de muchos); cambia el modo
+  de renderizado de `<img>` a SVG en línea (la única forma en que CSS puede
+  animarlo), respeta `prefers-reduced-motion` por su cuenta y no se dispara
+  en touch. La animación es solo visual: nunca forma parte de la etiqueta
+  que se guarda en `avatar`.
+
+**Detalle de infraestructura, por si vuelve a doler**: `blobatar` y
+`@blobatar/react` se publican solo como ESM, sin build CJS. Jest (vía
+`next/jest`) no transforma nada dentro de `node_modules` por defecto, y su
+`transformIgnorePatterns` no se puede ampliar con un override manual en
+`jest.config.js` — `next/jest` lo recalcula él mismo a partir de
+`transpilePackages` en `next.config.js`, así que ambos paquetes están
+listados ahí. Aparte, jsdom no expone `TextEncoder`/`TextDecoder` como
+globales (sí lo son en Node y en cualquier navegador real) y `blobatar` los
+usa para hashear el nombre — de ahí el polyfill en `src/setupTests.js`
+(`require('node:util')`).
 
 ## Login — conectado a Firebase Authentication
 

@@ -19,3 +19,11 @@ class IntersectionObserverStub {
   disconnect() {}
 }
 global.IntersectionObserver = IntersectionObserverStub;
+
+// jsdom tampoco expone TextEncoder/TextDecoder como globales (sí lo son en
+// Node y en cualquier navegador real) — `blobatar` los usa para hashear el
+// nombre del avatar, y sin esto revienta con "TextEncoder is not defined"
+// en cualquier test que lo importe. Node los trae de serie en `util`.
+const { TextEncoder, TextDecoder } = require('node:util');
+global.TextEncoder = TextEncoder;
+global.TextDecoder = TextDecoder;
