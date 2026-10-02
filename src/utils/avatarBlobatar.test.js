@@ -5,6 +5,8 @@ import {
   PERSONALIZACION_INICIAL,
   opcionesBlobatar,
   etiquetaBlobatar,
+  esEtiquetaBlobatar,
+  parsearEtiquetaBlobatar,
 } from './avatarBlobatar';
 
 // Mismo `@Pattern` que valida chat-gateway para el campo `avatar` (ver
@@ -87,6 +89,42 @@ describe('avatarBlobatar', () => {
       const usernameLargo = 'a'.repeat(50); // el máximo que permite chat-registro
       const etiqueta = etiquetaBlobatar(usernameLargo, PERSONALIZACION_INICIAL);
       expect(etiqueta.length).toBeLessThanOrEqual(500);
+    });
+  });
+
+  describe('esEtiquetaBlobatar', () => {
+    it('reconoce una etiqueta <Blobatar .../>', () => {
+      expect(esEtiquetaBlobatar('<Blobatar name="mateo" />')).toBe(true);
+    });
+
+    it('no confunde un enlace http(s), null, ni vacío', () => {
+      expect(esEtiquetaBlobatar('https://cdn.example.com/avatares/mateo.png')).toBe(false);
+      expect(esEtiquetaBlobatar(null)).toBe(false);
+      expect(esEtiquetaBlobatar(undefined)).toBe(false);
+      expect(esEtiquetaBlobatar('')).toBe(false);
+    });
+  });
+
+  describe('parsearEtiquetaBlobatar', () => {
+    it('es el inverso exacto de etiquetaBlobatar, sin personalización', () => {
+      expect(parsearEtiquetaBlobatar(etiquetaBlobatar('mateo', {}))).toEqual({ name: 'mateo' });
+    });
+
+    it('es el inverso exacto de etiquetaBlobatar, con los cuatro atributos', () => {
+      expect(parsearEtiquetaBlobatar(etiquetaBlobatar('mateo', PERSONALIZACION_INICIAL))).toEqual({
+        name: 'mateo',
+        ...PERSONALIZACION_INICIAL,
+      });
+    });
+
+    it('lee hue/tone como número, no como string', () => {
+      const resultado = parsearEtiquetaBlobatar('<Blobatar name="ana" hue="310" tone="0.2" />');
+      expect(resultado.hue).toBe(310);
+      expect(resultado.tone).toBe(0.2);
+    });
+
+    it('ignora un atributo que no reconoce, sin lanzar', () => {
+      expect(parsearEtiquetaBlobatar('<Blobatar name="ana" futuro="x" />')).toEqual({ name: 'ana' });
     });
   });
 });

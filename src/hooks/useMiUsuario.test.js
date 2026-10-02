@@ -58,6 +58,38 @@ describe('useMiUsuario', () => {
     expect(localStorage.getItem('chat:miUsuario')).toBe('ana');
   });
 
+  it('empieza con avatar null, y lo actualiza con lo que resuelva el backend', async () => {
+    observarSesion.mockImplementation((callback) => {
+      callback(usuarioFake('uid-123'));
+      return jest.fn();
+    });
+    obtenerUsuario.mockResolvedValue({
+      ok: true,
+      data: { username: 'ana', email: 'ana@example.com', avatar: '<Blobatar name="ana" />' },
+    });
+
+    const { result } = renderHook(() => useMiUsuario());
+    expect(result.current.avatar).toBeNull();
+
+    await waitFor(() => expect(result.current.avatar).toBe('<Blobatar name="ana" />'));
+  });
+
+  it('si el backend resuelve sin avatar (cuenta sin uno), lo deja en null', async () => {
+    observarSesion.mockImplementation((callback) => {
+      callback(usuarioFake('uid-123'));
+      return jest.fn();
+    });
+    obtenerUsuario.mockResolvedValue({
+      ok: true,
+      data: { username: 'ana', email: 'ana@example.com', avatar: null },
+    });
+
+    const { result } = renderHook(() => useMiUsuario());
+
+    await waitFor(() => expect(result.current.yo).toBe('ana'));
+    expect(result.current.avatar).toBeNull();
+  });
+
   it('no consulta el backend si no hay sesión', () => {
     observarSesion.mockImplementation((callback) => {
       callback(null);

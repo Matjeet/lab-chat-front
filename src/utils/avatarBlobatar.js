@@ -119,3 +119,43 @@ export const etiquetaBlobatar = (username, personalizacion = {}) => {
   if (personalizacion.expression) atributos.push(`expression="${personalizacion.expression}"`);
   return `<Blobatar ${atributos.join(' ')} />`;
 };
+
+/**
+ * `true` si `avatar` es una etiqueta `<Blobatar .../>` generada por este
+ * frontend, `false` si es el otro formato que admite el contrato (un enlace
+ * `http(s)`) o si no hay avatar en absoluto. Ver `AvatarUsuario`, que
+ * decide con esto cómo pintar lo que devuelve `GET /api/v1/usuarios/{uid}`.
+ *
+ * @param {string|null|undefined} avatar
+ * @returns {boolean}
+ */
+export const esEtiquetaBlobatar = (avatar) => typeof avatar === 'string' && avatar.startsWith('<Blobatar');
+
+/**
+ * El inverso de {@link etiquetaBlobatar}: lee de vuelta un fragmento
+ * `<Blobatar .../>` ya guardado a `{name, shape, hue, tone, expression}` —
+ * el mismo vocabulario que entiende {@link opcionesBlobatar}. Atributos
+ * `clave="valor"` extraídos con una expresión regular, en vez de un parser
+ * XML/JSX genérico — mismo criterio que al serializar: el formato es lo
+ * bastante acotado para no necesitar uno. Un atributo que no reconoce (por
+ * si una versión futura de este mismo frontend, u otro cliente, añade uno
+ * nuevo) se ignora sin lanzar.
+ *
+ * @param {string} etiqueta
+ * @returns {{name: string, shape?: string, hue?: number, tone?: number, expression?: string}}
+ */
+export const parsearEtiquetaBlobatar = (etiqueta) => {
+  const resultado = { name: '' };
+  const ATRIBUTO_RE = /(\w+)="([^"]*)"/g;
+  let coincidencia = ATRIBUTO_RE.exec(etiqueta);
+  while (coincidencia !== null) {
+    const [, clave, valor] = coincidencia;
+    if (clave === 'name') resultado.name = valor;
+    else if (clave === 'shape') resultado.shape = valor;
+    else if (clave === 'expression') resultado.expression = valor;
+    else if (clave === 'hue') resultado.hue = Number(valor);
+    else if (clave === 'tone') resultado.tone = Number(valor);
+    coincidencia = ATRIBUTO_RE.exec(etiqueta);
+  }
+  return resultado;
+};

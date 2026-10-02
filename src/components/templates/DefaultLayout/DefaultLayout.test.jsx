@@ -81,6 +81,30 @@ describe('DefaultLayout', () => {
     expect(screen.getByLabelText('Chatear con')).toBeInTheDocument();
   });
 
+  it('`headerAvatar` queda al extremo derecho, después del selector de tema', () => {
+    render(
+      <DefaultLayout
+        title="Chat"
+        headerActions={<button type="button">Notificaciones</button>}
+        headerAvatar={<span data-testid="avatar">Avatar</span>}
+      >
+        <p>Contenido</p>
+      </DefaultLayout>,
+    );
+
+    const avatar = screen.getByTestId('avatar');
+    const botonTema = screen.getByRole('button', { name: /cambiar tema/i });
+    const notificaciones = screen.getByRole('button', { name: 'Notificaciones' });
+
+    // El avatar aparece después tanto de las acciones (`headerActions`) como
+    // del selector de tema, nunca entre los dos — ver `compareDocumentPosition`:
+    // el bit FOLLOWING indica que el nodo comparado viene después en el documento.
+    // eslint-disable-next-line no-bitwise
+    expect(notificaciones.compareDocumentPosition(avatar) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    // eslint-disable-next-line no-bitwise
+    expect(botonTema.compareDocumentPosition(avatar) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
   it('sin `altoCompleto`, no fija el alto de pantalla ni el scroll interno', () => {
     const { container } = render(
       <DefaultLayout title="Chat">
