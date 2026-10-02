@@ -13,6 +13,9 @@ import styles from './DefaultLayout.module.css';
  * @param {string} props.title              Título para la cabecera.
  * @param {React.ReactNode} [props.headerCentro] Contenido centrado en la cabecera (p. ej. `SelectorInterlocutor`).
  * @param {React.ReactNode} [props.headerActions] Acciones extra a la izquierda del selector de tema.
+ * @param {React.ReactNode} [props.headerAvatar] Contenido al extremo derecho de la cabecera,
+ *   después del selector de tema (p. ej. `AvatarUsuario`) — slot aparte de `headerActions`
+ *   justo para no quedar entre los botones de acción y el selector de tema.
  * @param {boolean} [props.centered=false]  Centra `children` vertical y
  *   horizontalmente en el espacio entre cabecera y pie (para pantallas de un
  *   solo formulario, p. ej. registro o login). Por defecto el contenido
@@ -37,6 +40,7 @@ const DefaultLayout = ({
   title,
   headerCentro,
   headerActions,
+  headerAvatar,
   centered = false,
   tarjeta = false,
   altoCompleto = false,
@@ -53,6 +57,7 @@ const DefaultLayout = ({
         <>
           {headerActions}
           <ThemeToggle />
+          {headerAvatar}
         </>
       }
     />

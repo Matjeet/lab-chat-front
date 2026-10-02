@@ -162,7 +162,7 @@ describe('HomePage', () => {
     expect(screen.getByLabelText('Chatear con')).toBeInTheDocument();
   });
 
-  it('muestra el avatar de "mi usuario" en la cabecera, a la izquierda del botón de tema', () => {
+  it('muestra el avatar de "mi usuario" al extremo derecho de la cabecera, después del botón de tema', () => {
     useMiUsuario.mockReturnValue({
       yo: 'mateo',
       avatar: '<Blobatar name="mateo" shape="sun" />',
@@ -172,11 +172,15 @@ describe('HomePage', () => {
 
     const avatar = screen.getByTitle('Avatar de mateo');
     const botonTema = screen.getByRole('button', { name: /cambiar tema/i });
-    // `compareDocumentPosition` con el bit `PRECEDING`: el avatar aparece
-    // antes que el botón de tema en el documento, que en una cabecera que
-    // fluye de izquierda a derecha es "a su izquierda".
+    const botonNotificaciones = screen.getByRole('button', { name: 'Notificaciones' });
+    // `compareDocumentPosition` con el bit `FOLLOWING`: el avatar aparece
+    // después tanto del botón de notificaciones como del de tema — nunca
+    // entre los dos — que en una cabecera que fluye de izquierda a derecha
+    // es "completamente a la derecha".
     // eslint-disable-next-line no-bitwise
-    expect(botonTema.compareDocumentPosition(avatar) & Node.DOCUMENT_POSITION_PRECEDING).toBeTruthy();
+    expect(botonNotificaciones.compareDocumentPosition(avatar) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    // eslint-disable-next-line no-bitwise
+    expect(botonTema.compareDocumentPosition(avatar) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   it('sin avatar guardado, el de la cabecera cae al automático por el username', () => {

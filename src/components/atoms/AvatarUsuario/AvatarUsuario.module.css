@@ -1,6 +1,15 @@
+.contenedor {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 36px, a juego con `TAMANO_PX` en AvatarUsuario.jsx (ver el comentario ahí
+   sobre por qué es más grande que los iconos vecinos de la cabecera) — sin
+   token de `tokens.css` para este número exacto, igual que `TAMANO_PX`. */
 .imagen {
-  width: var(--space-6);
-  height: var(--space-6);
+  width: 36px;
+  height: 36px;
   border-radius: var(--radius-full);
   object-fit: cover;
 }

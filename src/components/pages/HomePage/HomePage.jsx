@@ -102,11 +102,13 @@ const VistaConversacion = ({ yo, con, canal }) => {
  *   respaldo — se recuerda en `localStorage` (`src/utils/miUsuario.js`;
  *   `RegistroPage` ya lo guarda solo si te registraste aquí). El mismo
  *   `GET` también resuelve `avatar` (sin respaldo en `localStorage`, a
- *   diferencia de `yo`): `AvatarUsuario`, en la cabecera, a la izquierda de
- *   `ThemeToggle`, lo pinta tal cual (el fragmento `<Blobatar .../>` que
- *   generó `AvatarPersonalizable` al registrarse, o la imagen si fuera un
- *   enlace), con el mismo automático de siempre si todavía no resolvió o si
- *   la cuenta no tiene uno.
+ *   diferencia de `yo`): `AvatarUsuario`, en la cabecera, va en el slot
+ *   `headerAvatar` de `DefaultLayout` — al extremo derecho, después de
+ *   `ThemeToggle`, aparte de `headerActions` (`Notificaciones`) para no
+ *   quedar entre los dos botones. Pinta `avatar` tal cual (el fragmento
+ *   `<Blobatar .../>` que generó `AvatarPersonalizable` al registrarse, o
+ *   la imagen si fuera un enlace), con el mismo automático de siempre si
+ *   todavía no resolvió o si la cuenta no tiene uno.
  * - **Con quién chatear (`con`)**: se elige con `SelectorInterlocutor`, en la
  *   cabecera (`InterlocutorContext`) — visible en toda pantalla que exija
  *   sesión, no solo aquí — o haciendo click en un chat de `ListaChats`, a la
@@ -202,12 +204,8 @@ const HomePage = () => {
     <DefaultLayout
       title="Chat"
       headerCentro={<SelectorInterlocutor yo={yo} />}
-      headerActions={
-        <>
-          <Notificaciones yo={yo} />
-          <AvatarUsuario avatar={avatar} username={yo} />
-        </>
-      }
+      headerActions={<Notificaciones yo={yo} />}
+      headerAvatar={<AvatarUsuario avatar={avatar} username={yo} />}
       altoCompleto
     >
       {!yo && (
