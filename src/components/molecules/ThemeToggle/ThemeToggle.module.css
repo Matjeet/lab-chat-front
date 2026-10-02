@@ -1,5 +1,14 @@
+/* Mismo tamaño de caja que el icono de Notificaciones (width/height:
+   var(--space-5)) — con el mismo Button de ambos lados, eso basta para que
+   los dos botones midan exactamente lo mismo. Un `<span>` de texto normal
+   no tiene esa caja fija por sí solo (depende de la fuente), así que se fuerza
+   con flex centrado en vez de confiar en line-height. */
 .icono {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--space-5);
+  height: var(--space-5);
   font-size: var(--font-size-lg);
   line-height: 1;
 }

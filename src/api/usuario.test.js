@@ -11,21 +11,35 @@ afterEach(() => {
 });
 
 describe('obtenerUsuario', () => {
-  it('manda el idToken como Bearer y devuelve username/email', async () => {
+  it('manda el idToken como Bearer y devuelve username/email/avatar', async () => {
     global.fetch = jest.fn().mockResolvedValue(
-      respuestaFake(200, { username: 'mateo', email: 'mateo@example.com' }),
+      respuestaFake(200, {
+        username: 'mateo',
+        email: 'mateo@example.com',
+        avatar: '<Blobatar name="mateo" />',
+      }),
     );
 
     const resultado = await obtenerUsuario('uid-123', 'token-abc');
 
     expect(resultado).toEqual({
       ok: true,
-      data: { username: 'mateo', email: 'mateo@example.com' },
+      data: { username: 'mateo', email: 'mateo@example.com', avatar: '<Blobatar name="mateo" />' },
     });
     expect(global.fetch).toHaveBeenCalledWith(
       'http://localhost:8080/api/v1/usuarios/uid-123',
       { headers: { Authorization: 'Bearer token-abc' } },
     );
+  });
+
+  it('devuelve avatar: null tal cual, para una cuenta sin avatar', async () => {
+    global.fetch = jest.fn().mockResolvedValue(
+      respuestaFake(200, { username: 'mateo', email: 'mateo@example.com', avatar: null }),
+    );
+
+    const resultado = await obtenerUsuario('uid-123', 'token-abc');
+
+    expect(resultado.data.avatar).toBeNull();
   });
 
   it('codifica el uid en la URL', async () => {

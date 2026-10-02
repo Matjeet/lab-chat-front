@@ -28,10 +28,19 @@ import { guardarMiUsuario, leerMiUsuario } from '../utils/miUsuario';
  * todavía...) no pasa nada más: lo de `localStorage` sigue disponible, y
  * `establecerYo` deja confirmarlo a mano como respaldo — ver `HomePage`.
  *
- * @returns {{ yo: string, establecerYo: (usuario: string) => void }}
+ * `avatar` (contrato §4.2: un enlace `http(s)`, una etiqueta
+ * `<Blobatar .../>`, o `null`) solo sale del backend — a diferencia de
+ * `yo`, no tiene respaldo en `localStorage` ni vía `establecerYo` (el
+ * formulario manual de `HomePage` no pide un avatar, así que no hay nada
+ * que guardar ahí): mientras no resuelva la llamada, se queda en `null`,
+ * igual que si la cuenta de verdad no tuviera uno. `AvatarUsuario` ya trata
+ * ambos casos igual (cae al automático a partir de `yo`).
+ *
+ * @returns {{ yo: string, avatar: string|null, establecerYo: (usuario: string) => void }}
  */
 const useMiUsuario = () => {
   const [yo, setYo] = useState('');
+  const [avatar, setAvatar] = useState(null);
 
   useEffect(() => {
     setYo(leerMiUsuario());
@@ -47,6 +56,7 @@ const useMiUsuario = () => {
           if (resultado.ok) {
             guardarMiUsuario(resultado.data.username);
             setYo(resultado.data.username);
+            setAvatar(resultado.data.avatar ?? null);
           }
         });
     });
@@ -58,7 +68,7 @@ const useMiUsuario = () => {
     setYo(usuario);
   }, []);
 
-  return { yo, establecerYo };
+  return { yo, avatar, establecerYo };
 };
 
 export default useMiUsuario;

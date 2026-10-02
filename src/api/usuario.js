@@ -4,6 +4,7 @@ import { API_BASE_URL } from './config';
  * @typedef {Object} UsuarioResponse
  * @property {string} username
  * @property {string} email
+ * @property {string|null} avatar  Enlace http(s), etiqueta `<Blobatar .../>`, o `null` si no eligió ninguno.
  */
 
 /**

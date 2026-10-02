@@ -56,7 +56,8 @@ lo configura por su cuenta para lo que expone el gateway.
 | `src/components/organisms/LoginForm/` | Formulario de login: valida, llama a `onIniciarSesion` y muestra el aviso según `error.kind` si falla. |
 | `src/components/pages/LoginPage/` | Monta `LoginForm`, le pasa `onIniciarSesion` (llama a `iniciarSesion` y navega a `/home` si sale bien) + enlace a `/registro`. También navega a `/home` si ya hay sesión, antes de mostrar el formulario. |
 | `src/api/usuario.js` | `obtenerUsuario(uid, idToken)` → `GET /api/v1/usuarios/{uid}` (contrato §4.2) y `existeUsuario(username, idToken)` → `GET /api/v1/usuarios/existe` (contrato §4.6) — dos de los tres endpoints autenticados del sistema. |
-| `src/hooks/useMiUsuario.js` | `{yo, establecerYo}` — sincroniza "tu usuario" con `obtenerUsuario` en cuanto hay sesión (ver [`integracion-conversacion.md`](./integracion-conversacion.md#identidad)); `localStorage` como respaldo/caché. |
+| `src/hooks/useMiUsuario.js` | `{yo, avatar, establecerYo}` — sincroniza "tu usuario" (y su `avatar`) con `obtenerUsuario` en cuanto hay sesión (ver [`integracion-conversacion.md`](./integracion-conversacion.md#identidad)); `localStorage` como respaldo/caché, solo para `yo` (`avatar` no tiene respaldo). |
+| `src/components/atoms/AvatarUsuario/` | Pinta `avatar` de `useMiUsuario` en la cabecera de `HomePage`, al extremo derecho (slot `headerAvatar` de `DefaultLayout`, después de `ThemeToggle`) — parsea la etiqueta `<Blobatar .../>` si la hay, o cae al automático por `username`. Ver "Avatar generado con blobatar" más arriba. |
 | `src/hooks/useExisteUsuario.js` | Función `(username) => Promise<ResultadoExisteUsuario>` — comprueba si un username existe, con el `idToken` de cualquier sesión activa. La usa `SelectorInterlocutor` antes de abrir un chat nuevo. |
 | `src/components/pages/HomePage/` | En `/home`, destino tras un login correcto — el chat 1 a 1 en sí (ver [`integracion-conversacion.md`](./integracion-conversacion.md)). Exige sesión (`useRequiereSesion`). |
 | `src/components/pages/StyleGuidePage/` | Guía de estilo. Exige sesión (`useRequiereSesion`) — no es pública. |
@@ -92,7 +93,9 @@ sola línea, ≤500 caracteres — el frontend hoy solo genera la segunda forma,
 con [`blobatar`](https://www.npmjs.com/package/blobatar) +
 [`@blobatar/react`](https://www.npmjs.com/package/@blobatar/react)
 (avatares geométricos deterministas: el mismo nombre siempre genera el mismo
-avatar).
+avatar). El mismo valor, ya persistido, vuelve en `GET /api/v1/usuarios/{uid}`
+(contrato §4.2) — `AvatarUsuario` lo lee de vuelta para pintarlo en la
+cabecera, ver "Datos de usuario" más abajo.
 
 - **`AvatarPersonalizable`** (arriba del todo en `RegistroForm`): pinta
   `<Blobatar name={username} />` en vivo mientras se escribe el nombre de
@@ -196,15 +199,15 @@ preguntar por la disponibilidad de cualquier `username`.
 ### `GET /api/v1/usuarios/{uid}` — tus propios datos
 
 Chat-gateway comprueba que el `uid` que decodifica el token coincide con el
-`{uid}` de la URL — nadie puede leer el `username`/`email` de una cuenta
-ajena solo por conocer su `uid`.
+`{uid}` de la URL — nadie puede leer el `username`/`email`/`avatar` de una
+cuenta ajena solo por conocer su `uid`.
 
 `src/api/usuario.js#obtenerUsuario(uid, idToken)` lo llama con el mismo
 patrón de resultado tipado que el resto de `src/api/`, mapeando el `type`
 del *Problem Detail* a un `kind`:
 
 ```js
-{ ok: true,  data: { username, email } }        // 200
+{ ok: true,  data: { username, email, avatar } } // 200 — avatar: string | null
 { ok: false, error: { kind: 'no-autenticado' } } // 401 unauthorized
 { ok: false, error: { kind: 'prohibido' } }      // 403 forbidden (token de otro uid)
 { ok: false, error: { kind: 'no-encontrado' } }  // 404 resource-not-found
@@ -218,6 +221,31 @@ del *Problem Detail* a un `kind`:
 cuenta, porque siempre son los de la sesión activa. Ver
 [`integracion-conversacion.md`](./integracion-conversacion.md#identidad)
 para cómo `HomePage` usa el resultado.
+
+`avatar` (mismo formato que en el registro — ver "Avatar generado con
+blobatar" más arriba: un enlace `http(s)`, una etiqueta `<Blobatar .../>`, o
+`null`) es lo único que expone `useMiUsuario` sin respaldo en `localStorage`
+— a diferencia de `yo`, no hay nada que recordar entre sesiones ni que
+`establecerYo` (el formulario manual de respaldo) pueda rellenar a mano; si
+el backend no ha resuelto todavía, o la cuenta no tiene uno, se queda en
+`null`. Lo consume `AvatarUsuario` (`src/components/atoms/AvatarUsuario/`),
+montado en `headerAvatar`, un slot de `DefaultLayout` (`src/components/templates/DefaultLayout/`)
+aparte de `headerActions` — este último va justo antes de `ThemeToggle`,
+`headerAvatar` justo después, así el avatar queda al extremo derecho de la
+cabecera de `HomePage` y nunca entre los botones de acción
+(`Notificaciones`) y el selector de tema. Si `avatar` empieza por
+`<Blobatar`, lo parsea (`src/utils/avatarBlobatar.js#parsearEtiquetaBlobatar`,
+el inverso de `etiquetaBlobatar`) y pinta ese `<Blobatar>` con
+`animate="hover"` — no `"always"` como en el registro, para no tener un
+icono de cabecera animándose todo el tiempo sin que nadie lo mire. Si es un
+enlace, una `<img>` normal. Sin `avatar` pero con `yo` ya conocido, cae al
+mismo automático que ve quien se registra antes de personalizar nada:
+`<Blobatar name={yo} />`. A propósito **más grande** que los iconos de
+`Notificaciones`/`ThemeToggle` (36px vs. 24px): igualado a ese tamaño (una
+iteración anterior de este mismo componente lo intentó) la cara del avatar
+se veía demasiado pequeña para distinguirse — un avatar más grande que los
+iconos de acción vecinos es además el patrón habitual en una cabecera con
+foto de perfil.
 
 ### `GET /api/v1/usuarios/existe` — ¿existe este username?
 

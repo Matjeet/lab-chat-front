@@ -162,6 +162,34 @@ describe('HomePage', () => {
     expect(screen.getByLabelText('Chatear con')).toBeInTheDocument();
   });
 
+  it('muestra el avatar de "mi usuario" al extremo derecho de la cabecera, después del botón de tema', () => {
+    useMiUsuario.mockReturnValue({
+      yo: 'mateo',
+      avatar: '<Blobatar name="mateo" shape="sun" />',
+      establecerYo,
+    });
+    montar();
+
+    const avatar = screen.getByTitle('Avatar de mateo');
+    const botonTema = screen.getByRole('button', { name: /cambiar tema/i });
+    const botonNotificaciones = screen.getByRole('button', { name: 'Notificaciones' });
+    // `compareDocumentPosition` con el bit `FOLLOWING`: el avatar aparece
+    // después tanto del botón de notificaciones como del de tema — nunca
+    // entre los dos — que en una cabecera que fluye de izquierda a derecha
+    // es "completamente a la derecha".
+    // eslint-disable-next-line no-bitwise
+    expect(botonNotificaciones.compareDocumentPosition(avatar) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    // eslint-disable-next-line no-bitwise
+    expect(botonTema.compareDocumentPosition(avatar) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('sin avatar guardado, el de la cabecera cae al automático por el username', () => {
+    useMiUsuario.mockReturnValue({ yo: 'mateo', avatar: null, establecerYo });
+    montar();
+
+    expect(screen.getByTitle('Avatar de mateo')).toBeInTheDocument();
+  });
+
   it('sin "yo" resuelto, pide "Tu usuario" como respaldo', () => {
     montar();
     expect(screen.getByLabelText('Tu usuario')).toBeInTheDocument();
