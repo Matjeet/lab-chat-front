@@ -1,6 +1,6 @@
 .item {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: var(--space-3);
   padding: var(--space-3);
@@ -12,8 +12,14 @@
   background-color: var(--color-primary-soft);
 }
 
+.avatar {
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
 .contenido {
   display: flex;
+  flex: 1;
   flex-direction: column;
   gap: var(--space-1);
   min-width: 0;

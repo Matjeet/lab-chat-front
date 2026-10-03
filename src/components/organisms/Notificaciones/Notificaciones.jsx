@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 import Button from '../../atoms/Button';
 import Modal from '../../molecules/Modal';
 import ItemNotificacion from '../../atoms/ItemNotificacion';
+import AvatarUsuario from '../../atoms/AvatarUsuario';
 import { useInterlocutor } from '../../../context/InterlocutorContext';
 import useNotificaciones from '../../../hooks/useNotificaciones';
 import useActualizarSolicitud from '../../../hooks/useActualizarSolicitud';
@@ -36,6 +37,12 @@ const RETRASO_RECARGA_RECHAZO_MS = 500;
  * La campana muestra una insignia con `noLeidas` (más de `INSIGNIA_MAXIMA` se
  * ve como "9+") — ver `useNotificaciones` para su cálculo (aproximado: solo
  * cuenta la página cargada, el backend no expone un total de no leídas).
+ *
+ * Cada notificación con remitente lleva su avatar (`avatarRemitente`, que
+ * el gateway devuelve en cada `NotificacionResponse`, contrato §4.8) a la
+ * izquierda, con `AvatarUsuario`; `null` (no eligió uno, no es una solicitud
+ * nueva, o la notificación es anterior a este campo) cae al automático por
+ * username, igual que en la cabecera y en `ListaChats`.
  *
  * Cada notificación de tipo `"solicitud"` pendiente trae dos botones
  * (`ItemNotificacion`): aceptar (verde) y rechazar (rojo). Ambos llaman a
@@ -199,6 +206,14 @@ const Notificaciones = ({ yo = '' }) => {
                   <ItemNotificacion
                     key={notificacion.id}
                     notificacion={notificacion}
+                    avatar={
+                      notificacion.remitente ? (
+                        <AvatarUsuario
+                          avatar={notificacion.avatarRemitente}
+                          username={notificacion.remitente}
+                        />
+                      ) : undefined
+                    }
                     deshabilitado={procesandoId === notificacion.id}
                     onMarcarLeida={() => marcarLeida(notificacion.id)}
                     onMarcarNoLeida={() => marcarNoLeida(notificacion.id)}

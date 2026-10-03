@@ -4,6 +4,7 @@ import { API_BASE_URL } from '../api/config';
  * @typedef {Object} Notificacion
  * @property {number} id
  * @property {string|null} remitente  Username de quien la originó. `null` si el tipo no tiene remitente.
+ * @property {string|null} [avatarRemitente]  Avatar de `remitente` (enlace http(s) o etiqueta `<Blobatar .../>`); `null` si no hay remitente, no eligió uno, no es una solicitud nueva o es anterior a este campo.
  * @property {string} tipo  Hoy solo `"solicitud"`.
  * @property {boolean} leida
  * @property {string} createdAt  ISO-8601 UTC.
