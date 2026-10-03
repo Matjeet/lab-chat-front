@@ -148,6 +148,29 @@ describe('useListaChats', () => {
     ]);
   });
 
+  it('registrarMensajeNuevo conserva el avatar que ya traía el chat al moverlo al principio', async () => {
+    observarSesion.mockImplementation((callback) => {
+      callback(usuarioFake('uid-123'));
+      return jest.fn();
+    });
+    const conAna = { otroUsuario: 'ana', avatar: '<Blobatar name="ana" />', ultimoMensaje: { contenido: 'Hola!' } };
+    const conLuis = { otroUsuario: 'luis', avatar: null, ultimoMensaje: { contenido: 'Ey' } };
+    obtenerListaChats.mockResolvedValue(paginaFake([conLuis, conAna]));
+
+    const { result } = renderHook(() => useListaChats('mateo'));
+    await waitFor(() => expect(result.current.cargando).toBe(false));
+
+    const mensajeNuevo = { id: '9', remitente: 'ana', destinatario: 'mateo', contenido: 'Nuevo!' };
+    act(() => {
+      result.current.registrarMensajeNuevo('ana', mensajeNuevo);
+    });
+
+    expect(result.current.chats).toEqual([
+      { otroUsuario: 'ana', avatar: '<Blobatar name="ana" />', ultimoMensaje: mensajeNuevo },
+      conLuis,
+    ]);
+  });
+
   it('registrarMensajeNuevo con un usuario nuevo lo agrega como primer chat', async () => {
     observarSesion.mockImplementation((callback) => {
       callback(usuarioFake('uid-123'));

@@ -55,6 +55,19 @@ hace falta un endpoint dedicado en `chat-notificaciones`.
 La insignia (`Notificaciones`) muestra el número tal cual hasta 9; más de 9
 se ve como "9+" (`INSIGNIA_MAXIMA`).
 
+## El avatar del remitente
+
+Cada `NotificacionResponse` trae `avatarRemitente` (`string | null`, contrato
+§4.8/§4.9): el avatar de `remitente`, en el mismo formato que `avatar` en el
+registro (enlace `http(s)` o etiqueta `<Blobatar .../>`). `chat-notificaciones`
+lo guarda al registrar la notificación, y solo llega en una **solicitud
+nueva** (es lo único para lo que `chat-conversacion` lo manda); es `null` si
+no hay remitente, si no eligió avatar, o si la notificación es anterior a
+este campo. `Notificaciones` lo pinta con `AvatarUsuario` (el mismo átomo de
+la cabecera y de `ListaChats`) a la izquierda del texto, pasándolo a
+`ItemNotificacion` como slot (`avatar`) — un átomo no importa otro átomo. Sin
+avatar, cae al automático por username del remitente.
+
 ## El panel
 
 - Se abre al pulsar la campana; **recarga la lista cada vez que se abre**

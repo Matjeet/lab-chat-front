@@ -98,10 +98,18 @@ const useListaChats = (yo) => {
    * tampoco debe existir en esta lista.
    */
   const registrarMensajeNuevo = useCallback((otroUsuario, mensaje) => {
-    setChats((prev) => [
-      { otroUsuario, ultimoMensaje: mensaje },
-      ...prev.filter((chat) => chat.otroUsuario !== otroUsuario),
-    ]);
+    setChats((prev) => {
+      const existente = prev.find((chat) => chat.otroUsuario === otroUsuario);
+      return [
+        // Conserva el `avatar` que ya trajo el backend: mover un chat al
+        // principio no debe borrárselo. Uno nuevo (sin entrada previa) no
+        // tiene `avatar` hasta que se recargue la lista — no hay endpoint
+        // para pedir el de un solo usuario; `AvatarUsuario` cae al
+        // automático por username mientras tanto.
+        { ...existente, otroUsuario, ultimoMensaje: mensaje },
+        ...prev.filter((chat) => chat.otroUsuario !== otroUsuario),
+      ];
+    });
   }, []);
 
   return { chats, cargando, cargandoMas, error, hasMore, cargarMas, registrarMensajeNuevo };

@@ -29,6 +29,8 @@ const formatearFecha = (iso) => new Date(iso).toLocaleString();
  *
  * @param {object} props
  * @param {import('../../../notificaciones/notificaciones').Notificacion} props.notificacion
+ * @param {React.ReactNode} [props.avatar]  A la izquierda del texto (slot, no dato: un átomo no
+ *   puede importar otro átomo — `AvatarUsuario` lo arma `Notificaciones`).
  * @param {() => void} props.onMarcarLeida
  * @param {() => void} props.onMarcarNoLeida
  * @param {() => void} [props.onAceptar]   Solo se usa si `tipo === 'solicitud'` y sigue pendiente.
@@ -39,6 +41,7 @@ const formatearFecha = (iso) => new Date(iso).toLocaleString();
  */
 const ItemNotificacion = ({
   notificacion,
+  avatar,
   onMarcarLeida,
   onMarcarNoLeida,
   onAceptar,
@@ -58,6 +61,7 @@ const ItemNotificacion = ({
         if (!leida) onMarcarLeida();
       }}
     >
+      {avatar && <span className={styles.avatar}>{avatar}</span>}
       <div className={styles.contenido}>
         <p className={styles.texto}>{texto}</p>
         <time className={styles.fecha} dateTime={createdAt}>
