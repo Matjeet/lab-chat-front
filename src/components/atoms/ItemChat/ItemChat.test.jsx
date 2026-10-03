@@ -40,4 +40,27 @@ describe('ItemChat', () => {
     );
     expect(screen.getByRole('button')).not.toHaveAttribute('aria-current');
   });
+
+  it('muestra el avatar recibido a la izquierda del nombre', () => {
+    render(
+      <ItemChat
+        otroUsuario="ana"
+        ultimoMensaje={{ contenido: 'Hola!' }}
+        avatar={<span data-testid="avatar" />}
+        onClick={jest.fn()}
+      />,
+    );
+
+    const avatar = screen.getByTestId('avatar');
+    const nombre = screen.getByText('ana');
+    // eslint-disable-next-line no-bitwise
+    expect(nombre.compareDocumentPosition(avatar) & Node.DOCUMENT_POSITION_PRECEDING).toBeTruthy();
+  });
+
+  it('sin avatar, no reserva hueco para él', () => {
+    const { container } = render(
+      <ItemChat otroUsuario="ana" ultimoMensaje={{ contenido: 'Hola!' }} onClick={jest.fn()} />,
+    );
+    expect(container.querySelectorAll('button > span')).toHaveLength(1); // solo el bloque de texto
+  });
 });
