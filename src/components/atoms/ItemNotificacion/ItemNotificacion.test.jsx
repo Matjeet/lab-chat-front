@@ -198,4 +198,21 @@ describe('ItemNotificacion', () => {
     );
     expect(screen.queryByRole('button', { name: 'Marcar como no leída' })).not.toBeInTheDocument();
   });
+
+  it('muestra el avatar recibido a la izquierda del texto', () => {
+    render(
+      <ItemNotificacion
+        notificacion={notificacionSolicitud()}
+        avatar={<span data-testid="avatar" />}
+        onMarcarLeida={jest.fn()}
+        onMarcarNoLeida={jest.fn()}
+      />,
+    );
+
+    const texto = screen.getByText('ana te envió una solicitud de chat');
+    // eslint-disable-next-line no-bitwise
+    expect(
+      texto.compareDocumentPosition(screen.getByTestId('avatar')) & Node.DOCUMENT_POSITION_PRECEDING,
+    ).toBeTruthy();
+  });
 });

@@ -146,6 +146,18 @@ const { chats, cargando, cargandoMas, error, hasMore, cargarMas, registrarMensaj
   activa (mismo criterio que `useMiUsuario`: nunca llama al backend sin
   ambas cosas), pide la primera página de `GET
   /api/v1/conversaciones/{yo}/chats` (contrato §4.5).
+- **Avatar de cada chat**: cada `ChatResumen` trae `avatar` (`string | null`,
+  contrato §4.5: el avatar de `otroUsuario`, que `chat-conversacion` resuelve
+  desde su colección `perfil`; `null` si no eligió uno o todavía no hay
+  perfil suyo — p. ej. una cuenta anterior a la publicación por RabbitMQ).
+  `ListaChats` lo pinta con `AvatarUsuario` (el mismo átomo de la cabecera,
+  `animate="hover"`) a la izquierda del nombre; entra a `ItemChat` como slot
+  (`avatar`, un `ReactNode`) porque un átomo no importa otro átomo. Sin
+  avatar, cae al automático por username. `registrarMensajeNuevo` conserva el
+  `avatar` de un chat que ya existía al moverlo al principio; un chat
+  **nuevo** creado en local (primer mensaje recibido de alguien) no lo
+  tiene hasta recargar la lista — no hay endpoint para pedir el de un solo
+  usuario — y mientras tanto se ve el automático.
 - **Scroll infinito**: `ListaChats` observa un centinela al final de la
   lista con `IntersectionObserver`; al hacerse visible, si `hasMore` es
   `true`, llama a `cargarMas()`, que pide la siguiente página con el

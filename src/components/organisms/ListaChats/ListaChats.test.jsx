@@ -29,6 +29,42 @@ describe('ListaChats', () => {
     expect(screen.getByText('Nos vemos mañana')).toBeInTheDocument();
   });
 
+  it('pinta el avatar de cada chat a la izquierda de su nombre', () => {
+    render(
+      <ListaChats
+        {...props({
+          chats: [
+            {
+              otroUsuario: 'ana',
+              avatar: '<Blobatar name="ana" shape="sun" />',
+              ultimoMensaje: { contenido: 'Hola!' },
+            },
+          ],
+        })}
+      />,
+    );
+
+    const avatar = screen.getByTitle('Avatar de ana');
+    // eslint-disable-next-line no-bitwise
+    expect(screen.getByText('ana').compareDocumentPosition(avatar) & Node.DOCUMENT_POSITION_PRECEDING).toBeTruthy();
+  });
+
+  it('un chat sin avatar (null o ausente) cae al automático por username', () => {
+    render(
+      <ListaChats
+        {...props({
+          chats: [
+            { otroUsuario: 'ana', avatar: null, ultimoMensaje: { contenido: 'Hola!' } },
+            { otroUsuario: 'luis', ultimoMensaje: { contenido: 'Ey' } },
+          ],
+        })}
+      />,
+    );
+
+    expect(screen.getByTitle('Avatar de ana')).toBeInTheDocument();
+    expect(screen.getByTitle('Avatar de luis')).toBeInTheDocument();
+  });
+
   it('mientras carga, avisa en vez de mostrar la lista', () => {
     render(<ListaChats {...props({ cargando: true })} />);
     expect(screen.getByText(/cargando chats/i)).toBeInTheDocument();

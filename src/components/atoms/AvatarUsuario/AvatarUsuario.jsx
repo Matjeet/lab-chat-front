@@ -18,10 +18,11 @@ import styles from './AvatarUsuario.module.css';
 const TAMANO_PX = 36;
 
 /**
- * Átomo: el avatar de la sesión activa, en la cabecera — en el slot
- * `headerAvatar` de `DefaultLayout` (ver `HomePage`), al extremo derecho,
- * después de `ThemeToggle`. `avatar` es el mismo valor que devuelve
- * `GET /api/v1/usuarios/{uid}` (chat-gateway, contrato §4.2): un enlace
+ * Átomo: el avatar de un usuario — el de la sesión activa en la cabecera
+ * (slot `headerAvatar` de `DefaultLayout`, ver `HomePage`, al extremo
+ * derecho tras `ThemeToggle`) y el de cada persona en `ListaChats`. `avatar`
+ * es el mismo valor que devuelven `GET /api/v1/usuarios/{uid}` (contrato
+ * §4.2) y cada `ChatResumen` de la lista de chats (§4.5): un enlace
  * `http(s)`, una etiqueta `<Blobatar .../>` (la forma que genera este mismo
  * frontend al registrarse, ver `AvatarPersonalizable`/
  * `src/utils/avatarBlobatar.js`), o `null` si la cuenta no tiene uno
@@ -41,8 +42,9 @@ const TAMANO_PX = 36;
  *
  * `animate="hover"`, no `"always"` como en `AvatarPersonalizable`: ahí es
  * la pieza central de la pantalla de registro; aquí es un icono más de la
- * cabecera, siempre visible — animarlo sin parar sería ruido constante, no
- * un detalle.
+ * cabecera o de una fila de la lista de chats, siempre visible — animarlo
+ * sin parar (con decenas de filas, además) sería ruido constante, no un
+ * detalle; blobatar recomienda `"hover"` justo para listas.
  *
  * @param {object} props
  * @param {string|null} [props.avatar]

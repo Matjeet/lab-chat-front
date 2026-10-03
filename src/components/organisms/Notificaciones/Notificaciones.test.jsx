@@ -206,6 +206,33 @@ describe('Notificaciones', () => {
     expect(screen.getByRole('button', { name: 'Rechazar solicitud de ana' })).toBeInTheDocument();
   });
 
+  it('pinta el avatar del remitente a la izquierda de la notificación', async () => {
+    mockearHook({
+      notificaciones: [
+        notificacionSolicitud({ avatarRemitente: '<Blobatar name="ana" shape="sun" />' }),
+      ],
+    });
+    const user = userEvent.setup();
+    montar();
+
+    await user.click(screen.getByRole('button', { name: 'Notificaciones' }));
+
+    const avatar = screen.getByTitle('Avatar de ana');
+    const texto = screen.getByText('ana te envió una solicitud de chat');
+    // eslint-disable-next-line no-bitwise
+    expect(texto.compareDocumentPosition(avatar) & Node.DOCUMENT_POSITION_PRECEDING).toBeTruthy();
+  });
+
+  it('sin avatarRemitente (null o ausente), cae al automático por username', async () => {
+    mockearHook({ notificaciones: [notificacionSolicitud({ avatarRemitente: null })] });
+    const user = userEvent.setup();
+    montar();
+
+    await user.click(screen.getByRole('button', { name: 'Notificaciones' }));
+
+    expect(screen.getByTitle('Avatar de ana')).toBeInTheDocument();
+  });
+
   it('al aceptar una solicitud, abre el chat con el remitente en paralelo con confirmar al backend', async () => {
     mockearHook({ notificaciones: [notificacionSolicitud()] });
     const user = userEvent.setup();

@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react';
 
 import Alert from '../../atoms/Alert';
+import AvatarUsuario from '../../atoms/AvatarUsuario';
 import ItemChat from '../../atoms/ItemChat';
 import styles from './ListaChats.module.css';
 
@@ -14,6 +15,12 @@ import styles from './ListaChats.module.css';
  * `IntersectionObserver` en vez de `scrollIntoView`, porque aquí lo que
  * importa es detectar cuándo se hace visible, no forzar el scroll) dispara
  * `onCargarMas` al acercarse al final — solo mientras `hasMore` sea `true`.
+ *
+ * Cada fila lleva el avatar de la otra persona (`chat.avatar`, que ahora
+ * devuelve el gateway en cada `ChatResumen`, contrato §4.5) a la izquierda
+ * del nombre, con `AvatarUsuario` — el mismo átomo de la cabecera. Un chat
+ * sin avatar (`null`: no eligió uno, o todavía no hay perfil suyo en
+ * chat-conversacion) cae al automático por username, igual que allí.
  *
  * @param {object} props
  * @param {import('../../../conversacion/listaChats').ChatResumen[]} props.chats
@@ -76,6 +83,7 @@ const ListaChats = ({
             <ItemChat
               key={chat.otroUsuario}
               otroUsuario={chat.otroUsuario}
+              avatar={<AvatarUsuario avatar={chat.avatar} username={chat.otroUsuario} />}
               ultimoMensaje={chat.ultimoMensaje}
               activo={chat.otroUsuario === chatActivo}
               onClick={() => onSeleccionar(chat.otroUsuario)}

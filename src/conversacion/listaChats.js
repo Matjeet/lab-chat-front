@@ -3,6 +3,7 @@ import { API_BASE_URL } from '../api/config';
 /**
  * @typedef {Object} ChatResumen
  * @property {string} otroUsuario
+ * @property {string|null} [avatar]  Avatar de `otroUsuario` (enlace http(s) o etiqueta `<Blobatar .../>`); `null` si no eligió uno o aún no hay perfil suyo. Ausente en un chat que `registrarMensajeNuevo` acaba de crear en local.
  * @property {import('./historial').Mensaje} ultimoMensaje
  */
 
