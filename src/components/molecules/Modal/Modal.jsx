@@ -8,13 +8,13 @@ import styles from './Modal.module.css';
 const SELECTOR_FOCABLES =
   'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
 
-const BOTON_POR_TONO = { error: 'danger', info: 'primary' };
-const TITULO_POR_TONO = { error: 'Ha ocurrido un error', info: 'Aviso' };
+const BOTON_POR_TONO = { error: 'danger', info: 'primary', warning: 'warning' };
+const TITULO_POR_TONO = { error: 'Ha ocurrido un error', info: 'Aviso', warning: 'Atención' };
 
 /**
  * Molécula: el estándar único para un mensaje **bloqueante** — uno que
  * interrumpe la acción que el usuario acaba de intentar y necesita su
- * confirmación explícita antes de seguir. Dos tonos, mismo componente y
+ * confirmación explícita antes de seguir. Tres tonos, mismo componente y
  * misma forma:
  * - `tono="error"` (rojo, botón `danger`) — algo salió mal de verdad (p. ej.
  *   "ese usuario no existe" al elegir con quién chatear).
@@ -22,6 +22,9 @@ const TITULO_POR_TONO = { error: 'Ha ocurrido un error', info: 'Aviso' };
  *   que igual necesita reconocerse antes de seguir (p. ej. "ya tienes una
  *   solicitud pendiente con este usuario", o la confirmación de que una
  *   solicitud se envió).
+ * - `tono="warning"` (amarillo, botón `warning`) — algo que no es un error
+ *   ni mera información, sino una advertencia (p. ej. una función que
+ *   todavía está en construcción).
  *
  * No sustituye a `Alert` (avisos de pantalla que conviven con el resto del
  * contenido) ni al error inline de `FormField` (validación de un campo
@@ -35,7 +38,7 @@ const TITULO_POR_TONO = { error: 'Ha ocurrido un error', info: 'Aviso' };
  * (`{error && <Modal ... />}`).
  *
  * @param {object} props
- * @param {'error'|'info'} [props.tono='error']
+ * @param {'error'|'info'|'warning'} [props.tono='error']
  * @param {string} [props.titulo]  Por defecto, uno genérico según `tono`.
  * @param {React.ReactNode} props.mensaje
  * @param {() => void} props.onCerrar

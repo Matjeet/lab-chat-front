@@ -177,6 +177,8 @@ const StyleGuidePage = () => {
           <Button variant="primary">Primary</Button>
           <Button variant="secondary">Secondary</Button>
           <Button variant="ghost">Ghost</Button>
+          <Button variant="icon" aria-label="Solo icono">★</Button>
+          <Button variant="warning">Warning</Button>
           <Button variant="danger">Danger</Button>
           <Button variant="success">Success</Button>
           <Button variant="primary" disabled>

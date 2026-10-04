@@ -28,8 +28,10 @@ import styles from './Header.module.css';
  * @param {string} props.title             Título de la página (h1, solo para lectores de pantalla).
  * @param {React.ReactNode} [props.centro]  Contenido centrado (p. ej. `SelectorInterlocutor`).
  * @param {React.ReactNode} [props.actions] Acciones a la derecha (botones, enlaces...).
+ * @param {React.ReactNode} [props.marcaExtra] Contenido justo a la derecha de la marca
+ *   (p. ej. `BotonIA`).
  */
-const Header = ({ title, centro, actions }) => (
+const Header = ({ title, centro, actions, marcaExtra }) => (
   <header className={styles.header}>
     <div className={styles.izquierda}>
       <Link href="/" className={styles.marca}>
@@ -37,6 +39,7 @@ const Header = ({ title, centro, actions }) => (
         <span className={styles.nombreApp}>Chat</span>
       </Link>
       <h1 className="sr-only">{title}</h1>
+      {marcaExtra}
     </div>
     <div className={styles.centro}>{centro}</div>
     {actions && <nav className={styles.actions}>{actions}</nav>}
