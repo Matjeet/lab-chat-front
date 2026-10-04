@@ -49,6 +49,19 @@
   background-color: var(--color-surface-muted);
 }
 
+/* Solo el icono: sin fondo ni borde visibles (el borde sigue ahí, transparente,
+   igual que en las demás variantes, para que la caja mida lo mismo). Pensado
+   para los botones de la cabecera (campana, tema). Mantiene el fondo suave al
+   pasar el mouse, para que se note que es clicable. */
+.icon {
+  background-color: transparent;
+  color: var(--color-text);
+}
+
+.icon:not(:disabled):hover {
+  background-color: var(--color-surface-muted);
+}
+
 .danger {
   background-color: var(--color-danger);
   color: var(--color-on-danger);

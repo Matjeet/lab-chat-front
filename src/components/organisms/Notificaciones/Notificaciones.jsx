@@ -159,7 +159,7 @@ const Notificaciones = ({ yo = '' }) => {
   return (
     <div className={styles.contenedor} ref={contenedorRef}>
       <Button
-        variant="ghost"
+        variant="icon"
         aria-label="Notificaciones"
         aria-haspopup="dialog"
         aria-expanded={abierto}

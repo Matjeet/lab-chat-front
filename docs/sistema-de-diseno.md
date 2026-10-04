@@ -211,7 +211,7 @@ otro tono, según el `kind` que devuelve la API).
 
 | Nivel | Estilo |
 |-------|--------|
-| **atoms** | Definen su aspecto con tokens. Exponen `variant` para las variaciones previstas (p. ej. `Button`: `primary` / `secondary` / `ghost` / `danger` / `success`). |
+| **atoms** | Definen su aspecto con tokens. Exponen `variant` para las variaciones previstas (p. ej. `Button`: `primary` / `secondary` / `ghost` / `icon` (solo icono, sin borde: botones de la cabecera) / `danger` / `success`). |
 | **molecules** | Solo layout entre sus átomos (`gap`, dirección). No re-pintan los átomos. |
 | **organisms** | Layout de sección y espaciado. Color/tipografía siguen viniendo de tokens. |
 | **templates** | Rejilla de la pantalla, anchos máximos, zonas. Sin color de marca. |
