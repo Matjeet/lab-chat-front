@@ -39,8 +39,17 @@ const MENSAJE_RED =
  * re-renderizar el formulario por esto) y se manda tal cual en el campo
  * `avatar` de la petición.
  *
+ * Al terminar el alta con éxito avisa con `onRegistroCompleto(usuario,
+ * credenciales)`; `credenciales` (`{email, password}`, ya normalizados como
+ * se enviaron) permite a quien lo use iniciar sesión de inmediato sin volver
+ * a pedirlas. Si devuelve una promesa, el botón sigue deshabilitado hasta que
+ * se resuelva.
+ *
  * @param {object} props
- * @param {(usuario: import('../../../api/registro').RegistroResponse) => void} props.onRegistroCompleto
+ * @param {(
+ *   usuario: import('../../../api/registro').RegistroResponse,
+ *   credenciales: {email: string, password: string},
+ * ) => void | Promise<void>} props.onRegistroCompleto
  */
 const RegistroForm = ({ onRegistroCompleto }) => {
   const [valores, setValores] = useState(VALORES_INICIALES);
@@ -70,19 +79,25 @@ const RegistroForm = ({ onRegistroCompleto }) => {
     setErrores({});
     setEnviando(true);
 
-    const resultado = await registrarUsuario({
-      username: valores.username.trim(),
+    const credenciales = {
       email: valores.email.trim().toLowerCase(),
       password: valores.password,
+    };
+    const resultado = await registrarUsuario({
+      username: valores.username.trim(),
+      ...credenciales,
       avatar: avatarRef.current,
     });
 
-    setEnviando(false);
-
     if (resultado.ok) {
-      onRegistroCompleto(resultado.data);
+      // Espera a quien lo use (puede iniciar sesión a continuación): el botón
+      // sigue deshabilitado hasta entonces, para no permitir un segundo envío.
+      await onRegistroCompleto(resultado.data, credenciales);
+      setEnviando(false);
       return;
     }
+
+    setEnviando(false);
 
     const { error } = resultado;
     if (error.kind === 'validacion') {

@@ -3,7 +3,8 @@ import userEvent from '@testing-library/user-event';
 
 import RegistroPage from './RegistroPage';
 import { registrarUsuario } from '../../../api/registro';
-import { observarSesion } from '../../../firebase/auth';
+import { iniciarSesion, observarSesion } from '../../../firebase/auth';
+import { consumirBienvenidaPendiente } from '../../../utils/bienvenida';
 
 jest.mock('../../../api/registro');
 
@@ -11,6 +12,7 @@ jest.mock('../../../api/registro');
 // las variables de entorno que solo existen en build/dev).
 jest.mock('../../../firebase/auth', () => ({
   observarSesion: jest.fn(),
+  iniciarSesion: jest.fn(),
 }));
 
 const replace = jest.fn();
@@ -30,6 +32,7 @@ beforeEach(() => {
 afterEach(() => {
   jest.clearAllMocks();
   localStorage.clear();
+  sessionStorage.clear();
 });
 
 describe('RegistroPage', () => {
@@ -41,8 +44,7 @@ describe('RegistroPage', () => {
     expect(screen.getByLabelText('Nombre de usuario')).toBeInTheDocument();
   });
 
-  it('cambia a la confirmación tras un alta correcta', async () => {
-    const user = userEvent.setup();
+  const registrarCorrectamente = async (user) => {
     registrarUsuario.mockResolvedValue({
       ok: true,
       data: {
@@ -58,6 +60,33 @@ describe('RegistroPage', () => {
     await user.type(screen.getByLabelText('Correo electrónico'), 'mateo@example.com');
     await user.type(screen.getByLabelText('Contraseña'), 'Passw0rd!');
     await user.click(screen.getByRole('button', { name: 'Crear cuenta' }));
+  };
+
+  it('tras un alta correcta inicia sesión con las mismas credenciales y navega a /home', async () => {
+    const user = userEvent.setup();
+    iniciarSesion.mockResolvedValue({
+      ok: true,
+      data: { uid: 'uid-7', email: 'mateo@example.com', idToken: 'token' },
+    });
+
+    await registrarCorrectamente(user);
+
+    await waitFor(() => expect(replace).toHaveBeenCalledWith('/home'));
+    expect(iniciarSesion).toHaveBeenCalledWith({
+      email: 'mateo@example.com',
+      password: 'Passw0rd!',
+    });
+    expect(screen.queryByText(/cuenta creada correctamente/i)).not.toBeInTheDocument();
+    expect(localStorage.getItem('chat:miUsuario')).toBe('mateo29');
+    // Para que HomePage dé la bienvenida (una sola vez).
+    expect(consumirBienvenidaPendiente()).toBe(true);
+  });
+
+  it('si el inicio de sesión automático falla, cae a la confirmación con enlace al login', async () => {
+    const user = userEvent.setup();
+    iniciarSesion.mockResolvedValue({ ok: false, error: { kind: 'red' } });
+
+    await registrarCorrectamente(user);
 
     expect(
       await screen.findByText(/cuenta creada correctamente/i),
@@ -71,6 +100,8 @@ describe('RegistroPage', () => {
     // Para que HomePage no tenga que volver a pedir el username (ver
     // src/utils/miUsuario.js).
     expect(localStorage.getItem('chat:miUsuario')).toBe('mateo29');
+    // Sin sesión no hay bienvenida: no debe quedar pendiente para un login posterior.
+    expect(consumirBienvenidaPendiente()).toBe(false);
   });
 
   it('muestra el formulario de inmediato aunque la comprobación de sesión no haya resuelto', () => {

@@ -13,6 +13,7 @@ import useCrearSolicitudChat from '../../../hooks/useCrearSolicitudChat';
 import useNotificaciones from '../../../hooks/useNotificaciones';
 import useActualizarSolicitud from '../../../hooks/useActualizarSolicitud';
 import { reproducirSonidoEnviado, reproducirSonidoRecibido } from '../../../utils/sonidosMensajes';
+import { marcarBienvenidaPendiente } from '../../../utils/bienvenida';
 
 // Factory explícita: un automock sin factory cargaría el Firebase real (sin
 // las variables de entorno que solo existen en build/dev).
@@ -112,6 +113,7 @@ beforeEach(() => {
 afterEach(() => {
   jest.clearAllMocks();
   localStorage.clear();
+  sessionStorage.clear();
 });
 
 // InterlocutorContext real (no mockeado): el selector vive en la cabecera y
@@ -479,5 +481,27 @@ describe('HomePage', () => {
 
     expect(screen.getByLabelText('Tu usuario')).toBeInTheDocument();
     await waitFor(() => expect(replace).toHaveBeenCalledWith('/login'));
+  });
+
+  it('recién registrado, muestra la bienvenida una sola vez', async () => {
+    const user = userEvent.setup();
+    marcarBienvenidaPendiente();
+
+    const { unmount } = montar();
+
+    expect(screen.getByRole('alertdialog', { name: /bienvenida/i })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Empezar' }));
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+
+    // Una recarga (montar de nuevo) ya no la muestra: la marca se consumió.
+    unmount();
+    montar();
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+  });
+
+  it('sin una alta reciente, no muestra la bienvenida', () => {
+    montar();
+
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
   });
 });
