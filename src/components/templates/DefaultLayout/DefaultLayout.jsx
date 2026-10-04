@@ -12,6 +12,8 @@ import styles from './DefaultLayout.module.css';
  * @param {object} props
  * @param {string} props.title              Título para la cabecera.
  * @param {React.ReactNode} [props.headerCentro] Contenido centrado en la cabecera (p. ej. `SelectorInterlocutor`).
+ * @param {React.ReactNode} [props.headerMarcaExtra] Contenido justo a la derecha de la marca
+ *   "Chat", en la zona izquierda de la cabecera (p. ej. `BotonIA`).
  * @param {React.ReactNode} [props.headerActions] Acciones extra a la izquierda del selector de tema.
  * @param {React.ReactNode} [props.headerAvatar] Contenido al extremo derecho de la cabecera,
  *   después del selector de tema (p. ej. `AvatarUsuario`) — slot aparte de `headerActions`
@@ -39,6 +41,7 @@ import styles from './DefaultLayout.module.css';
 const DefaultLayout = ({
   title,
   headerCentro,
+  headerMarcaExtra,
   headerActions,
   headerAvatar,
   centered = false,
@@ -53,6 +56,7 @@ const DefaultLayout = ({
     <Header
       title={title}
       centro={headerCentro}
+      marcaExtra={headerMarcaExtra}
       actions={
         <>
           {headerActions}

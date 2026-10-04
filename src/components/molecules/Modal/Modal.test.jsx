@@ -23,6 +23,12 @@ describe('Modal', () => {
     expect(screen.getByRole('button', { name: 'Entendido' })).toHaveClass('primary');
   });
 
+  it('con tono "warning", usa un título genérico propio y el botón warning', () => {
+    render(<Modal tono="warning" mensaje="Función en construcción" onCerrar={() => {}} />);
+    expect(screen.getByRole('alertdialog', { name: 'Atención' })).toHaveClass('warning');
+    expect(screen.getByRole('button', { name: 'Entendido' })).toHaveClass('warning');
+  });
+
   it('acepta un mensaje con contenido enriquecido (JSX), no solo texto', () => {
     render(
       <Modal
