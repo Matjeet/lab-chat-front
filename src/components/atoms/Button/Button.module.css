@@ -51,9 +51,12 @@
 
 /* Solo el icono: sin fondo ni borde visibles (el borde sigue ahí, transparente,
    igual que en las demás variantes, para que la caja mida lo mismo). Pensado
-   para los botones de la cabecera (campana, tema). Mantiene el fondo suave al
+   para los botones de la cabecera (campana, tema). Padding parejo (sin el
+   `--space-4` horizontal de los demás): la caja queda casi cuadrada y los
+   iconos quedan más juntos. Mantiene el fondo suave al
    pasar el mouse, para que se note que es clicable. */
 .icon {
+  padding: var(--space-2);
   background-color: transparent;
   color: var(--color-text);
 }
