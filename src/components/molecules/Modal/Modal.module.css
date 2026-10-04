@@ -26,6 +26,10 @@
   border-color: var(--color-primary);
 }
 
+.dialogo.warning {
+  border-color: var(--color-warning);
+}
+
 /* El diálogo recibe foco programático al abrirse (gestión de foco de un
  * modal, no navegación real por teclado): el anillo de foco global
  * (`--color-focus-ring`) sobra aquí, el propio borde de color ya marca que
@@ -43,6 +47,10 @@
 
 .titulo.info {
   color: var(--color-primary);
+}
+
+.titulo.warning {
+  color: var(--color-warning);
 }
 
 .mensaje {

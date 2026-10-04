@@ -12,6 +12,7 @@ import FormField from '../../molecules/FormField';
 import Modal from '../../molecules/Modal';
 import SelectorInterlocutor from '../../molecules/SelectorInterlocutor';
 import Notificaciones from '../../organisms/Notificaciones';
+import BotonIA from '../../organisms/BotonIA';
 import useRequiereSesion from '../../../hooks/useRequiereSesion';
 import useConversacion from '../../../hooks/useConversacion';
 import useCanalMensajes from '../../../hooks/useCanalMensajes';
@@ -224,6 +225,7 @@ const HomePage = () => {
   return (
     <DefaultLayout
       title="Chat"
+      headerMarcaExtra={<BotonIA />}
       headerCentro={<SelectorInterlocutor yo={yo} />}
       headerActions={<Notificaciones yo={yo} />}
       headerAvatar={<AvatarUsuario avatar={avatar} username={yo} />}

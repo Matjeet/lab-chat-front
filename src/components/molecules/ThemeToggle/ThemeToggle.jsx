@@ -62,7 +62,7 @@ const ThemeToggle = () => {
 
   return (
     <Button
-      variant="ghost"
+      variant="icon"
       onClick={cambiar}
       aria-label={`Cambiar tema. Actual: ${ETIQUETA[tema]}`}
     >

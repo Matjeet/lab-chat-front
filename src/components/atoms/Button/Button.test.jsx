@@ -23,6 +23,11 @@ describe('Button', () => {
     expect(screen.getByRole('button', { name: 'Aceptar' })).toHaveClass('success');
   });
 
+  it('aplica la clase del variant "icon" (solo icono, sin borde visible)', () => {
+    render(<Button variant="icon" aria-label="Notificaciones">x</Button>);
+    expect(screen.getByRole('button', { name: 'Notificaciones' })).toHaveClass('icon');
+  });
+
   it('no ejecuta onClick cuando está deshabilitado', async () => {
     const onClick = jest.fn();
     render(

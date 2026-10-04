@@ -6,7 +6,7 @@ import styles from './Button.module.css';
  * @param {object} props
  * @param {React.ReactNode} props.children  Contenido del botón.
  * @param {'button'|'submit'|'reset'} [props.type='button']
- * @param {'primary'|'secondary'|'ghost'|'danger'} [props.variant='primary']
+ * @param {'primary'|'secondary'|'ghost'|'icon'|'warning'|'danger'} [props.variant='primary']
  * @param {boolean} [props.disabled=false]
  * @param {() => void} [props.onClick]
  * @param {object} [props.rest]  Resto de atributos nativos (aria-*, name, ...).

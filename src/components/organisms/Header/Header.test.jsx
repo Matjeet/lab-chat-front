@@ -15,6 +15,11 @@ describe('Header', () => {
     expect(screen.getByRole('button', { name: 'Salir' })).toBeInTheDocument();
   });
 
+  it('renderiza el contenido junto a la marca cuando se pasa', () => {
+    render(<Header title="Chat" marcaExtra={<button type="button">IA</button>} />);
+    expect(screen.getByRole('button', { name: 'IA' })).toBeInTheDocument();
+  });
+
   it('no renderiza navegación si no hay acciones', () => {
     render(<Header title="Chat" />);
     expect(screen.queryByRole('navigation')).not.toBeInTheDocument();
