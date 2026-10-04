@@ -86,6 +86,11 @@ describe('RegistroForm', () => {
       password: 'Passw0rd!',
       avatar: '<Blobatar name="mateo29" />',
     });
+    // Segundo argumento: lo que `RegistroPage` necesita para iniciar sesión.
+    expect(onRegistroCompleto).toHaveBeenCalledWith(
+      { id: 1, username: 'mateo29', email: 'mateo@example.com', activo: true },
+      { email: 'mateo@example.com', password: 'Passw0rd!' },
+    );
   });
 
   it('envía el avatar personalizado si se abrió el selector y se cambió algo', async () => {

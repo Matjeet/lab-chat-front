@@ -19,6 +19,12 @@ const nextConfig = {
   // override manual en jest.config.js), así que sin esto Jest revienta con
   // "Unexpected token 'export'" al hacer `require()` de su `export { ... }`.
   transpilePackages: ['blobatar', '@blobatar/react'],
+
+  // Orígenes (aparte de localhost) que pueden pedirle recursos de desarrollo
+  // (`/_next/hmr`, etc.) a `npm run dev` — p. ej. al exponerlo con un túnel de
+  // cloudflared. Los "quick tunnels" cambian de subdominio en cada ejecución,
+  // así que va el comodín. Solo afecta a `npm run dev`.
+  allowedDevOrigins: ['*.trycloudflare.com'],
 };
 
 module.exports = nextConfig;
