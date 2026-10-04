@@ -9,6 +9,7 @@ import Button from '../../atoms/Button';
 import Alert from '../../atoms/Alert';
 import AvatarUsuario from '../../atoms/AvatarUsuario';
 import FormField from '../../molecules/FormField';
+import Modal from '../../molecules/Modal';
 import SelectorInterlocutor from '../../molecules/SelectorInterlocutor';
 import Notificaciones from '../../organisms/Notificaciones';
 import useRequiereSesion from '../../../hooks/useRequiereSesion';
@@ -19,7 +20,12 @@ import useListaChats from '../../../hooks/useListaChats';
 import { useInterlocutor } from '../../../context/InterlocutorContext';
 import { validarUsername } from '../../../utils/validacionConversacion';
 import { reproducirSonidoEnviado, reproducirSonidoRecibido } from '../../../utils/sonidosMensajes';
+import { consumirBienvenidaPendiente } from '../../../utils/bienvenida';
 import styles from './HomePage.module.css';
+
+const TITULO_BIENVENIDA = '¡Te damos la bienvenida a Chat!';
+const MENSAJE_BIENVENIDA =
+  'Tu cuenta se creó correctamente y ya iniciaste sesión. Para empezar, escribe el usuario de alguien en la cabecera y envíale una solicitud de chat.';
 
 /**
  * Sub-componente interno: solo se monta una vez hay `{yo, con}` confirmados,
@@ -90,6 +96,10 @@ const VistaConversacion = ({ yo, con, canal }) => {
  *
  * Exige sesión activa (`useRequiereSesion`).
  *
+ * Si se llega recién registrado (`RegistroPage` deja una marca de un solo
+ * uso, ver `src/utils/bienvenida.js`), muestra un `Modal` de bienvenida —
+ * una única vez: la marca se consume al leerla.
+ *
  * **Identidad, a propósito temporal:** `chat-conversacion` identifica cada
  * lado de la conversación por `username` de chat-registro (contrato §2.1).
  *
@@ -154,7 +164,16 @@ const HomePage = () => {
 
   const [valorYo, setValorYo] = useState('');
   const [errorYo, setErrorYo] = useState(null);
+  const [mostrarBienvenida, setMostrarBienvenida] = useState(false);
   const ultimoIdRegistradoRef = useRef(null);
+
+  // Solo tras un alta recién hecha (`RegistroPage` deja la marca): se consume
+  // al leerla, así no vuelve a salir al recargar ni en un login posterior. En
+  // un efecto, no al inicializar el estado: `sessionStorage` no existe en el
+  // prerenderizado del export estático.
+  useEffect(() => {
+    if (consumirBienvenidaPendiente()) setMostrarBienvenida(true);
+  }, []);
 
   useEffect(() => {
     setValorYo(yo);
@@ -195,6 +214,8 @@ const HomePage = () => {
     setErrorYo(null);
     establecerYo(valorYo.trim());
   };
+
+  const cerrarBienvenida = () => setMostrarBienvenida(false);
 
   const conLimpio = con.trim();
   const chateandoContigoMismo =
@@ -260,6 +281,16 @@ const HomePage = () => {
             )}
           </div>
         </div>
+      )}
+
+      {mostrarBienvenida && (
+        <Modal
+          tono="info"
+          titulo={TITULO_BIENVENIDA}
+          mensaje={MENSAJE_BIENVENIDA}
+          textoBoton="Empezar"
+          onCerrar={cerrarBienvenida}
+        />
       )}
     </DefaultLayout>
   );
