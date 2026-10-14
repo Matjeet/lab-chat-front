@@ -29,7 +29,7 @@ import styles from './Header.module.css';
  * @param {React.ReactNode} [props.centro]  Contenido centrado (p. ej. `SelectorInterlocutor`).
  * @param {React.ReactNode} [props.actions] Acciones a la derecha (botones, enlaces...).
  * @param {React.ReactNode} [props.marcaExtra] Contenido justo a la derecha de la marca
- *   (p. ej. `BotonIA`).
+ *   (p. ej. `BotonRuleta`).
  */
 const Header = ({ title, centro, actions, marcaExtra }) => (
   <header className={styles.header}>
