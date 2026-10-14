@@ -169,7 +169,7 @@ cambia el color y qué variante de `Button` usa el botón de confirmación:
 |--------|-------|-------|--------|
 | `"error"` (por defecto) | Rojo (`--color-danger`) | `danger` | Algo salió mal de verdad — el usuario no existe, una comprobación falló. |
 | `"info"` | Azul (`--color-primary`) | `primary` | No es un error, es información que igual corta el flujo — ya existe una solicitud pendiente, o la confirmación de que algo se envió. |
-| `"warning"` | Amarillo (`--color-warning`) | `warning` | Una advertencia, ni error ni mera información — p. ej. una función que todavía está en construcción (`BotonIA`). |
+| `"warning"` | Amarillo (`--color-warning`) | `warning` | Una advertencia, ni error ni mera información — p. ej. una función que todavía está en construcción (`BotonRuleta`). |
 
 **Cuándo usar `Modal`, y cuándo no** — tres niveles de mensaje, tres
 componentes distintos, sin solaparse:

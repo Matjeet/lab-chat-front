@@ -1,21 +1,21 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
-import BotonIA from './BotonIA';
+import BotonRuleta from './BotonRuleta';
 
-describe('BotonIA', () => {
-  it('muestra el botón de funciones de IA y no el aviso hasta pulsarlo', () => {
-    render(<BotonIA />);
+describe('BotonRuleta', () => {
+  it('muestra el botón de la ruleta y no el aviso hasta pulsarlo', () => {
+    render(<BotonRuleta />);
 
-    expect(screen.getByRole('button', { name: 'Funciones de IA' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Ruleta' })).toBeInTheDocument();
     expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
   });
 
   it('al pulsarlo, avisa en un modal amarillo que la función está en construcción', async () => {
     const user = userEvent.setup();
-    render(<BotonIA />);
+    render(<BotonRuleta />);
 
-    await user.click(screen.getByRole('button', { name: 'Funciones de IA' }));
+    await user.click(screen.getByRole('button', { name: 'Ruleta' }));
 
     const dialogo = screen.getByRole('alertdialog');
     expect(dialogo).toHaveTextContent('Función en construcción');
@@ -24,9 +24,9 @@ describe('BotonIA', () => {
 
   it('el aviso se cierra con el botón de confirmación', async () => {
     const user = userEvent.setup();
-    render(<BotonIA />);
+    render(<BotonRuleta />);
 
-    await user.click(screen.getByRole('button', { name: 'Funciones de IA' }));
+    await user.click(screen.getByRole('button', { name: 'Ruleta' }));
     await user.click(screen.getByRole('button', { name: 'Entendido' }));
 
     expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
